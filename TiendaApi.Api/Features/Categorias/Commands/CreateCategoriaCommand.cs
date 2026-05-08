@@ -1,8 +1,11 @@
 using CSharpFunctionalExtensions;
+using FluentValidation;
 using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Categorias;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -15,11 +18,28 @@ public record CreateCategoriaCommand(CategoriaRequestDto Dto)
 /// <summary>
 /// Handler del comando CreateCategoriaCommand.
 /// </summary>
-public class CreateCategoriaCommandHandler(ICategoriaService service)
+public class CreateCategoriaCommandHandler(
+    ICategoriaRepository repository,
+    IValidator<CategoriaRequestDto> validator)
     : IRequestHandler<CreateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<CategoriaDto, DomainError>> Handle(
+    public async Task<Result<CategoriaDto, DomainError>> Handle(
         CreateCategoriaCommand request, CancellationToken cancellationToken)
-        => service.CreateAsync(request.Dto);
+    {
+        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Result.Failure<CategoriaDto, DomainError>(CategoriaError.ValidacionConCampos(errors));
+        }
+
+        if (await repository.ExistsByNombreAsync(request.Dto.Nombre))
+            return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NombreDuplicado(request.Dto.Nombre));
+
+        var saved = await repository.SaveAsync(request.Dto.ToEntity());
+        return Result.Success<CategoriaDto, DomainError>(saved.ToDto());
+    }
 }

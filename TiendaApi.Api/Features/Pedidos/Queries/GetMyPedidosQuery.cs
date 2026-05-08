@@ -2,7 +2,8 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Pedidos;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Queries;
 
@@ -15,11 +16,14 @@ public record GetMyPedidosQuery(long UserId)
 /// <summary>
 /// Handler de la query GetMyPedidosQuery.
 /// </summary>
-public class GetMyPedidosQueryHandler(IPedidosService service)
+public class GetMyPedidosQueryHandler(IPedidosRepository repository)
     : IRequestHandler<GetMyPedidosQuery, Result<IEnumerable<PedidoDto>, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
+    public async Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
         GetMyPedidosQuery request, CancellationToken cancellationToken)
-        => service.FindByUserIdAsync(request.UserId);
+    {
+        var pedidos = await repository.FindByUserIdAsync(request.UserId);
+        return Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos.ToDtoList());
+    }
 }

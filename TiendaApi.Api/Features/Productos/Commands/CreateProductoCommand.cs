@@ -1,8 +1,12 @@
 using CSharpFunctionalExtensions;
+using FluentValidation;
 using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.Features.Productos.Notifications;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -15,11 +19,28 @@ public record CreateProductoCommand(ProductoRequestDto Dto)
 /// <summary>
 /// Handler del comando CreateProductoCommand.
 /// </summary>
-public class CreateProductoCommandHandler(IProductoService service)
+public class CreateProductoCommandHandler(
+    IProductoRepository repository,
+    IValidator<ProductoRequestDto> validator,
+    IMediator mediator)
     : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<ProductoDto, DomainError>> Handle(
+    public async Task<Result<ProductoDto, DomainError>> Handle(
         CreateProductoCommand request, CancellationToken cancellationToken)
-        => service.CreateAsync(request.Dto);
+    {
+        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
+        }
+
+        var saved = await repository.SaveAsync(request.Dto.ToEntity());
+        var dto = saved.ToDto();
+        await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
+        return Result.Success<ProductoDto, DomainError>(dto);
+    }
 }

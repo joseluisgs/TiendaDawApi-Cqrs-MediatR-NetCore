@@ -2,7 +2,9 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -15,11 +17,24 @@ public record UpdateProductoPartialCommand(long Id, ProductoPatchDto Dto)
 /// <summary>
 /// Handler del comando UpdateProductoPartialCommand.
 /// </summary>
-public class UpdateProductoPartialCommandHandler(IProductoService service)
+public class UpdateProductoPartialCommandHandler(IProductoRepository repository)
     : IRequestHandler<UpdateProductoPartialCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<ProductoDto, DomainError>> Handle(
+    public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoPartialCommand request, CancellationToken cancellationToken)
-        => service.UpdatePartialAsync(request.Id, request.Dto);
+    {
+        var producto = await repository.FindByIdAsync(request.Id);
+        if (producto is null)
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
+
+        if (!string.IsNullOrWhiteSpace(request.Dto.Nombre)) producto.Nombre = request.Dto.Nombre;
+        if (!string.IsNullOrWhiteSpace(request.Dto.Descripcion)) producto.Descripcion = request.Dto.Descripcion;
+        if (request.Dto.Precio.HasValue && request.Dto.Precio.Value > 0) producto.Precio = request.Dto.Precio.Value;
+        if (request.Dto.Stock.HasValue) producto.Stock = request.Dto.Stock.Value;
+        if (!string.IsNullOrWhiteSpace(request.Dto.Imagen)) producto.Imagen = request.Dto.Imagen;
+
+        var updated = await repository.UpdateAsync(producto);
+        return Result.Success<ProductoDto, DomainError>(updated.ToDto());
+    }
 }
