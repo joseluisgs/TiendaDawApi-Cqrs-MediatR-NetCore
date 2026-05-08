@@ -11,6 +11,7 @@ namespace TiendaApi.Api.Features.Users.Commands;
 
 /// <summary>
 /// Comando para actualizar el avatar de un usuario.
+/// Un valor null o en blanco restaura el avatar por defecto.
 /// </summary>
 public record UpdateUserAvatarCommand(long Id, string? AvatarUrl)
     : IRequest<Result<UserDto, DomainError>>;

@@ -34,7 +34,11 @@ public class CreatePedidoCommandHandler(
     IMediator mediator)
     : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
 {
+    /// <summary>Reintentos para conflictos de concurrencia al crear pedidos simultáneos.</summary>
     private const int MaxRetries = 3;
+
+    /// <summary>Código de PostgreSQL para fallos de serialización en transacciones serializables.</summary>
+    private const string PostgresSerializationErrorCode = "40001";
 
     /// <inheritdoc/>
     public async Task<Result<PedidoDto, DomainError>> Handle(
@@ -153,5 +157,5 @@ public class CreatePedidoCommandHandler(
         ex.InnerException is NpgsqlException npgsqlEx && IsSerializationFailureMessage(npgsqlEx.Message);
 
     private static bool IsSerializationFailureMessage(string message) =>
-        message.Contains("40001") || message.Contains("serialization", StringComparison.OrdinalIgnoreCase) || message.Contains("serializacion", StringComparison.OrdinalIgnoreCase);
+        message.Contains(PostgresSerializationErrorCode) || message.Contains("serialization", StringComparison.OrdinalIgnoreCase) || message.Contains("serializacion", StringComparison.OrdinalIgnoreCase);
 }

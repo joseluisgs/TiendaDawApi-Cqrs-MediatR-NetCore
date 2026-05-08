@@ -16,19 +16,18 @@ namespace TiendaApi.Api.Controllers;
 /// Controlador de API para gestión de categorías de productos.
 /// Endpoints: CRUD paginado de categorías.
 /// </summary>
+/// <remarks>
+/// 🎓 ANTES vs AHORA:
+/// ANTES:  CategoriasController(ICategoriaService service, ILogger logger)
+/// AHORA:  CategoriasController(IMediator mediator)
+/// El Controller ya no conoce ningún detalle de implementación.
+/// Solo sabe que puede "enviar" peticiones al Mediator.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class CategoriasController(IMediator mediator) : ControllerBase
 {
-    /// <summary>
-    /// 🎓 ANTES vs AHORA:
-    /// ANTES:  CategoriasController(ICategoriaService service, ILogger logger)
-    /// AHORA:  CategoriasController(IMediator mediator)
-    /// El Controller ya no conoce ningún detalle de implementación.
-    /// Solo sabe que puede "enviar" peticiones al Mediator.
-    /// </summary>
-
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<CategoriaDto>), StatusCodes.Status200OK)]
     [AllowAnonymous]
