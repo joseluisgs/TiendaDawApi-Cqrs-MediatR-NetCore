@@ -46,6 +46,7 @@ services.AddAuthentication(configuration);
 
 // Business
 services.AddRepositories(configuration);
+services.AddMediatRHandlers();
 services.AddServices();
 
 // Servicios Adicionales (desarrollo vs producción)
