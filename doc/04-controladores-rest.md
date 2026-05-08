@@ -1116,30 +1116,257 @@ Con los controladores dominados, el siguiente paso es aprender sobre validación
 
 ## Controladores con CQRS + MediatR
 
-Antes el controller inyectaba un service de negocio. Ahora inyecta `IMediator` y envía `Commands` o `Queries`.
+### La evolución del controlador: de servicios amediador
+
+En los capítulos anteriores exploramos CQRS y cómo separa las operaciones de lectura (Queries) de las operaciones de escritura (Commands). Ahora veamos cómo los controladores se benefician de este patrón.
+
+Antes el controller inyectaba un service de negocio. Ahora inyecta `IMediator` y envía `Commands` o `Queries`. Esta simplicidad es revolucionaria para la arquitectura.
+
+### ¿Por qué usar IMediator en el controlador?
+
+El controlador tradicional tenía múltiples responsabilidades: recibir la petición, validar inputs, llamar a servicios de negocio, mapear respuestas y manejar errores. Esto generaba controladores difíciles de mantener y测试.
 
 ```mermaid
-graph LR
-    A[Controller con Service] --> B[ProductoService]
-    C[Controller con IMediator] --> D[IMediator]
-    D --> E[QueryHandler]
-    D --> F[CommandHandler]
+flowchart TB
+    subgraph "ANTES - Controlador con múltiples dependencias"
+        A[Controller] 
+        A --> B["IProductoService"]
+        A --> C["ICategoriaService"]
+        A --> D["IPedidoService"]
+        A --> E["IUserService"]
+        A --> F["IMapper"]
+        
+        style A fill:#ff6b6b,color:#fff
+        style B fill:#fcc419,color:#000
+        style C fill:#fcc419,color:#000
+        style D fill:#fcc419,color:#000
+        style E fill:#fcc419,color:#000
+        style F fill:#fcc419,color:#000
+    end
+    
+    subgraph "AHORA - Controlador con una sola dependencia"
+        G[Controller] 
+        G --> H["IMediator"]
+        
+        style G fill:#51cf66,color:#fff
+        style H fill:#339af0,color:#fff
+    end
 ```
 
-Ejemplo real:
+### La метаfora del chef y el Camarero
+
+Imagina un restaurante donde el chef (controlador) tiene que hablar directamente con el proveedor de ingredientes, el limpiador de mesas, el chef pastelero y el manager. Esto sería caótico y el chef no podría concentrar en cocinar (la lógica de negocio).
+
+Ahora imagina que hay un camarero (MediatR) que recibe todas las peticiones y las distribuye a quien corresponde. El chef solo necesita hablar con el camarero y enfocarse en preparar la comida.
+
+Exactamente lo mismo ocurre con los controladores. En lugar de conocer y coordinar múltiples servicios, el controlador solo conoce al mediador.
+
+### Anatomía de un controlador con MediatR
 
 ```csharp
-public class CategoriasController(IMediator mediator) : ControllerBase
+public class ProductosController(IMediator mediator) : ControllerBase
 {
+    /// <summary>Obtiene todos los productos paginados.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedResult<ProductoDto>), StatusCodes.Status200OK)]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] string? nombre = null,
+        [FromQuery] string? categoria = null,
+        [FromQuery] int page = 0,
+        [FromQuery] int size = 10,
+        [FromQuery] string sortBy = "id",
+        [FromQuery] string direction = "asc")
+    {
+        // Construir filtro
+        var filter = new ProductoFilterDto(
+            nombre, categoria, null, null, null, page, size, sortBy, direction);
+        
+        // Enviar al mediator (no sabe qué handler lo procesa)
+        var resultado = await mediator.Send(new GetAllProductosQuery(filter));
+        
+        // Usar Match para convertir Result a IActionResult
+        return resultado.Match(
+            onSuccess: productos =>
+            {
+                var linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader))
+                    Response.Headers.Append("Link", linkHeader);
+                return Ok(productos);
+            },
+            onFailure: error => StatusCode(500, new { message = error.Message })
+        );
+    }
+
+    /// <summary>Obtiene un producto por su ID.</summary>
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ProductoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(long id)
     {
-        var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
+        var resultado = await mediator.Send(new GetProductoByIdQuery(id));
         return resultado.Match(
-            categoria => Ok(categoria),
-            error => NotFound(new { message = error.Message }));
+            onSuccess: producto => Ok(producto),
+            onFailure: error => error switch
+            {
+                NotFoundError => NotFound(new { message = error.Message }),
+                _ => StatusCode(500, new { message = error.Message })
+            }
+        );
+    }
+
+    /// <summary>Crea un nuevo producto.</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ProductoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "RequireAdminRole")]
+    public async Task<IActionResult> Create([FromBody] ProductoRequestDto dto)
+    {
+        var resultado = await mediator.Send(new CreateProductoCommand(dto));
+        return resultado.Match(
+            onSuccess: producto => CreatedAtAction(
+                nameof(GetById),
+                new { id = producto.Id },
+                producto),
+            onFailure: error => error switch
+            {
+                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
+                NotFoundError => NotFound(new { message = error.Message }),
+                ConflictError => Conflict(new { message = error.Message }),
+                _ => StatusCode(500, new { message = error.Message })
+            }
+        );
     }
 }
 ```
 
-Esto mejora la testabilidad porque el controller solo necesita mockear `IMediator`, no varios servicios o dependencias de negocio.
+### ¿Qué hace el controlador ahora?
+
+El controlador moderno tiene UNA sola responsabilidad: recibir la petición HTTP y retornar la respuesta HTTP apropiada.
+
+```mermaid
+flowchart TB
+    subgraph "Responsabilidades del controlador moderno"
+        A["1. Recibir petición HTTP\n(Model Binding)"]
+        B["2. Enviar al MediatR\n(Sin conocer handlers)"]
+        C["3. Convertir Result a IActionResult\n(Match pattern)"]
+        D["4. Retornar respuesta HTTP\n(Status codes)"]
+    end
+    
+    A --> B --> C --> D
+    
+    style A fill:#339af0,color:#fff
+    style B fill:#339af0,color:#fff
+    style C fill:#339af0,color:#fff
+    style D fill:#339af0,color:#fff
+```
+
+El controlador ya no:
+- ❌ Valida reglas de negocio (el handler lo hace)
+- ❌ Accede a repositorios (el handler lo hace)
+- ❌ Envía emails (los notification handlers lo hacen)
+- ❌ Mapea entidades a DTOs (el handler lo hace)
+
+El controlador solo traduce entre HTTP y MediatR.
+
+### Ejemplo completo con manejo de errores
+
+```csharp
+public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase
+{
+    /// <summary>Obtiene todos los pedidos (admin).</summary>
+    [HttpGet]
+    [Authorize(Roles = UserRoles.ADMIN)]
+    [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllPedidos()
+    {
+        var resultado = await mediator.Send(new GetAllPedidosListQuery());
+        return resultado.Match(
+            onSuccess: pedidos => Ok(pedidos),
+            onFailure: error => StatusCode(500, new { message = error.Message })
+        );
+    }
+
+    /// <summary>Crea un nuevo pedido para el usuario actual.</summary>
+    [HttpPost("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateMyPedido([FromBody] PedidoRequestDto dto)
+    {
+        // Extraer userId del claim
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+
+        // Enviar comando (sin saber qué handler lo procesa)
+        var resultado = await mediator.Send(new CreatePedidoCommand(userId, dto));
+
+        if (resultado.IsSuccess)
+        {
+            var pedido = resultado.Value;
+            return CreatedAtAction(nameof(GetMyPedidoById), new { id = pedido.Id }, pedido);
+        }
+
+        var error = resultado.Error;
+        return error switch
+        {
+            NotFoundError => NotFound(new { message = error.Message }),
+            ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
+            BusinessRuleError => BadRequest(new { message = error.Message }),
+            ForbiddenError => StatusCode(403, new { message = error.Message }),
+            ConflictError => Conflict(new { message = error.Message }),
+            _ => StatusCode(500, new { message = error.Message })
+        };
+    }
+}
+```
+
+### Beneficios tangibles
+
+| Aspecto | Antes | Ahora |
+|---------|-------|-------|
+| **Dependencias del controller** | 5-10 servicios | 1 (IMediator) |
+| **Testing** | Mockear muchos servicios | Mockear solo IMediator |
+| **Modificar lógica de negocio** | Tocar controller y servicios | Solo tocar handler |
+| **Nuevos endpoints** | Modificar servicios existentes | Agregar nuevo command/query |
+| **Acoplamiento** | Alto (controller conoce servicios) | Bajo (solo conoce interfaz) |
+
+### Testeando el controlador
+
+La testabilidad mejora dramáticamente porque solo necesitamos un mock de IMediator:
+
+```csharp
+[Fact]
+public async Task Create_ValidData_ReturnsCreated()
+{
+    // Arrange
+    var mockMediator = new Mock<IMediator>();
+    var controller = new ProductosController(mockMediator.Object);
+    
+    var expectedProduct = new ProductoDto { Id = 1, Nombre = "Test" };
+    mockMediator
+        .Setup(m => m.Send(
+            It.IsAny<CreateProductoCommand>(),
+            It.IsAny<CancellationToken>()))
+        .ReturnsAsync(Result.Success<ProductoDto, DomainError>(expectedProduct));
+    
+    var dto = new ProductoRequestDto { Nombre = "Test", Precio = 100 };
+    
+    // Act
+    var result = await controller.Create(dto);
+    
+    // Assert
+    var createdResult = result as CreatedAtActionResult;
+    Assert.NotNull(createdResult);
+    Assert.Equal(1, ((ProductoDto)createdResult.Value!).Id);
+}
+```
+
+Solo necesitamos un mock. Todo lo demás está en el handler, que se testea independientemente.

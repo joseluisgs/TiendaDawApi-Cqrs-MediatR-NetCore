@@ -83,54 +83,53 @@ flowchart LR
     end
 ```
 
-### Implementación de Transacciones
+### Implementación de Transacciones con CQRS
+
+Con CQRS y MediatR, las transacciones se manejan dentro de los Command Handlers. El Handler tiene la única responsabilidad de ejecutar la operación atómica.
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using MediatR;
+using CSharpFunctionalExtensions;
 
-public class PedidoService
+public class CreatePedidoCommandHandler(
+    TiendaDbContext context,
+    IPedidosRepository repository,
+    ILogger<CreatePedidoCommandHandler> logger)
+    : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
 {
-    private readonly TiendaDbContext _context;
-    private readonly ILogger<PedidoService> _logger;
-
-    public PedidoService(
-        TiendaDbContext context,
-        ILogger<PedidoService> logger)
+    public async Task<Result<PedidoDto, DomainError>> Handle(
+        CreatePedidoCommand request,
+        CancellationToken cancellationToken)
     {
-        _context = context;
-        _logger = logger;
-    }
-
-    public async Task<Result<Pedido, Error>> CreatePedidoAsync(
-        CreatePedidoRequest request)
-    {
-        // Usar transacción explícita
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        // Usar transacción explícita para operaciones que afectan múltiples tablas
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
             // 1. Verificar productos y stock
-            var productos = await _context.Productos
-                .Where(p => request.Items.Select(i => i.ProductoId).Contains(p.Id))
-                .ToListAsync();
+            var productos = await context.Productos
+                .Where(p => request.Dto.Items.Select(i => i.ProductoId).Contains(p.Id))
+                .ToListAsync(cancellationToken);
 
             // Validar que todos los productos existen
-            if (productos.Count != request.Items.Count)
+            if (productos.Count != request.Dto.Items.Count)
             {
                 await transaction.RollbackAsync();
-                return Result.Failure<Pedido, Error>(Errors.Pedidos.ProductoNoEncontrado);
+                return Result.Failure<PedidoDto, DomainError>(
+                    PedidoError.ProductoNoEncontrado);
             }
 
             // 2. Validar stock disponible
-            foreach (var item in request.Items)
+            foreach (var item in request.Dto.Items)
             {
                 var producto = productos.First(p => p.Id == item.ProductoId);
                 if (producto.Stock < item.Cantidad)
                 {
                     await transaction.RollbackAsync();
-                    return Result.Failure<Pedido, Error>(
-                        Errors.Pedidos.StockInsuficiente(
+                    return Result.Failure<PedidoDto, DomainError>(
+                        PedidoError.StockInsuficiente(
                             producto.Nombre, 
                             producto.Stock, 
                             item.Cantidad));
@@ -143,7 +142,7 @@ public class PedidoService
                 UsuarioId = request.UsuarioId,
                 Estado = PedidoEstado.Pendiente,
                 CreatedAt = DateTime.UtcNow,
-                Items = request.Items.Select(item => new PedidoItem
+                Items = request.Dto.Items.Select(item => new PedidoItem
                 {
                     ProductoId = item.ProductoId,
                     Cantidad = item.Cantidad,
@@ -151,17 +150,36 @@ public class PedidoService
                 }).ToList()
             };
 
-            _context.Pedidos.Add(pedido);
+            context.Pedidos.Add(pedido);
 
             // 4. Decrementar stock
-            foreach (var item in request.Items)
+            foreach (var item in request.Dto.Items)
             {
-                var producto = await _context.Productos
-                    .FirstAsync(p => p.Id == item.ProductoId);
+                var producto = await context.Productos
+                    .FirstAsync(p => p.Id == item.ProductoId, cancellationToken);
                 producto.Stock -= item.Cantidad;
             }
 
             // 5. Guardar cambios
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Confirmar transacción
+            await transaction.CommitAsync(cancellationToken);
+
+            logger.LogInformation("Pedido {PedidoId} creado para usuario {UsuarioId}", 
+                pedido.Id, pedido.UsuarioId);
+
+            return Result.Success<PedidoDto, DomainError>(pedido.ToDto());
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Error creando pedido para usuario {UsuarioId}", request.UsuarioId);
+            return Result.Failure<PedidoDto, DomainError>(
+                PedidoError.ErrorAlCrear(ex.Message));
+        }
+    }
+}
             await _context.SaveChangesAsync();
 
             // 6. Commit de la transacción
@@ -861,33 +879,45 @@ public static class Errors
 
 ---
 
-## 15.8. Controller
+## 15.8. Controller con CQRS + MediatR
+
+Con CQRS, el controlador ya no conoce el servicio directamente. Solo conoce `IMediator` y envía Commands/Queries.
 
 ```csharp
+using MediatR;
+using CSharpFunctionalExtensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using TiendaApi.Api.Features.Pedidos.Commands;
+using TiendaApi.Api.Dtos.Pedidos;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Models;
+
 [ApiController]
 [Route("api/[controller]")]
-public class PedidosController : ControllerBase
+public class PedidosController(IMediator mediator) : ControllerBase
 {
-    private readonly PedidoService _pedidoService;
-
-    public PedidosController(PedidoService pedidoService)
-    {
-        _pedidoService = pedidoService;
-    }
-
     [HttpPost]
-    [ProducesResponseType(typeof(PedidoResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreatePedido([FromBody] CreatePedidoRequest request)
+    [Authorize]
+    public async Task<IActionResult> CreatePedido([FromBody] PedidoRequestDto request)
     {
-        var result = await _pedidoService.CreatePedidoAsync(request);
+        // Extraer userId del claim
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+
+        // Enviar al MediatR (el handler hace todo el trabajo)
+        var result = await mediator.Send(new CreatePedidoCommand(userId, request));
 
         return result.Match(
             pedido => CreatedAtAction(
-                actionName: nameof(GetPedido),
+                actionName: nameof(GetMyPedidoById),
                 routeValues: new { id = pedido.Id },
-                value: PedidoResponse.FromPedido(pedido)),
+                value: pedido),
             error =>
             {
                 return error.Code switch
