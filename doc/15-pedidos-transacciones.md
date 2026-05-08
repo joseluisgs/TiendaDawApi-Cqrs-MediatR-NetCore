@@ -1,17 +1,19 @@
-# 15. Pedidos: Transacciones y Control de Concurrencia
+# 15. Pedidos: Transacciones y Control de Concurrencia con CQRS
 
 ## Índice
 
 [15. Pedidos: Transacciones y Control de Concurrencia](#15-pedidos-transacciones-y-control-de-concurrencia)
   - [15.1. El Problema de la Concurrencia en Pedidos](#151-el-problema-de-la-concurrencia-en-pedidos)
-  - [15.2. Transacciones con EF Core](#152-transacciones-con-ef-core)
-  - [15.3. Enfoque Optimista](#153-enfoque-optimista)
-  - [15.4. Enfoque Pesimista](#154-enfoque-pesimista)
-  - [15.5. Enfoque Mixto (Usado en el Proyecto)](#155-enfoque-mixto-usado-en-el-proyecto)
-  - [15.6. Comparación de Enfoques](#156-comparación-de-enfoques)
-  - [15.7. Errores de Dominio](#157-errores-de-dominio)
-  - [15.8. Controller](#158-controller)
-  - [15.9. Resumen](#159-resumen)
+  - [15.2. CQRS y Pedidos: La Evolución](#152-cqrs-y-pedidos-la-evolución)
+  - [15.3. Transacciones con EF Core en Handlers](#153-transacciones-con-ef-core-en-handlers)
+  - [15.4. Enfoque Optimista](#154-enfoque-optimista)
+  - [15.5. Enfoque Pesimista](#155-enfoque-pesimista)
+  - [15.6. Enfoque Mixto (Usado en el Proyecto)](#156-enfoque-mixto-usado-en-el-proyecto)
+  - [15.7. Comparación de Enfoques](#157-comparación-de-enfoques)
+  - [15.8. Errores de Dominio para Pedidos](#158-errores-de-dominio-para-pedidos)
+  - [15.9. Controller con MediatR](#159-controller-con-mediatr)
+  - [15.10. Notifications y Efectos Secundarios](#1510-notifications-y-efectos-secundarios)
+  - [15.11. Resumen](#1511-resumen)
 
 ---
 
@@ -61,9 +63,116 @@ El resultado es que vendemos 2 productos cuando solo teníamos 1 en stock.
 
 ---
 
-## 15.2. Transacciones con EF Core
+## 15.2. CQRS y Pedidos: La Evolución
 
-### Conceptos de Transacciones
+### De Service Layer a Command Handlers
+
+Antes (enfoque tradicional), toda la lógica de pedidos vivía en un servicio gigante:
+
+```mermaid
+flowchart TB
+    subgraph "ANTES: PedidoService Giant"
+        A["PedidoService"]
+        A --> B["Crear pedido"]
+        A --> C["Actualizar estado"]
+        A --> D["Cancelar pedido"]
+        A --> E["Obtener pedidos usuario"]
+        A --> F["Obtener todos los pedidos"]
+        A --> G["Verificar stock"]
+        A --> H["Decrementar stock"]
+        A --> I["Enviar email"]
+        A --> J["Notificar SignalR"]
+    end
+    
+    style A fill:#ff6b6b,color:#fff
+    style B fill:#fcc419,color:#000
+    style C fill:#fcc419,color:#000
+    style D fill:#fcc419,color:#000
+    style E fill:#fcc419,color:#000
+    style F fill:#fcc419,color:#000
+    style G fill:#fcc419,color:#000
+    style H fill:#fcc419,color:#000
+    style I fill:#fcc419,color:#000
+    style J fill:#fcc419,color:#000
+```
+
+Ahora (con CQRS), cada operación es un handler independiente con responsabilidad única:
+
+```mermaid
+flowchart TB
+    subgraph "AHORA: Command/Query Handlers Separados"
+        subgraph "Commands"
+            C1["CreatePedidoCommand\nHandler"]
+            C2["UpdateEstadoCommand\nHandler"]
+            C3["DeletePedidoCommand\nHandler"]
+        end
+        
+        subgraph "Queries"
+            Q1["GetAllPedidosQuery\nHandler"]
+            Q2["GetMyPedidosQuery\nHandler"]
+            Q3["GetPedidoByIdQuery\nHandler"]
+        end
+        
+        subgraph "Notifications"
+            N1["PedidoCreado\nNotification"]
+            N2["EstadoActualizado\nNotification"]
+        end
+    end
+    
+    style C1 fill:#51cf66,color:#fff
+    style C2 fill:#51cf66,color:#fff
+    style C3 fill:#51cf66,color:#fff
+    style Q1 fill:#339af0,color:#fff
+    style Q2 fill:#339af0,color:#fff
+    style Q3 fill:#339af0,color:#fff
+    style N1 fill:#fcc419,color:#000
+    style N2 fill:#fcc419,color:#000
+```
+
+### ¿Por qué usar CQRS para Pedidos?
+
+| Aspecto | Con Service | Con CQRS |
+|---------|-------------|----------|
+| **Testabilidad** | Mockear 10 servicios | Mockear solo repositorio |
+| **Transacciones** | Método gigante con todo | Handler focalizado |
+| **Efectos secundarios** | Acoplados en el servicio | Desacoplados en Notifications |
+| **Conflictos** | Difícil identificar origen | Cada handler tiene su responsabilidad |
+| **Mantenimiento** | Miedo a tocar código | Cambios localizados |
+
+### La estructura de archivos en nuestro proyecto
+
+```
+Features/Pedidos/
+├── Commands/
+│   ├── CreatePedidoCommand.cs
+│   ├── CreatePedidoCommandHandler.cs
+│   ├── UpdatePedidoEstadoCommand.cs
+│   ├── UpdatePedidoEstadoCommandHandler.cs
+│   ├── UpdatePedidoAdminCommand.cs
+│   ├── UpdateMyPedidoCommand.cs
+│   ├── DeletePedidoAdminCommand.cs
+│   └── DeleteMyPedidoCommand.cs
+├── Queries/
+│   ├── GetAllPedidosQuery.cs
+│   ├── GetAllPedidosQueryHandler.cs
+│   ├── GetAllPedidosListQuery.cs
+│   ├── GetMyPedidosQuery.cs
+│   ├── GetMyPedidosQueryHandler.cs
+│   ├── GetPedidoByIdQuery.cs
+│   └── GetMyPedidoByIdQuery.cs
+└── Notifications/
+    ├── PedidoCreadoNotification.cs
+    ├── PedidoCreadoEmailHandler.cs
+    ├── PedidoCreadoSignalRHandler.cs
+    ├── EstadoPedidoActualizadoNotification.cs
+    └── PedidoCanceladoNotification.cs
+```
+
+Cada archivo tiene UNA responsabilidad. El `CreatePedidoCommandHandler` solo sabe crear pedidos. No conoce emails, no conoce SignalR, solo la lógica de negocio de creación.
+
+---
+
+## 15.3. Transacciones con EF Core en Handlers
 
 Una **transacción** es un conjunto de operaciones que se ejecutan como una unidad indivisible. Todas las operaciones se completan exitosamente o ninguna se aplica, garantizando la consistencia de los datos.
 
@@ -372,18 +481,24 @@ WHERE Id = 1 AND RowVersion = 0x0000000
 -- DbUpdateConcurrencyException thrown
 ```
 
-### Reintentos Automáticos con Polly
+### Reintentos Automáticos con Polly en Handler
 
 ```csharp
 using Polly;
 using Polly.Retry;
 
-public class PedidoService
+// El handler puede usar Polly para reintentar en caso de conflictos de concurrencia
+public class CreatePedidoCommandHandler(
+    TiendaDbContext context,
+    IPedidosRepository repository,
+    ILogger<CreatePedidoCommandHandler> logger)
+    : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
 {
     private readonly AsyncRetryPolicy _retryPolicy;
 
-    public PedidoService()
+    public CreatePedidoCommandHandler()
     {
+        // Policy: reintentar hasta 3 veces con backoff exponencial
         _retryPolicy = Policy
             .Handle<DbUpdateConcurrencyException>()
             .WaitAndRetryAsync(
@@ -392,7 +507,27 @@ public class PedidoService
                     TimeSpan.FromMilliseconds(100 * Math.Pow(2, retryAttempt)),
                 onRetry: (outcome, timespan, retryAttempt, context) =>
                 {
-                    Console.WriteLine($"Reintento {retryAttempt}...");
+                    logger.LogWarning("Reintento {RetryAttempt} por conflicto de concurrencia", retryAttempt);
+                });
+    }
+
+    public async Task<Result<PedidoDto, DomainError>> Handle(
+        CreatePedidoCommand request,
+        CancellationToken cancellationToken)
+    {
+        return await _retryPolicy.ExecuteAsync(async () =>
+        {
+            // La lógica de negocio con transacciones...
+            // Si hay DbUpdateConcurrencyException, Polly reintentará automáticamente
+            return await CreatePedidoInternoAsync(request, context, repository, logger, cancellationToken);
+        });
+    }
+    
+    private async Task<Result<PedidoDto, DomainError>> CreatePedidoInternoAsync(...)
+    {
+        // Implementación con optimistic locking...
+    }
+}
                 });
     }
 
@@ -592,56 +727,155 @@ public async Task<Result<Pedido, Error>> CreatePedidoSerializableAsync(
 
 ---
 
-## 15.5. Enfoque Mixto (Usado en el Proyecto)
+## 15.5. Enfoque Mixto con CQRS (Usado en el Proyecto)
 
 El **enfoque mixto** combina las ventajas de ambos métodos: usa operaciones atómicas para el decremento de stock (pesimista) y optimistic locking para la validación general. Este es el enfoque recomendado para sistemas de inventario.
 
-### Arquitectura del Enfoque Mixto
+Con CQRS, el handler `CreatePedidoCommandHandler` encapsulate toda esta lógica de forma limpia y testeable.
+
+### Arquitectura del Enfoque Mixto con CQRS
 
 ```mermaid
 flowchart TD
-    subgraph "1. Validación Optimista"
-        A1["Verificar productos existen"]
-        A2["Leer stock actual"]
-        A3["Validar stock > cantidad"]
+    subgraph "CreatePedidoCommandHandler"
+        direction TB
+        A1["1. Validación Optimista\nVerificar productos existen\nLeer stock actual\nValidar stock > cantidad"]
+        A2["2. Decremento Atómico\nUPDATE atómico con WHERE\nVerificar filas afectadas\nFallo si stock insuficiente"]
+        A3["3. Crear Pedido\nINSERT pedido\nINSERT pedido_items\nCOMMIT"]
+        A4["4. Publicar Notification\nPedidoCreadoNotification\n(email + SignalR en paralelo)"]
     end
     
-    subgraph "2. Decremento Atómico"
-        B1["UPDATE atómico con WHERE"]
-        B2["Verificar filas afectadas"]
-        B3["Fallo si stock insuficiente"]
-    end
-    
-    subgraph "3. Crear Pedido"
-        C1["INSERT pedido"]
-        C2["INSERT pedido_items"]
-        C3["COMMIT"]
-    end
-    
-    A1 --> A2 --> A3 --> B1 --> B2 --> B3 --> C1 --> C2 --> C3
+    A1 --> A2 --> A3 --> A4
 ```
 
-### Implementación del Enfoque Mixto
+### Implementación del Enfoque Mixto con Command Handler
 
 ```csharp
-public class PedidoService
-{
-    private readonly TiendaDbContext _context;
-    private readonly ILogger<PedidoService> _logger;
+using MediatR;
+using CSharpFunctionalExtensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
-    public async Task<Result<Pedido, Error>> CreatePedidoAsync(
-        CreatePedidoRequest request)
+public class CreatePedidoCommandHandler(
+    TiendaDbContext context,
+    IPedidosRepository repository,
+    IMediator mediator,
+    ILogger<CreatePedidoCommandHandler> logger)
+    : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
+{
+    public async Task<Result<PedidoDto, DomainError>> Handle(
+        CreatePedidoCommand request,
+        CancellationToken cancellationToken)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
-            // FASE 1: Verificación optimista
-            // Obtenemos productos sin bloquear para validar rápido
-            var productos = await _context.Productos
+            // FASE 1: Verificación optimista (lectura rápida sin lock)
+            var productoIds = request.Dto.Items.Select(i => i.ProductoId).ToList();
+            
+            var productos = await context.Productos
                 .AsNoTracking()
-                .Where(p => request.Items.Select(i => i.ProductoId).Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id);
+                .Where(p => productoIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, cancellationToken);
+
+            // Validar que todos los productos existen
+            if (productos.Count != request.Dto.Items.Count)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<PedidoDto, DomainError>(
+                    PedidoError.ProductoNoEncontrado);
+            }
+
+            // Validar stock disponible (lectura rápida)
+            foreach (var item in request.Dto.Items)
+            {
+                var producto = productos[item.ProductoId];
+                if (producto.Stock < item.Cantidad)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Result.Failure<PedidoDto, DomainError>(
+                        PedidoError.StockInsuficiente(
+                            producto.Nombre, 
+                            producto.Stock, 
+                            item.Cantidad));
+                }
+            }
+
+            // FASE 2: Decremento atómico con WHERE (previene stock negativo)
+            foreach (var item in request.Dto.Items)
+            {
+                // UPDATE atómico: solo decrementa si stock >= cantidad
+                var filasAfectadas = await context.Productos
+                    .Where(p => p.Id == item.ProductoId && p.Stock >= item.Cantidad)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(p => p.Stock, p => p.Stock - item.Cantidad),
+                        cancellationToken);
+
+                if (filasAfectadas == 0)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Result.Failure<PedidoDto, DomainError>(
+                        PedidoError.StockInsuficiente(
+                            productos[item.ProductoId].Nombre,
+                            productos[item.ProductoId].Stock,
+                            item.Cantidad));
+                }
+            }
+
+            // FASE 3: Crear el pedido
+            var pedido = new Pedido
+            {
+                UsuarioId = request.UsuarioId,
+                Estado = PedidoEstado.Pendiente,
+                Destinatario = request.Dto.Destinatario,
+                DireccionEnvio = request.Dto.DireccionEnvio,
+                CreatedAt = DateTime.UtcNow,
+                Items = request.Dto.Items.Select(item => new PedidoItem
+                {
+                    ProductoId = item.ProductoId,
+                    Cantidad = item.Cantidad,
+                    PrecioUnitario = productos[item.ProductoId].Precio,
+                    Subtotal = productos[item.ProductoId].Precio * item.Cantidad
+                }).ToList()
+            };
+
+            context.Pedidos.Add(pedido);
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Confirmar transacción
+            await transaction.CommitAsync(cancellationToken);
+
+            // FASE 4: Publicar notification (efectos secundarios desacoplados)
+            var pedidoDto = pedido.ToDto();
+            await mediator.Publish(new PedidoCreadoNotification(pedidoDto), cancellationToken);
+
+            logger.LogInformation(
+                "Pedido {PedidoId} creado para usuario {UsuarioId}, Total: {Total}",
+                pedido.Id, pedido.UsuarioId, pedido.Items.Sum(i => i.Subtotal));
+
+            return Result.Success<PedidoDto, DomainError>(pedidoDto);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            logger.LogError(ex, "Error creando pedido para usuario {UsuarioId}", request.UsuarioId);
+            return Result.Failure<PedidoDto, DomainError>(
+                PedidoError.ErrorAlCrear(ex.Message));
+        }
+    }
+}
+```
+
+### ¿Por qué este handler es mejor que un PedidoService tradicional?
+
+| Aspecto | PedidoService tradicional | CreatePedidoCommandHandler |
+|---------|--------------------------|----------------------------|
+| **Responsabilidad** |Hace de todo | Solo crear pedidos |
+| **Efectos secundarios** | Acoplados en el método | Desacoplados en Notifications |
+| **Testing** | Mockear repositorio + email + signalR + cache | Solo mockear repositorio |
+| **Transparencia** | Difícil saber qué hace cada método | Clear reading: fases 1-4 |
+| **Errores** | Errores genéricos | Errores tipados del dominio |
 
             // Verificar que todos los productos existen
             if (productos.Count != request.Items.Count)
@@ -962,37 +1196,333 @@ public class PedidosController(IMediator mediator) : ControllerBase
 
 ---
 
-## 15.9. Resumen
+## 15.9. Controller con MediatR
 
-### Arquitectura de Concurrencia
+El controlador de pedidos con CQRS es extremadamente limpio: solo traduce entre HTTP y MediatR, sin conocer la lógica de negocio.
+
+```csharp
+using System.Security.Claims;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TiendaApi.Api.Dtos.Pedidos;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Features.Pedidos.Commands;
+using TiendaApi.Api.Features.Pedidos.Queries;
+using TiendaApi.Api.Helpers.Pagination;
+using TiendaApi.Api.Models;
+
+namespace TiendaApi.Api.Controllers;
+
+/// <summary>
+/// Controlador REST para la gestión de pedidos.
+/// Separa endpoints para administradores (todos los pedidos) y usuarios (sus pedidos).
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
+public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase
+{
+    /// <summary>Obtiene todos los pedidos (solo administradores).</summary>
+    [HttpGet]
+    [Authorize(Roles = UserRoles.ADMIN)]
+    [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllPedidos()
+    {
+        var resultado = await mediator.Send(new GetAllPedidosListQuery());
+        return resultado.Match(
+            onSuccess: pedidos => Ok(pedidos),
+            onFailure: error => StatusCode(500, new { message = error.Message }));
+    }
+
+    /// <summary>Obtiene los pedidos del usuario actual (paginado).</summary>
+    [HttpGet("me/paged")]
+    [Authorize]
+    [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyPedidosPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? direction = null)
+    {
+        // Extraer userId del claim
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+
+        var resultado = await mediator.Send(new GetMyPedidosPagedQuery(userId, page - 1, size));
+        return resultado.Match(
+            onSuccess: pedidos =>
+            {
+                var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader)) 
+                    Response.Headers.Append("Link", linkHeader);
+                return Ok(pedidos);
+            },
+            onFailure: error => StatusCode(500, new { message = error.Message }));
+    }
+
+    /// <summary>Crea un nuevo pedido para el usuario actual.</summary>
+    [HttpPost("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateMyPedido([FromBody] PedidoRequestDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+
+        var resultado = await mediator.Send(new CreatePedidoCommand(userId, dto));
+
+        if (resultado.IsSuccess)
+        {
+            var pedido = resultado.Value;
+            return CreatedAtAction(nameof(GetMyPedidoById), new { id = pedido.Id }, pedido);
+        }
+
+        var error = resultado.Error;
+        return error switch
+        {
+            NotFoundError => NotFound(new { message = error.Message }),
+            ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
+            BusinessRuleError => BadRequest(new { message = error.Message }),
+            ForbiddenError => StatusCode(403, new { message = error.Message }),
+            ConflictError => Conflict(new { message = error.Message }),
+            _ => StatusCode(500, new { message = error.Message })
+        };
+    }
+
+    /// <summary>Obtiene un pedido específico del usuario actual.</summary>
+    [HttpGet("me/{id}")]
+    [Authorize]
+    [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyPedidoById(string id)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+
+        var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
+        return resultado.Match(
+            onSuccess: pedido => Ok(pedido),
+            onFailure: error => error switch
+            {
+                NotFoundError => NotFound(new { message = error.Message }),
+                ForbiddenError => StatusCode(403, new { message = error.Message }),
+                _ => StatusCode(500, new { message = error.Message })
+            });
+    }
+
+    /// <summary>Actualiza el estado de un pedido (solo administradores).</summary>
+    [HttpPut("{id}/estado")]
+    [Authorize(Roles = UserRoles.ADMIN)]
+    [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdatePedidoEstado(string id, [FromBody] UpdateEstadoDto dto)
+    {
+        var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
+        return resultado.Match(
+            onSuccess: pedido => Ok(pedido),
+            onFailure: error => error switch
+            {
+                NotFoundError => NotFound(new { message = error.Message }),
+                ValidationError => BadRequest(new { message = error.Message }),
+                BusinessRuleError => BadRequest(new { message = error.Message }),
+                _ => StatusCode(500, new { message = error.Message })
+            });
+    }
+}
+```
+
+### ¿Qué hace el controlador ahora?
+
+| Responsabilidad | Antes | Ahora |
+|-----------------|-------|-------|
+| Extraer userId del claim | ❌ En el servicio | ✅ En el controller |
+| Validar entrada | ❌ En el servicio | ✅ En el handler + FluentValidation |
+| Lógica de negocio | ❌ En el servicio | ✅ En el CommandHandler |
+| Transacciones | ❌ En el servicio | ✅ En el CommandHandler |
+| Efectos secundarios | ❌ En el servicio | ✅ En NotificationHandlers |
+| Mapear respuesta | ❌ En el servicio | ✅ En el handler |
+
+---
+
+## 15.10. Notifications y Efectos Secundarios
+
+Una de las ventajas de CQRS es cómo los efectos secundarios están completamente desacoplados del handler principal.
+
+### Notifications de Pedidos en Nuestro Proyecto
+
+```csharp
+// 1. Notificación cuando se crea un pedido
+public record PedidoCreadoNotification(PedidoDto Pedido) : INotification;
+
+// 2. Notificación cuando se actualiza el estado
+public record EstadoPedidoActualizadoNotification(
+    string PedidoId, 
+    string EstadoAnterior, 
+    string EstadoNuevo) : INotification;
+
+// 3. Notificación cuando se cancela un pedido
+public record PedidoCanceladoNotification(
+    string PedidoId, 
+    string Motivo) : INotification;
+```
+
+### Handlers de Notifications
+
+```csharp
+// EmailHandler: envía email al cliente
+public class PedidoCreadoEmailHandler
+    : INotificationHandler<PedidoCreadoNotification>
+{
+    private readonly IEmailService _emailService;
+    
+    public async Task Handle(PedidoCreadoNotification n, CancellationToken ct)
+    {
+        await _emailService.SendAsync(
+            to: n.Pedido.Destinatario.Email,
+            subject: $"Tu pedido #{n.Pedido.Id} ha sido confirmado",
+            body: $"Gracias por tu compra. Total: {n.Pedido.Total:C}");
+    }
+}
+
+// SignalRHandler: notifica a clientes en tiempo real
+public class PedidoCreadoSignalRHandler
+    : INotificationHandler<PedidoCreadoNotification>
+{
+    private readonly IHubContext<PedidosHub> _hubContext;
+    
+    public async Task Handle(PedidoCreadoNotification n, CancellationToken ct)
+    {
+        // Notificar al usuario específico
+        await _hubContext.Clients.User(n.Pedido.UsuarioId.ToString())
+            .SendAsync("PedidoCreado", n.Pedido);
+        
+        // Notificar a administradores
+        await _hubContext.Clients.Group("admins")
+            .SendAsync("NuevoPedido", n.Pedido);
+    }
+}
+
+// Estado actualizado: email + SignalR
+public class EstadoPedidoActualizadoEmailHandler
+    : INotificationHandler<EstadoPedidoActualizadoNotification>
+{
+    public async Task Handle(EstadoPedidoActualizadoNotification n, CancellationToken ct)
+    {
+        await _emailService.SendAsync(
+            to: "cliente@email.com",
+            subject: $"Tu pedido ha sido actualizado: {n.EstadoNuevo}",
+            body: $"El estado de tu pedido ahora es: {n.EstadoNuevo}");
+    }
+}
+```
+
+### Flujo Completo con Notifications
+
+```mermaid
+sequenceDiagram
+    participant Client as Cliente
+    participant Ctrl as Controller
+    participant Handler as CreatePedidoCommandHandler
+    participant DB as PostgreSQL
+    participant Notif as INotification
+    
+    Client->>Ctrl: POST /api/pedidos/me {items}
+    Ctrl->>Handler: Send(CreatePedidoCommand)
+    
+    rect rgb(200, 255, 200)
+        Note over Handler: Transacción atómica
+        Handler->>DB: Verificar productos y stock
+        Handler->>DB: UPDATE atómico stock
+        Handler->>DB: INSERT pedido + items
+        Handler->>DB: COMMIT
+    end
+    
+    Handler->>Notif: Publish(PedidoCreadoNotification)
+    
+    rect rgb(200, 240, 255)
+        Note over Notif: Ejecución en paralelo
+        Notif->>Notif: EmailHandler.Handle()
+        Notif->>Notif: SignalRHandler.Handle()
+    end
+    
+    Handler-->>Ctrl: Result.Success(pedidoDto)
+    Ctrl-->>Client: 201 Created {pedidoDto}
+    
+    Note over Client: Emails y notificaciones llegan después
+```
+
+### Beneficios de las Notifications en Pedidos
+
+| Beneficio | Descripción |
+|-----------|-------------|
+| **Desacoplamiento** | El handler no conoce los canales de notificación |
+| **Extensibilidad** | Agregar WhatsApp sin tocar el handler |
+| **Testabilidad** | Testear handler sin testear emails |
+| **Rendimiento** | El cliente recibe respuesta inmediata |
+| **Recoverability** | Si email falla, el pedido ya está guardado |
+
+---
+
+## 15.11. Resumen
+
+### Arquitectura de Concurrencia con CQRS
 
 ```mermaid
 flowchart TB
-    subgraph "Enfoque Mixto (Recomendado)"
-        A1["Validación optimista (lectura rápida)"]
-        A2["UPDATE atómico ( WHERE stock >= cantidad )"]
-        A3["INSERT pedido (sin bloqueos)"]
+    subgraph "Enfoque Mixto con CQRS (Recomendado)"
+        direction TB
+        A1["1. CommandHandler: Validación optimista"]
+        A2["2. CommandHandler: UPDATE atómico"]
+        A3["3. CommandHandler: INSERT pedido"]
+        A4["4. Notification: efectos secundarios"]
     end
     
-    A1 --> A2 --> A3
+    A1 --> A2 --> A3 --> A4
     
     subgraph "Ventajas"
-        B1["Bloqueos mínimos"]
-        B2["Sin deadlocks"]
-        B3["Escalable"]
+        B1["Handler con responsabilidad única"]
+        B2["Efectos secundarios desacoplados"]
+        B3["Fácil de testear"]
+        B4["Extensible sin modificar handler"]
     end
 ```
 
-### Checklist de Implementación
+### Checklist de Implementación con CQRS
 
-| Paso | Descripción                   | Estado |
-| ---- | ----------------------------- | ------ |
-| 1    | Validar que productos existen | ✅      |
-| 2    | Validar stock preliminar      | ✅      |
-| 3    | UPDATE atómico con WHERE      | ✅      |
-| 4    | Verificar filas afectadas     | ✅      |
-| 5    | Crear pedido si todo OK       | ✅      |
-| 6    | Commit de transacción         | ✅      |
+| Paso | Descripción | Ubicación |
+| ---- | ----------- | --------- |
+| 1 | Validar que productos existen | CreatePedidoCommandHandler |
+| 2 | Validar stock preliminar | CreatePedidoCommandHandler |
+| 3 | UPDATE atómico con WHERE | CreatePedidoCommandHandler |
+| 4 | Verificar filas afectadas | CreatePedidoCommandHandler |
+| 5 | Crear pedido si todo OK | CreatePedidoCommandHandler |
+| 6 | Commit de transacción | CreatePedidoCommandHandler |
+| 7 | Publicar notification | CreatePedidoCommandHandler |
+| 8 | Email al cliente | PedidoCreadoEmailHandler |
+| 9 | Notificación SignalR | PedidoCreadoSignalRHandler |
+
+### Transición a CQRS: Resumen
+
+| Antes (Service Layer) | Ahora (CQRS + MediatR) |
+|-----------------------|------------------------|
+| `PedidoService.CreatePedidoAsync()` | `CreatePedidoCommandHandler.Handle()` |
+| Métodos giant con muchas responsabilidades | Handlers pequeños con una responsabilidad |
+| Efectos secundarios en el servicio | Notifications separadas |
+| Difícil de testear (muchos mocks) | Fácil de testear (solo repositorio) |
+| Miedo a modificar código | Cambios localizados y seguros |
 
 ### Siguientes Pasos
 

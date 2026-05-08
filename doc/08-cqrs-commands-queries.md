@@ -9,13 +9,14 @@
   - [8.4. Commands vs Queries: La División Fundamental](#84-commands-vs-queries-la-división-fundamental)
   - [8.5. Anatomía Completa de una Query](#85-anatomía-completa-de-una-query)
   - [8.6. Anatomía Completa de un Command](#86-anatomía-completa-de-un-command)
-  - [8.7. El Patrón Mediador: El Camarero del Restaurante](#87-el-patrón-mediador-el-camarero-del-restaurante)
-  - [8.8. MediatR en Nuestro Proyecto](#88-mediatr-en-nuestro-proyecto)
-  - [8.9. Integración con el Patrón Result](#89-integración-con-el-patrón-result)
-  - [8.10. Validación dentro del Handler](#810-validación-dentro-del-handler)
-  - [8.11. Cuándo Usar CQRS y Cuándo No](#811-cuándo-usar-cqrs-y-cuándo-no)
-  - [8.12. Ventajas y Desventajas Reales](#812-ventajas-y-desventajas-reales)
-  - [8.13. Resumen y Siguientes Pasos](#813-resumen-y-siguientes-pasos)
+  - [8.7. Notifications: Efectos Secundarios Desacoplados](#87-notifications-efectos-secundarios-desacoplados)
+  - [8.8. El Patrón Mediador: El Camarero del Restaurante](#88-el-patrón-mediador-el-camarero-del-restaurante)
+  - [8.9. MediatR en Nuestro Proyecto](#89-mediatr-en-nuestro-proyecto)
+  - [8.10. Integración con el Patrón Result](#810-integración-con-el-patrón-result)
+  - [8.11. Validación dentro del Handler](#811-validación-dentro-del-handler)
+  - [8.12. Cuándo Usar CQRS y Cuándo No](#812-cuándo-usar-cqrs-y-cuándo-no)
+  - [8.13. Ventajas y Desventajas Reales](#813-ventajas-y-desventajas-reales)
+  - [8.14. Resumen y Siguientes Pasos](#814-resumen-y-siguientes-pasos)
 
 ---
 
@@ -65,7 +66,7 @@ flowchart TB
         B --> C["Miedo a modificar\n¿romperé algo que funciona?"]
         C --> D["Acoplamiento fuerte\nTodo depende de todo"]
         D --> E["Curva de aprendizaje alta\nNuevos desarrolladores perdidos"]
-        E --> F[" git blame constante\n誰hizo este método?"]
+        E --> F[" git blame constante\n\xWho made this method?"]
     end
     
     style A fill:#ff6b6b,color:#fff
@@ -472,48 +473,440 @@ public class CreateProductoCommandHandler(
         logger.LogInformation("Producto creado: {Nombre}", saved.Nombre);
         
         // Paso 5: Retornar resultado
-        return Result.Success<ProductoDto, DomainError>(saved.ToDto());
+return Result.Success<ProductoDto, DomainError>(saved.ToDto());
     }
 }
 ```
 
-### Command con efectos secundarios
+## 8.7. Notifications: Efectos Secundarios Desacoplados
 
-La magia de CQRS está en separar los efectos secundarios:
+La magia de CQRS está en separar los efectos secundarios usando **Notifications** (también llamados **Eventos de Dominio**).
+
+### ⚠️ Antes de continuar: ¿Notifications o Eventos?
+
+Esta es una pregunta común: "¿Son lo mismo Notifications y Eventos?"
+
+**La respuesta corta**: Sí, son fundamentalmente lo mismo. La diferencia es solo de terminología:
+
+| Término | Origen | En este documento |
+|---------|--------|-------------------|
+| **Domain Events / Eventos de Dominio** | Concepto de DDD (Domain-Driven Design) | El concepto/teoría |
+| **Notifications** | Nombre específico de MediatR | La implementación práctica |
+
+```mermaid
+flowchart TB
+    subgraph "MISMO CONCEPTO"
+        A["Evento de Dominio\n(Concepto teórico)"]
+        B["Notification\n(Implementación en MediatR)"]
+    end
+    
+    A == "es" ==> B
+    
+    style A fill:#339af0,color:#fff
+    style B fill:#51cf66,color:#fff
+```
+
+En la práctica:
+- Cuando uso `ProductoCreadoNotification`, estoy creando un **Evento de Dominio**
+- MediatR lo llama "Notification", pero su propósito es exactamente el mismo que los Domain Events en DDD
+
+Así que cuando veas "Notification" en este documento, piensa: "es un Evento de Dominio implementado con MediatR".
+
+---
+
+### ¿Qué es una Notification / Evento de Dominio?
+
+Una **Notification** (o Evento de Dominio) representa **"algo que ocurrió"** en el sistema que puede ser interesante para otras partes del código.
+
+```mermaid
+flowchart TB
+    subgraph "Definición"
+        A["Un Evento representa\nun HECHO del pasado"]
+        B["No es una orden\n(No dice 'haz esto')"]
+        C["Es inmutable\n(No se puede cambiar)"]
+        D["Puede tener múltiples\ninteresados (suscriptores)"]
+    end
+    
+    A --> B --> C --> D
+    
+    style A fill:#51cf66,color:#fff
+    style B fill:#51cf66,color:#fff
+    style C fill:#51cf66,color:#fff
+    style D fill:#51cf66,color:#fff
+```
+
+**Ejemplos concretos**:
+
+| Notification | Representa | ¿Quién la crea? |
+|-------------|-------------|------------------|
+| `UsuarioRegistradoNotification` | "El usuario se registró" | CreateUserCommandHandler |
+| `ProductoCreadoNotification` | "El producto fue creado" | CreateProductoCommandHandler |
+| `PedidoCanceladoNotification` | "El pedido fue cancelado" | UpdatePedidoCommandHandler |
+
+**Nombre correcto**: Los eventos siempre se nombran en **pasado** (ya que representan algo que ocurrió).
 
 ```csharp
-// El handler NO llama directamente a servicios externos
-// Solo publica una notificación
-await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
+// ✅ CORRECTO: Nombre en pasado
+public record ProductoCreadoNotification
+public record PedidoCanceladoNotification
 
-// Y luego, handlers separados reaccionan a esa notificación:
+// ❌ INCORRECTO: Nombre en presente/futuro (parece un comando)
+public record ProductoCreateNotification
+public record CancelPedidoNotification
+```
 
-// NotificationHandler para email
-public class ProductoCreadoEmailHandler
-    : INotificationHandler<ProductoCreadoNotification>
+---
+
+### ¿Por qué existen? El problema que resuelven
+
+Imagina que al crear un producto quieres hacer varias cosas:
+
+```csharp
+// ❌ PROBLEMA: Handler con efectos secundarios acoplados
+public class CreateProductoCommandHandler
 {
-    private readonly IEmailService _emailService;
-    
-    public async Task Handle(ProductoCreadoNotification notification, CancellationToken ct)
+    public async Task Handle(CreateProductoCommand cmd)
     {
-        // Enviar email de notificación
+        // 1. Guardar el producto (lógica principal)
+        await _repository.SaveAsync(cmd.Dto.ToEntity());
+        
+        // 2. Enviar email al admin (efecto secundario)
         await _emailService.SendAsync(...);
-    }
-}
-
-// NotificationHandler para SignalR (tiempo real)
-public class ProductoCreadoSignalRHandler
-    : INotificationHandler<ProductoCreadoNotification>
-{
-    private readonly IHubContext<ProductosHub> _hubContext;
-    
-    public async Task Handle(ProductoCreadoNotification notification, CancellationToken ct)
-    {
-        // Notificar a todos los clientes conectados
-        await _hubContext.Clients.All.SendAsync("ProductoCreado", notification.Producto);
+        
+        // 3. Notificar por SignalR (efecto secundario)
+        await _hubContext.Clients.All.SendAsync(...);
+        
+        // 4. Invalidar cache (efecto secundario)
+        await _cache.RemoveAsync("productos");
+        
+        // 5. Registrar métricas (efecto secundario)
+        await _metrics.RecordAsync("producto_creado");
     }
 }
 ```
+
+**Problemas de este enfoque**:
+- El handler conoce 5 servicios diferentes ✅
+- Si agregas WhatsApp, tienes que modificar este handler ❌
+- Para testear, necesitas mockear 5 servicios ❌
+- Si el email falla, falla todo el comando ❌
+
+**La solución con Notifications**:
+
+```csharp
+// ✅ SOLUCIÓN: Handler solo hace lo principal
+public class CreateProductoCommandHandler
+{
+    public async Task Handle(CreateProductoCommand cmd, CancellationToken ct)
+    {
+        await _repository.SaveAsync(cmd.Dto.ToEntity());
+        
+        // Solo publica un evento, NO llama a servicios directamente
+        await _mediator.Publish(new ProductoCreadoNotification(producto), ct);
+    }
+}
+```
+
+```csharp
+// Los efectos secundarios están en handlers SEPARADOS
+
+// Handler 1: Email
+public class ProductoCreadoEmailHandler : INotificationHandler<ProductoCreadoNotification>
+{
+    public Task Handle(...) => await _emailService.SendAsync(...);
+}
+
+// Handler 2: SignalR
+public class ProductoCreadoSignalRHandler : INotificationHandler<ProductoCreadoNotification>
+{
+    public Task Handle(...) => await _hubContext.Clients.All.SendAsync(...);
+}
+
+// Handler 3: Cache
+public class ProductoCreadoCacheHandler : INotificationHandler<ProductoCreadoNotification>
+{
+    public Task Handle(...) => await _cache.RemoveAsync(...);
+}
+
+// Handler 4: WhatsApp (AGREGAR SIN MODIFICAR NADA EXISTENTE)
+public class ProductoCreadoWhatsAppHandler : INotificationHandler<ProductoCreadoNotification>
+{
+    public Task Handle(...) => await _whatsApp.SendAsync(...);
+}
+```
+
+---
+
+### ¿Cuándo usar Notifications?
+
+Usa una notification cuando:
+
+| Situación | Ejemplo |
+|-----------|---------|
+| **Algo se creó** | Usuario registrado, Pedido creado |
+| **Algo se actualizó** | Estado de pedido cambiado |
+| **Algo se eliminó** | Producto dado de baja |
+| **Algo significativo ocurrió** | Login fallido, Stock bajo |
+
+**NO uses** notifications para:
+- Cosas que el usuario espera como respuesta directa
+- Operaciones que deben completar dentro de la misma transacción
+
+---
+
+### Diagrama: Importancia de los Eventos de Dominio en MediatR
+
+```mermaid
+flowchart TB
+    subgraph "1. ANTES: Acoplamiento directo (PROBLEMA)"
+        direction TB
+        A1["Command Handler"]
+        A2["💥 Conoce muchos servicios"]
+        A3["📝 Difícil de testear"]
+        A4["🔒 Cambios riesgosos"]
+        A5["❌ Agregar función = modificar handler"]
+        
+        A1 --> A2 --> A3 --> A4 --> A5
+        
+        style A1 fill:#ff6b6b,color:#fff
+        style A2 fill:#ff6b6b,color:#fff
+        style A3 fill:#ff6b6b,color:#fff
+        style A4 fill:#ff6b6b,color:#fff
+        style A5 fill:#ff6b6b,color:#fff
+    end
+    
+    subgraph "2. DESPUÉS: Eventos de Dominio (SOLUCIÓN)"
+        direction TB
+        B1["Command Handler\nSolo lógica principal"]
+        B2["mediator.Publish()\n(Event)"]
+        B3["Notification Handlers\n(Email, SignalR, Cache...)"]
+        B4["✅ Desacoplado"]
+        B5["✅ Testeable"]
+        B6["✅ Extensible\n(agregar sin modificar)"]
+        
+        B1 -->|"1 Publish"| B2 -->|"N Handlers"| B3
+        B3 --> B4
+        B3 --> B5
+        B3 --> B6
+        
+        style B1 fill:#51cf66,color:#fff
+        style B2 fill:#339af0,color:#fff
+        style B3 fill:#fcc419,color:#000
+        style B4 fill:#51cf66,color:#fff
+        style B5 fill:#51cf66,color:#fff
+        style B6 fill:#51cf66,color:#fff
+    end
+```
+
+---
+
+### Diagrama: Cómo funcionan los Eventos en MediatR
+
+```mermaid
+flowchart LR
+    subgraph "FLUJO COMPLETO DE EVENTOS EN MEDIATR"
+        
+        subgraph "COMMAND (Petición)"
+            C["CreateProductoCommand\n(IRequest)"]
+        end
+        
+        subgraph "HANDLER (Procesa)"
+            CH["CreateProductoCommandHandler\n(IRequestHandler)"]
+        end
+        
+        subgraph "EVENTO (Ocurrió)"
+            E["ProductoCreadoNotification\n(INotification)"]
+        end
+        
+        subgraph "HANDLERS (Reaccionan)"
+            EH1["EmailHandler"]
+            EH2["SignalRHandler"]
+            EH3["CacheHandler"]
+        end
+        
+        C -->|"mediator.Send()"| CH
+        CH -->|"mediator.Publish()"| E
+        E -->|"Handle()"| EH1
+        E -->|"Handle()"| EH2
+        E -->|"Handle()"| EH3
+        
+        style C fill:#fcc419,color:#000
+        style CH fill:#51cf66,color:#fff
+        style E fill:#339af0,color:#fff
+        style EH1 fill:#74c0fc,color:#000
+        style EH2 fill:#74c0fc,color:#000
+        style EH3 fill:#74c0fc,color:#000
+    end
+```
+
+---
+
+### Diagrama de Secuencia: El flujo completo
+
+```mermaid
+sequenceDiagram
+    participant Client as Cliente
+    participant Controller
+    participant MediatR
+    participant CmdHandler as CommandHandler
+    participant DB as Base de Datos
+    participant Notif as Notification
+    participant Email as EmailHandler
+    participant SignalR as SignalRHandler
+    participant Cache as CacheHandler
+
+    %% Flujo principal
+    Client->>Controller: POST /api/productos
+    Controller->>MediatR: Send(CreateProductoCommand)
+    
+    rect rgb(200, 240, 200)
+        Note over MediatR,CmdHandler: FASE 1: Procesar comando
+        MediatR->>CmdHandler: Handle(CreateProductoCommand)
+        CmdHandler->>DB: INSERT producto
+        DB-->>CmdHandler: producto creado
+        CmdHandler-->>MediatR: Result.Success(producto)
+    end
+
+    rect rgb(200, 240, 255)
+        Note over MediatR,Cache: FASE 2: Publicar evento (async)
+        MediatR->>Notif: Publish(ProductoCreadoNotification)
+        
+        %% Ejecución en paralelo de los handlers
+        par
+            Notif->>Email: Handle(notification)
+            Note over Email: Envia email\n(no bloquea)
+        and
+            Notif->>SignalR: Handle(notification)
+            Note over SignalR: Notifica clientes\n(no bloquea)
+        and
+            Notif->>Cache: Handle(notification)
+            Note over Cache: Invalida cache\n(no bloquea)
+        end
+    end
+
+    MediatR-->>Controller: Result.Success
+    Controller-->>Client: 201 Created
+
+    Note over Client: El email, signalR y cache\nllegan DESPUÉS
+```
+
+---
+
+### Diferencia clave: Request vs Notification
+
+```mermaid
+flowchart TB
+    subgraph "IRequest (Command/Query)"
+        R1["Un solo handler lo procesa"]
+        R2["El handler RETORNA un resultado"]
+        R3["El cliente ESPERA la respuesta"]
+        R4["Es síncrono"]
+    end
+    
+    subgraph "INotification (Evento)"
+        N1["Múltiples handlers pueden reaccionar"]
+        N2["El handler NO retorna nada"]
+        N3["El cliente YA recibió respuesta"]
+        N4["Es asíncrono (siempre)"]
+    end
+    
+    R1 -->|"vs"| N1
+    R2 -->|"vs"| N2
+    R3 -->|"vs"| N3
+    R4 -->|"vs"| N4
+    
+    style R1 fill:#fcc419,color:#000
+    style R2 fill:#fcc419,color:#000
+    style R3 fill:#fcc419,color:#000
+    style R4 fill:#fcc419,color:#000
+    style N1 fill:#339af0,color:#fff
+    style N2 fill:#339af0,color:#fff
+    style N3 fill:#339af0,color:#fff
+    style N4 fill:#339af0,color:#fff
+```
+
+---
+
+### Ejemplo real de la vida: El sistema de pedidos
+
+```mermaid
+flowchart LR
+    subgraph "Cuando se crea un PEDIDO..."
+        CMD["CreatePedidoCommand\n(Handler)"]
+    end
+    
+    subgraph "Se publican MULTIPLES eventos"
+        E1["PedidoCreadoNotification"]
+        E2["StockActualizadoNotification"]
+    end
+    
+    subgraph "Cada evento tiene HANDLERS"
+        H1A["📧 Email al cliente"]
+        H1B["📱 SignalR al admin"]
+        H2A["📊 Metrics++"]
+        H2B["🔄 Cache invalidada"]
+    end
+    
+    CMD -->|"Publish()"| E1
+    CMD -->|"Publish()"| E2
+    
+    E1 --> H1A
+    E1 --> H1B
+    E2 --> H2A
+    E2 --> H2B
+    
+    style CMD fill:#51cf66,color:#fff
+    style E1 fill:#339af0,color:#fff
+    style E2 fill:#339af0,color:#fff
+    style H1A fill:#fcc419,color:#000
+    style H1B fill:#fcc419,color:#000
+    style H2A fill:#fcc419,color:#000
+    style H2B fill:#fcc419,color:#000
+```
+
+**Cada notificación es independiente**: Si quieres agregar WhatsApp, solo agregas un nuevo handler, NO tocas nada del CommandHandler ni de los otros handlers.
+
+---
+
+### Resumen: Effects secundarios con Notifications
+
+```mermaid
+flowchart TB
+    subgraph "COMMAND HANDLER"
+        A["1. Procesa el comando\n(valida, guarda)"]
+    end
+    
+    subgraph "PUBLISH"
+        B["2. Publish()\n(avisa que ocurrió algo)"]
+    end
+    
+    subgraph "NOTIFICATION HANDLERS"
+        C["3. EmailHandler\n→ Envia email"]
+        D["4. SignalRHandler\n→ Notifica web"]
+        E["5. CacheHandler\n→ Actualiza cache"]
+        F["6. MetricsHandler\n→ Registra métricas"]
+    end
+    
+    A --> B --> C
+    B --> D
+    B --> E
+    B --> F
+    
+    style A fill:#51cf66,color:#fff
+    style B fill:#339af0,color:#fff
+    style C fill:#fcc419,color:#000
+    style D fill:#fcc419,color:#000
+    style E fill:#fcc419,color:#000
+    style F fill:#fcc419,color:#000
+```
+
+**Puntos clave**:
+1. El handler **no conoce** los efectos secundarios
+2. Cada notification handler **es independiente**
+3. Los handlers **se ejecutan en paralelo** (no bloquean)
+4. Agregar nuevos efectos = **crear nuevo archivo**, no modificar handler
+
+---
 
 ### Secuencia de ejecución de un Command
 
@@ -560,7 +953,7 @@ sequenceDiagram
 
 ---
 
-## 8.7. El Patrón Mediador: El Camarero del Restaurante
+## 8.8. El Patrón Mediador: El Camarero del Restaurante
 
 Ahora entiendes por qué existe el patrón mediador: es el "camarero" que recibe pedidos de los clientes y los lleva a los cocineros sin que el cliente necesite saber quién cocina qué.
 
@@ -691,7 +1084,7 @@ public class LoggingBehavior<TRequest, TResponse>
 
 ---
 
-## 8.8. MediatR en Nuestro Proyecto
+## 8.9. MediatR en Nuestro Proyecto
 
 Veamos cómo está configurado MediatR en nuestra aplicación y cómo usarlo correctamente.
 
@@ -768,7 +1161,7 @@ Features/
 
 ---
 
-## 8.9. Integración con el Patrón Result
+## 8.10. Integración con el Patrón Result
 
 Los handlers de MediatR trabajan perfectamente con el Patrón Result que aprendimos en el capítulo anterior. Esta combinación es poderosa porque:
 
@@ -839,7 +1232,7 @@ flowchart TB
 
 ---
 
-## 8.10. Validación dentro del Handler
+## 8.11. Validación dentro del Handler
 
 Una de las ventajas de CQRS es que la validación puede vivir junto al command, haciendo el código más coherente.
 
@@ -929,7 +1322,7 @@ flowchart LR
 
 ---
 
-## 8.11. Cuándo Usar CQRS y Cuándo No
+## 8.12. Cuándo Usar CQRS y Cuándo No
 
 CQRS no es la solución perfecta para todo. Vamos a ser honestos sobre cuándo usarlo y cuándo no.
 
@@ -953,7 +1346,7 @@ Cada command es una operación atómica que se puede rastrear fácilmente.
 ### Cuándo NO usar CQRS
 
 ❌ **CRUD simple**
-Si tu aplicación es基本的 Create/Read/Update/Delete sin lógica compleja, CQRS añade complejidad innecesaria.
+Si tu aplicación es básica Create/Read/Update/Delete sin lógica compleja, CQRS añade complejidad innecesaria.
 
 ❌ **Prototipo o proyecto pequeño**
 Para una prueba de concepto o proyecto con 3-4 endpoints, el overhead de CQRS no vale la pena.
@@ -972,7 +1365,7 @@ CQRS es una herramienta, no un objetivo. El objetivo es escribir código manteni
 
 ---
 
-## 8.12. Ventajas y Desventajas Reales
+## 8.13. Ventajas y Desventajas Reales
 
 Vamos a ser justos y balanceados: esto es lo que realmente experimentas usando CQRS.
 
@@ -1056,7 +1449,7 @@ Sobre el mito de que "MediatR es 52x más lento":
 
 ---
 
-## 8.13. Resumen y Siguientes Pasos
+## 8.14. Resumen y Siguientes Pasos
 
 ### Puntos clave del capítulo
 
