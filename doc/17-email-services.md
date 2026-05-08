@@ -1002,3 +1002,21 @@ Con emails dominados, el siguiente paso es aprender sobre REST best practices.
 - MailKit: https://github.com/jstedfast/MailKit
 - MimeKit: https://github.com/jstedfast/MimeKit
 - Email Background Service: https://learn.microsoft.com/dotnet/core/extensions/background-service-pattern
+
+## 17.11. EmailService como INotificationHandler
+
+Con CQRS + MediatR el `EmailService` ya no necesita ser llamado directamente desde cada caso de uso. Ahora los commands publican eventos de dominio y un `INotificationHandler` decide si debe encolar un correo.
+
+```mermaid
+flowchart LR
+    A[CreatePedidoCommandHandler] -->|Publish| B[PedidoCreadoNotification]
+    B --> C[PedidoCreadoEmailHandler]
+    C --> D[IEmailService]
+    D --> E[EmailBackgroundService / SMTP]
+```
+
+Ventajas:
+
+- El handler principal no conoce SMTP ni plantillas HTML.
+- Se pueden añadir más emails sin tocar el command.
+- Los tests verifican publicación de eventos en lugar de acoplarse al envío real.

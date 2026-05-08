@@ -2,7 +2,9 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Categorias;
 
 namespace TiendaApi.Api.Features.Categorias.Queries;
 
@@ -15,11 +17,16 @@ public record GetCategoriaByIdQuery(long Id)
 /// <summary>
 /// Handler de la query GetCategoriaByIdQuery.
 /// </summary>
-public class GetCategoriaByIdQueryHandler(ICategoriaService service)
+public class GetCategoriaByIdQueryHandler(ICategoriaRepository repository)
     : IRequestHandler<GetCategoriaByIdQuery, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<CategoriaDto, DomainError>> Handle(
+    public async Task<Result<CategoriaDto, DomainError>> Handle(
         GetCategoriaByIdQuery request, CancellationToken cancellationToken)
-        => service.FindByIdAsync(request.Id);
+    {
+        var categoria = await repository.FindByIdAsync(request.Id);
+        return categoria is null
+            ? Result.Failure<CategoriaDto, DomainError>(CategoriaError.NotFound(request.Id))
+            : Result.Success<CategoriaDto, DomainError>(categoria.ToDto());
+    }
 }

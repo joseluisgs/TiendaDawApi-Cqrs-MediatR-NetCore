@@ -1,13 +1,15 @@
 using System.Security.Claims;
 using CSharpFunctionalExtensions;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Models;
-using TiendaApi.Api.Services.Pedidos;
+using TiendaApi.Api.Features.Pedidos.Commands;
+using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
+using TiendaApi.Api.Models;
 
 namespace TiendaApi.Api.Controllers;
 
@@ -18,13 +20,8 @@ namespace TiendaApi.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class PedidosController(IPedidosService service, ILogger<PedidosController> logger) : ControllerBase
+public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase
 {
-    #region ========== ENDPOINTS DE ADMINISTRADORES ==========
-
-    /// <summary>
-    /// Obtiene todos los pedidos del sistema (solo administradores).
-    /// </summary>
     [HttpGet]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
@@ -32,22 +29,12 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllPedidos()
     {
-        var resultado = await service.FindAllAsync();
-
+        var resultado = await mediator.Send(new GetAllPedidosListQuery());
         return resultado.Match(
             onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => StatusCode(500, new { message = error.Message })
-        );
+            onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
-    /// <summary>
-    /// Obtiene los pedidos del sistema de forma paginada (solo administradores).
-    /// </summary>
-    /// <param name="page">Número de página (1-indexed).</param>
-    /// <param name="size">Elementos por página.</param>
-    /// <param name="sortBy">Campo de ordenación.</param>
-    /// <param name="direction">Dirección (asc, desc).</param>
-    /// <returns>200 OK con lista paginada de pedidos.</returns>
     [HttpGet("paged")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
@@ -59,25 +46,17 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
         [FromQuery] string? sortBy = null,
         [FromQuery] string? direction = null)
     {
-        var resultado = await service.FindAllPagedAsync(page - 1, size);
-
+        var resultado = await mediator.Send(new GetAllPedidosQuery(page - 1, size));
         return resultado.Match(
             onSuccess: pedidos =>
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader))
-                    Response.Headers.Append("Link", linkHeader);
+                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(pedidos);
             },
-            onFailure: error => StatusCode(500, new { message = error.Message })
-        );
+            onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
-    /// <summary>
-    /// Obtiene un pedido específico por su ID (solo administradores).
-    /// </summary>
-    /// <param name="id">ID del pedido.</param>
-    /// <returns>200 OK con el pedido, o 404 si no existe.</returns>
     [HttpGet("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -86,25 +65,16 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPedidoById(string id)
     {
-        var resultado = await service.FindByIdAsync(id);
-
+        var resultado = await mediator.Send(new GetPedidoByIdQuery(id));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
             onFailure: error => error switch
             {
                 NotFoundError => NotFound(new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Actualiza un pedido (solo administradores).
-    /// Los administradores pueden actualizar cualquier pedido.
-    /// </summary>
-    /// <param name="id">ID del pedido.</param>
-    /// <param name="dto">Nuevos datos del pedido.</param>
-    /// <returns>200 OK con el pedido actualizado, o 400/404 si hay errores.</returns>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -114,8 +84,7 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdatePedidoAdmin(string id, [FromBody] UpdatePedidoDto dto)
     {
-        var resultado = await service.UpdateAdminAsync(id, dto);
-
+        var resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
             onFailure: error => error switch
@@ -124,15 +93,9 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
                 ValidationError => BadRequest(new { message = error.Message }),
                 ForbiddenError => StatusCode(403, new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Elimina un pedido (solo administradores).
-    /// </summary>
-    /// <param name="id">ID del pedido a eliminar.</param>
-    /// <returns>204 No Content si tiene éxito, o 404 si no existe.</returns>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -141,11 +104,8 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePedidoAdmin(string id)
     {
-        var resultado = await service.DeleteAdminAsync(id);
-
-        if (resultado.IsSuccess)
-            return NoContent();
-
+        var resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
+        if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
         return error switch
         {
@@ -155,12 +115,6 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
         };
     }
 
-    /// <summary>
-    /// Actualiza el estado de un pedido (solo administradores).
-    /// </summary>
-    /// <param name="id">ID del pedido.</param>
-    /// <param name="dto">Nuevo estado del pedido.</param>
-    /// <returns>200 OK con el pedido actualizado, o 400/404 si hay errores.</returns>
     [HttpPut("{id}/estado")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -170,8 +124,7 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdatePedidoEstado(string id, [FromBody] UpdateEstadoDto dto)
     {
-        var resultado = await service.UpdateEstadoAsync(id, dto.Estado);
-
+        var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
             onFailure: error => error switch
@@ -181,18 +134,9 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
                 BusinessRuleError => BadRequest(new { message = error.Message }),
                 ForbiddenError => StatusCode(403, new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    #endregion
-
-    #region ========== ENDPOINTS DE USUARIOS (MIS PEDIDOS) ==========
-
-    /// <summary>
-    /// Obtiene todos los pedidos del usuario autenticado (sin paginación).
-    /// </summary>
-    /// <returns>200 OK con lista de pedidos del usuario.</returns>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
@@ -201,32 +145,19 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         logger.LogInformation("GetMyPedidos - User: {User}", User?.Identity?.Name);
         logger.LogInformation("GetMyPedidos - IsAuthenticated: {IsAuth}", User?.Identity?.IsAuthenticated);
-        
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         logger.LogInformation("GetMyPedidos - NameIdentifier claim: {Claim}", userIdClaim);
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.FindByUserIdAsync(userId);
-
+        var resultado = await mediator.Send(new GetMyPedidosQuery(userId));
         return resultado.Match(
             onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => StatusCode(500, new { message = error.Message })
-        );
+            onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
-    /// <summary>
-    /// Obtiene los pedidos del usuario autenticado de forma paginada.
-    /// </summary>
-    /// <param name="page">Número de página (1-indexed).</param>
-    /// <param name="size">Elementos por página.</param>
-    /// <param name="sortBy">Campo de ordenación.</param>
-    /// <param name="direction">Dirección (asc, desc).</param>
-    /// <returns>200 OK con lista paginada de pedidos.</returns>
     [HttpGet("me/paged")]
     [Authorize]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
@@ -239,31 +170,21 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.FindMyPedidosAsync(userId, page - 1, size);
-
+        var resultado = await mediator.Send(new GetMyPedidosPagedQuery(userId, page - 1, size));
         return resultado.Match(
             onSuccess: pedidos =>
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader))
-                    Response.Headers.Append("Link", linkHeader);
+                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(pedidos);
             },
-            onFailure: error => StatusCode(500, new { message = error.Message })
-        );
+            onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
-    /// <summary>
-    /// Crea un nuevo pedido para el usuario autenticado.
-    /// </summary>
-    /// <param name="dto">Datos del pedido a crear.</param>
-    /// <returns>201 Created con el pedido creado, o 400/404 si hay errores.</returns>
     [HttpPost("me")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status201Created)]
@@ -274,14 +195,11 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.CreateAsync(userId, dto);
-
+        var resultado = await mediator.Send(new CreatePedidoCommand(userId, dto));
         if (resultado.IsSuccess)
         {
             var pedido = resultado.Value;
@@ -300,11 +218,6 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
         };
     }
 
-    /// <summary>
-    /// Obtiene un pedido propio por su ID.
-    /// </summary>
-    /// <param name="id">ID del pedido.</param>
-    /// <returns>200 OK con el pedido, o 404 si no existe o no es suyo.</returns>
     [HttpGet("me/{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -315,14 +228,11 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.FindMyPedidoAsync(id, userId);
-
+        var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
             onFailure: error => error switch
@@ -330,17 +240,9 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
                 NotFoundError => NotFound(new { message = error.Message }),
                 ForbiddenError => StatusCode(403, new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Actualiza un pedido propio.
-    /// Solo permite modificar pedidos en estado PENDIENTE.
-    /// </summary>
-    /// <param name="id">ID del pedido.</param>
-    /// <param name="dto">Nuevos datos del pedido.</param>
-    /// <returns>200 OK con el pedido actualizado, o 400/404 si hay errores.</returns>
     [HttpPut("me/{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -352,14 +254,11 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.UpdateMyPedidoAsync(id, userId, dto);
-
+        var resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
             onFailure: error => error switch
@@ -369,16 +268,9 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
                 BusinessRuleError => BadRequest(new { message = error.Message }),
                 ForbiddenError => StatusCode(403, new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Cancela y elimina un pedido propio.
-    /// Solo permite eliminar pedidos en estado PENDIENTE.
-    /// </summary>
-    /// <param name="id">ID del pedido a eliminar.</param>
-    /// <returns>204 No Content si tiene éxito, o 400/404 si hay errores.</returns>
     [HttpDelete("me/{id}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -390,17 +282,12 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
 
-        var resultado = await service.DeleteMyPedidoAsync(id, userId);
-
-        if (resultado.IsSuccess)
-            return NoContent();
-
+        var resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
+        if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
         return error switch
         {
@@ -410,6 +297,4 @@ public class PedidosController(IPedidosService service, ILogger<PedidosControlle
             _ => StatusCode(500, new { message = error.Message })
         };
     }
-
-    #endregion
 }

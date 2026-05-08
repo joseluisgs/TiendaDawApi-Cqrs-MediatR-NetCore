@@ -2678,3 +2678,38 @@ Con testing E2E dominado (tanto Postman como Bruno), tienes un arsenal completo 
 | **Controller Tests** | WebApplicationFactory | Probar endpoints HTTP |
 | **E2E Tests** | Postman + Newman | Probar flujos completos de usuario |
 | **E2E Tests** | Bruno CLI | Probar API con archivos de texto versionables |
+
+## Testing de Handlers CQRS
+
+### Ventajas frente a testear Services
+
+Un handler CQRS concentra un único caso de uso. Por eso los tests nuevos de `TiendaApi.Tests/Unit/Features` son más pequeños y expresivos.
+
+### Patrón para Queries
+
+1. Arrange: mock del repositorio
+2. Act: ejecutar `Handle(...)`
+3. Assert: verificar `Success` o `Failure`
+
+```csharp
+var repository = new Mock<IProductoRepository>();
+repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
+var handler = new GetProductoByIdQueryHandler(repository.Object);
+var result = await handler.Handle(new GetProductoByIdQuery(1), CancellationToken.None);
+result.IsSuccess.Should().BeTrue();
+```
+
+### Patrón para Commands con Notifications
+
+Además del `Result`, se verifica que `mediator.Publish(...)` se haya lanzado.
+
+```csharp
+mediator.Verify(m => m.Publish(It.IsAny<ProductoCreadoNotification>(), It.IsAny<CancellationToken>()), Times.Once);
+```
+
+### Ejemplos reales del proyecto
+
+- `GetProductoByIdQueryHandlerTests`
+- `CreateProductoCommandHandlerTests`
+- `CreatePedidoCommandHandlerTests`
+- `GetMyPedidosQueryHandlerTests`

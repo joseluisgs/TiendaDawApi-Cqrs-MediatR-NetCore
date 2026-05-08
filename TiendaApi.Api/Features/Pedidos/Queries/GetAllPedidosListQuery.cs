@@ -2,23 +2,27 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Pedidos;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Queries;
 
 /// <summary>
 /// Query para obtener todos los pedidos (admin) sin paginación.
 /// </summary>
-public record GetAllPedidosQuery : IRequest<Result<IEnumerable<PedidoDto>, DomainError>>;
+public record GetAllPedidosListQuery : IRequest<Result<IEnumerable<PedidoDto>, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetAllPedidosQuery.
+/// Handler de la query GetAllPedidosListQuery.
 /// </summary>
-public class GetAllPedidosQueryHandler(IPedidosService service)
-    : IRequestHandler<GetAllPedidosQuery, Result<IEnumerable<PedidoDto>, DomainError>>
+public class GetAllPedidosListQueryHandler(IPedidosRepository repository)
+    : IRequestHandler<GetAllPedidosListQuery, Result<IEnumerable<PedidoDto>, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
-        GetAllPedidosQuery request, CancellationToken cancellationToken)
-        => service.FindAllAsync();
+    public async Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
+        GetAllPedidosListQuery request, CancellationToken cancellationToken)
+    {
+        var pedidos = await repository.FindAllAsync();
+        return Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos.ToDtoList());
+    }
 }

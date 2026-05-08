@@ -1113,3 +1113,33 @@ Con los controladores dominados, el siguiente paso es aprender sobre validación
 - Documentación de controladores: https://docs.microsoft.com/aspnet/core/web-api/
 - Model Binding: https://docs.microsoft.com/aspnet/core/mvc/models/model-binding
 - Filters: https://docs.microsoft.com/aspnet/core/mvc/controllers/filters
+
+## Controladores con CQRS + MediatR
+
+Antes el controller inyectaba un service de negocio. Ahora inyecta `IMediator` y envía `Commands` o `Queries`.
+
+```mermaid
+graph LR
+    A[Controller con Service] --> B[ProductoService]
+    C[Controller con IMediator] --> D[IMediator]
+    D --> E[QueryHandler]
+    D --> F[CommandHandler]
+```
+
+Ejemplo real:
+
+```csharp
+public class CategoriasController(IMediator mediator) : ControllerBase
+{
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(long id)
+    {
+        var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
+        return resultado.Match(
+            categoria => Ok(categoria),
+            error => NotFound(new { message = error.Message }));
+    }
+}
+```
+
+Esto mejora la testabilidad porque el controller solo necesita mockear `IMediator`, no varios servicios o dependencias de negocio.

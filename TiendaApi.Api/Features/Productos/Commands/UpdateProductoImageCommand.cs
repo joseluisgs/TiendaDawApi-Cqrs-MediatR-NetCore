@@ -3,7 +3,10 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -16,11 +19,28 @@ public record UpdateProductoImageCommand(long Id, IFormFile Image)
 /// <summary>
 /// Handler del comando UpdateProductoImageCommand.
 /// </summary>
-public class UpdateProductoImageCommandHandler(IProductoService service)
+public class UpdateProductoImageCommandHandler(
+    IProductoRepository repository,
+    IStorageService storageService)
     : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<ProductoDto, DomainError>> Handle(
+    public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoImageCommand request, CancellationToken cancellationToken)
-        => service.UpdateImageAsync(request.Id, request.Image);
+    {
+        var producto = await repository.FindByIdAsync(request.Id);
+        if (producto is null)
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
+
+        var saveResult = await storageService.SaveFileAsync(request.Image, "productos");
+        if (saveResult.IsFailure)
+            return Result.Failure<ProductoDto, DomainError>(saveResult.Error);
+
+        if (producto.IsLocalImage() && !string.IsNullOrWhiteSpace(producto.Imagen))
+            await storageService.DeleteFileAsync(producto.Imagen);
+
+        producto.Imagen = saveResult.Value;
+        var updated = await repository.UpdateAsync(producto);
+        return Result.Success<ProductoDto, DomainError>(updated.ToDto());
+    }
 }

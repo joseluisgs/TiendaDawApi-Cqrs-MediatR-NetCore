@@ -989,3 +989,13 @@ Con este patrón de organización, el siguiente paso natural es explorar patrone
 - Documentación de extensibilidad de ASP.NET Core: https://docs.microsoft.com/aspnet/core/fundamentals/extensibility
 - Patrones de startup en ASP.NET Core: https://docs.microsoft.com/aspnet/core/fundamentals/startup
 - Mejores prácticas de configuración: https://docs.microsoft.com/aspnet/core/fundamentals/configuration/options
+
+## MediatRConfig en el inventario
+
+En la organización actual de `Program.cs` aparece una pieza nueva:
+
+```csharp
+services.AddMediatRHandlers(); // Registra todos los IRequestHandler e INotificationHandler
+```
+
+La idea es *Convention over Configuration*: no hay que registrar handler por handler. `RegisterServicesFromAssemblyContaining<Program>()` escanea el ensamblado y descubre automáticamente commands, queries y notifications.

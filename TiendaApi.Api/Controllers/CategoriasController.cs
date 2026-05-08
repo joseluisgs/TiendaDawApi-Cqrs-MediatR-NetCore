@@ -1,12 +1,14 @@
 using CSharpFunctionalExtensions;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Models;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Features.Categorias.Commands;
+using TiendaApi.Api.Features.Categorias.Queries;
 using TiendaApi.Api.Helpers.Pagination;
+using TiendaApi.Api.Models;
 
 namespace TiendaApi.Api.Controllers;
 
@@ -14,24 +16,18 @@ namespace TiendaApi.Api.Controllers;
 /// Controlador de API para gestión de categorías de productos.
 /// Endpoints: CRUD paginado de categorías.
 /// </summary>
+/// <remarks>
+/// 🎓 ANTES vs AHORA:
+/// ANTES:  CategoriasController(ICategoriaService service, ILogger logger)
+/// AHORA:  CategoriasController(IMediator mediator)
+/// El Controller ya no conoce ningún detalle de implementación.
+/// Solo sabe que puede "enviar" peticiones al Mediator.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class CategoriasController(
-    ICategoriaService service,
-    ILogger<CategoriasController> logger
-) : ControllerBase
+public class CategoriasController(IMediator mediator) : ControllerBase
 {
-    /// <summary>
-    /// Obtiene todas las categorías paginadas con filtros opcionales.
-    /// </summary>
-    /// <param name="nombre">Filtrar por nombre (contiene).</param>
-    /// <param name="isDeleted">Filtrar por estado de eliminación.</param>
-    /// <param name="page">Número de página (0-indexed).</param>
-    /// <param name="size">Elementos por página.</param>
-    /// <param name="sortBy">Campo de ordenación.</param>
-    /// <param name="direction">Dirección (asc, desc).</param>
-    /// <returns>200 OK con lista paginada de categorías.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<CategoriaDto>), StatusCodes.Status200OK)]
     [AllowAnonymous]
@@ -43,8 +39,6 @@ public class CategoriasController(
         [FromQuery] string sortBy = "id",
         [FromQuery] string direction = "asc")
     {
-        logger.LogInformation("Obteniendo categorías paginadas - Página: {Page}, Tamaño: {Size}", page, size);
-
         var filter = new CategoriaFilterDto
         {
             Nombre = nombre,
@@ -55,14 +49,12 @@ public class CategoriasController(
             Direction = direction
         };
 
-        var resultado = await service.FindAllPagedAsync(filter);
-
+        var resultado = await mediator.Send(new GetAllCategoriasQuery(filter));
         return resultado.Match(
             onSuccess: categorias =>
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader))
-                    Response.Headers.Append("Link", linkHeader);
+                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(categorias);
             },
             onFailure: error => error switch
@@ -71,40 +63,25 @@ public class CategoriasController(
                 ValidationError => BadRequest(new { message = error.Message }),
                 ConflictError => Conflict(new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Obtiene una categoría por su ID.
-    /// </summary>
-    /// <param name="id">ID de la categoría.</param>
-    /// <returns>200 OK con la categoría, o 404 si no existe.</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     public async Task<IActionResult> GetById(long id)
     {
-        logger.LogInformation("Obteniendo categoría con ID: {Id}", id);
-
-        var resultado = await service.FindByIdAsync(id);
-
+        var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
             onSuccess: categoria => Ok(categoria),
             onFailure: error => error switch
             {
                 NotFoundError => NotFound(new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Crea una nueva categoría.
-    /// </summary>
-    /// <param name="dto">Datos de la categoría a crear.</param>
-    /// <returns>201 Created con la categoría creada, o 400/409 si hay errores.</returns>
     [HttpPost]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status201Created)]
@@ -114,10 +91,7 @@ public class CategoriasController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CategoriaRequestDto dto)
     {
-        logger.LogInformation("Creando nueva categoría: {Nombre}", dto.Nombre);
-
-        var resultado = await service.CreateAsync(dto);
-
+        var resultado = await mediator.Send(new CreateCategoriaCommand(dto));
         return resultado.Match(
             onSuccess: categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
             onFailure: error => error switch
@@ -125,16 +99,9 @@ public class CategoriasController(
                 ValidationError => BadRequest(new { message = error.Message }),
                 ConflictError => Conflict(new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Actualiza una categoría existente.
-    /// </summary>
-    /// <param name="id">ID de la categoría.</param>
-    /// <param name="dto">Nuevos datos de la categoría.</param>
-    /// <returns>200 OK con la categoría actualizada, o 400/404/409 si hay errores.</returns>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
@@ -145,10 +112,7 @@ public class CategoriasController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(long id, [FromBody] CategoriaRequestDto dto)
     {
-        logger.LogInformation("Actualizando categoría con ID: {Id}", id);
-
-        var resultado = await service.UpdateAsync(id, dto);
-
+        var resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
         return resultado.Match(
             onSuccess: categoria => Ok(categoria),
             onFailure: error => error switch
@@ -157,15 +121,9 @@ public class CategoriasController(
                 ValidationError => BadRequest(new { message = error.Message }),
                 ConflictError => Conflict(new { message = error.Message }),
                 _ => StatusCode(500, new { message = error.Message })
-            }
-        );
+            });
     }
 
-    /// <summary>
-    /// Elimina una categoría (soft-delete).
-    /// </summary>
-    /// <param name="id">ID de la categoría a eliminar.</param>
-    /// <returns>204 No Content si tiene éxito, o 404 si no existe.</returns>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -174,13 +132,8 @@ public class CategoriasController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(long id)
     {
-        logger.LogInformation("Eliminando categoría con ID: {Id}", id);
-
-        var resultado = await service.DeleteAsync(id);
-
-        if (resultado.IsSuccess)
-            return NoContent();
-
+        var resultado = await mediator.Send(new DeleteCategoriaCommand(id));
+        if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
         return error switch
         {

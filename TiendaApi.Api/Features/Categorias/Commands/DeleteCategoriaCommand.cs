@@ -1,7 +1,8 @@
 using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Repositories.Categorias;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -14,11 +15,18 @@ public record DeleteCategoriaCommand(long Id)
 /// <summary>
 /// Handler del comando DeleteCategoriaCommand.
 /// </summary>
-public class DeleteCategoriaCommandHandler(ICategoriaService service)
+public class DeleteCategoriaCommandHandler(ICategoriaRepository repository)
     : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
-    public Task<UnitResult<DomainError>> Handle(
+    public async Task<UnitResult<DomainError>> Handle(
         DeleteCategoriaCommand request, CancellationToken cancellationToken)
-        => service.DeleteAsync(request.Id);
+    {
+        var categoria = await repository.FindByIdAsync(request.Id);
+        if (categoria is null)
+            return UnitResult.Failure<DomainError>(CategoriaError.NotFound(request.Id));
+
+        await repository.DeleteAsync(request.Id);
+        return UnitResult.Success<DomainError>();
+    }
 }

@@ -2,7 +2,9 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Users;
+using TiendaApi.Api.Errors.Usuarios;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Usuarios;
 
 namespace TiendaApi.Api.Features.Users.Queries;
 
@@ -15,11 +17,16 @@ public record GetUserByIdQuery(long Id)
 /// <summary>
 /// Handler de la query GetUserByIdQuery.
 /// </summary>
-public class GetUserByIdQueryHandler(IUserService service)
+public class GetUserByIdQueryHandler(IUserRepository repository)
     : IRequestHandler<GetUserByIdQuery, Result<UserDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<UserDto, DomainError>> Handle(
+    public async Task<Result<UserDto, DomainError>> Handle(
         GetUserByIdQuery request, CancellationToken cancellationToken)
-        => service.FindByIdAsync(request.Id);
+    {
+        var user = await repository.FindByIdAsync(request.Id);
+        return user is null or { IsDeleted: true }
+            ? Result.Failure<UserDto, DomainError>(UsuarioError.NotFound(request.Id))
+            : Result.Success<UserDto, DomainError>(user.ToDto());
+    }
 }

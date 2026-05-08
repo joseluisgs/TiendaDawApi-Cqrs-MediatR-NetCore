@@ -3,25 +3,34 @@ using MediatR;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Pedidos;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Queries;
 
 /// <summary>
 /// Query para obtener todos los pedidos (admin) paginados.
 /// </summary>
-public record GetAllPedidosPagedQuery(int Page, int Size)
+public record GetAllPedidosQuery(int Page, int Size)
     : IRequest<Result<PagedResult<PedidoDto>, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetAllPedidosPagedQuery.
+/// Handler de la query GetAllPedidosQuery.
 /// </summary>
-public class GetAllPedidosPagedQueryHandler(IPedidosService service)
-    : IRequestHandler<GetAllPedidosPagedQuery, Result<PagedResult<PedidoDto>, DomainError>>
+public class GetAllPedidosQueryHandler(IPedidosRepository repository)
+    : IRequestHandler<GetAllPedidosQuery, Result<PagedResult<PedidoDto>, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<PagedResult<PedidoDto>, DomainError>> Handle(
-        GetAllPedidosPagedQuery request, CancellationToken cancellationToken)
-        => service.FindAllPagedAsync(request.Page, request.Size);
+    public async Task<Result<PagedResult<PedidoDto>, DomainError>> Handle(
+        GetAllPedidosQuery request, CancellationToken cancellationToken)
+    {
+        var pedidos = (await repository.FindAllAsync()).ToList();
+        return Result.Success<PagedResult<PedidoDto>, DomainError>(new PagedResult<PedidoDto>
+        {
+            Items = pedidos.Skip(request.Page * request.Size).Take(request.Size).ToDtoList(),
+            TotalCount = pedidos.Count,
+            Page = request.Page + 1,
+            PageSize = request.Size
+        });
+    }
 }
-

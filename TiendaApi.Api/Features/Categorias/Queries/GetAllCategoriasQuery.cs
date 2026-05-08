@@ -3,7 +3,8 @@ using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Categorias;
 
 namespace TiendaApi.Api.Features.Categorias.Queries;
 
@@ -16,11 +17,20 @@ public record GetAllCategoriasQuery(CategoriaFilterDto Filter)
 /// <summary>
 /// Handler de la query GetAllCategoriasQuery.
 /// </summary>
-public class GetAllCategoriasQueryHandler(ICategoriaService service)
+public class GetAllCategoriasQueryHandler(ICategoriaRepository repository)
     : IRequestHandler<GetAllCategoriasQuery, Result<PagedResult<CategoriaDto>, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<PagedResult<CategoriaDto>, DomainError>> Handle(
+    public async Task<Result<PagedResult<CategoriaDto>, DomainError>> Handle(
         GetAllCategoriasQuery request, CancellationToken cancellationToken)
-        => service.FindAllPagedAsync(request.Filter);
+    {
+        var (categorias, totalCount) = await repository.FindAllPagedAsync(request.Filter);
+        return Result.Success<PagedResult<CategoriaDto>, DomainError>(new PagedResult<CategoriaDto>
+        {
+            Items = categorias.ToDtoList(),
+            TotalCount = totalCount,
+            Page = request.Filter.Page + 1,
+            PageSize = request.Filter.Size
+        });
+    }
 }

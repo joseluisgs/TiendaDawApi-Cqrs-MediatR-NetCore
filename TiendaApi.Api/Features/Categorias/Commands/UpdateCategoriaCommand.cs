@@ -1,8 +1,11 @@
 using CSharpFunctionalExtensions;
+using FluentValidation;
 using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Services.Categorias;
+using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Categorias;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -15,11 +18,33 @@ public record UpdateCategoriaCommand(long Id, CategoriaRequestDto Dto)
 /// <summary>
 /// Handler del comando UpdateCategoriaCommand.
 /// </summary>
-public class UpdateCategoriaCommandHandler(ICategoriaService service)
+public class UpdateCategoriaCommandHandler(
+    ICategoriaRepository repository,
+    IValidator<CategoriaRequestDto> validator)
     : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
-    public Task<Result<CategoriaDto, DomainError>> Handle(
+    public async Task<Result<CategoriaDto, DomainError>> Handle(
         UpdateCategoriaCommand request, CancellationToken cancellationToken)
-        => service.UpdateAsync(request.Id, request.Dto);
+    {
+        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Result.Failure<CategoriaDto, DomainError>(CategoriaError.ValidacionConCampos(errors));
+        }
+
+        var categoria = await repository.FindByIdAsync(request.Id);
+        if (categoria is null)
+            return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NotFound(request.Id));
+
+        if (await repository.ExistsByNombreAsync(request.Dto.Nombre, request.Id))
+            return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NombreDuplicado(request.Dto.Nombre));
+
+        categoria.Nombre = request.Dto.Nombre;
+        var updated = await repository.UpdateAsync(categoria);
+        return Result.Success<CategoriaDto, DomainError>(updated.ToDto());
+    }
 }
