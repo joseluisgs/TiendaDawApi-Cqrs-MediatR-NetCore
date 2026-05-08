@@ -1,0 +1,183 @@
+@page "/rest"
+@using ClientBlazor.Cliente.Components.Shared
+@using ClientBlazor.Cliente.Services.Rest
+@using ClientBlazor.Cliente.DTOs.Productos
+@using ClientBlazor.Cliente.DTOs.Categorias
+@using ClientBlazor.Cliente.DTOs.Common
+@using ClientBlazor.Cliente.Domain.Errors
+@using ClientBlazor.Cliente.State.Notifications
+@using CSharpFunctionalExtensions
+@using System.Text.Json
+
+@inject IRestService RestService
+@inject INotificationStore NotificationStore
+
+<NavMenu />
+
+<div class="config-section" data-testid="rest-page">
+    <h3 class="section-title">REST API Client</h3>
+
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; justify-content: center; margin-bottom: 20px;">
+        <div class="form-group" style="min-width: 180px;">
+            <label>Recurso</label>
+            <select @bind="recurso" @bind:after="OnRecursoChanged" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;">
+                <option value="productos">Productos</option>
+                <option value="categorias">Categorías</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="min-width: 200px;">
+            <label>Operación</label>
+            <select @bind="operacion" @bind:after="OnOperacionChanged" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;">
+                <option value="get-list">GET - Listar todos</option>
+                <option value="get-by-id">GET - Por ID</option>
+                <option value="post">POST - Crear</option>
+                <option value="put">PUT - Actualizar</option>
+                <option value="delete">DELETE - Eliminar</option>
+            </select>
+        </div>
+
+        @if (NeedsId())
+        {
+            <div class="form-group" style="min-width: 100px;">
+                <label>ID</label>
+                <input type="number" @bind="id" placeholder="1" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;" />
+            </div>
+        }
+
+        <button class="btn-connect" @onclick="ExecuteAsync" disabled="@isExecuting">
+            @(isExecuting ? "Ejecutando..." : "Ejecutar")
+        </button>
+    </div>
+
+    @if (operacion == "post" || operacion == "put" || operacion == "delete")
+    {
+        <p style="color: var(--hk-red); text-align: center; font-weight: bold; margin-top: 10px;">
+            🔐 Esta operación requiere autenticación JWT (Rol ADMIN)
+        </p>
+    }
+</div>
+
+@if (operacion == "post" || operacion == "put")
+{
+    <div class="editor-section">
+        <h3 class="section-title">JSON Request Body</h3>
+        <textarea @bind="jsonBody" placeholder="JSON generado automáticamente..." style="min-height: 120px;"></textarea>
+        <button class="btn-quick" style="margin-top: 10px;" @onclick="GenerateJson"> Restablecer JSON </button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(responseText))
+{
+    <div class="response-section">
+        <h3 class="section-title">Respuesta</h3>
+        <div class="response-display">
+            <pre style="white-space: pre-wrap; font-family: 'Balsamiq Sans', cursive;">@responseText</pre>
+        </div>
+    </div>
+}
+
+<div class="info-box">
+    <h4>Operaciones Disponibles</h4>
+    <p>• <b>GET</b> /api/@recurso - Listar todos</p>
+    <p>• <b>GET</b> /api/@recurso/@(id == 0 ? "{id}" : id.ToString()) - Por ID</p>
+    <p>• <b>POST</b> /api/@recurso - Crear</p>
+    <p>• <b>PUT</b> /api/@recurso/@(id == 0 ? "{id}" : id.ToString()) - Actualizar</p>
+    <p>• <b>DELETE</b> /api/@recurso/@(id == 0 ? "{id}" : id.ToString()) - Eliminar</p>
+</div>
+
+@code {
+    /// <summary>Recurso de la API seleccionado (productos o categorias).</summary>
+    private string recurso = "productos";
+    /// <summary>Operación HTTP a realizar.</summary>
+    private string operacion = "get-list";
+    /// <summary>Identificador del recurso para operaciones individuales.</summary>
+    private long id = 1;
+    /// <summary>Cuerpo de la petición en formato JSON para POST/PUT.</summary>
+    private string jsonBody = "";
+    /// <summary>Texto de respuesta o error para mostrar en la consola.</summary>
+    private string responseText = "";
+    /// <summary>Estado de ejecución para bloquear el botón.</summary>
+    private bool isExecuting = false;
+
+    protected override void OnInitialized() => GenerateJson();
+
+    private void OnRecursoChanged()
+    {
+        operacion = "get-list";
+        id = 1;
+        responseText = "";
+        GenerateJson();
+    }
+
+    private void OnOperacionChanged()
+    {
+        responseText = "";
+        if (operacion == "get-list" || operacion == "get-by-id" || operacion == "delete") jsonBody = "{}";
+        else GenerateJson();
+    }
+
+    /// <summary>Determina si la operación actual requiere un identificador numérico.</summary>
+    private bool NeedsId() => operacion == "get-by-id" || operacion == "put" || operacion == "delete";
+
+    /// <summary>Genera un JSON de ejemplo basado en el recurso y la operación.</summary>
+    private void GenerateJson()
+    {
+        if (recurso == "productos")
+        {
+            jsonBody = operacion == "post" ? "{\n  \"Nombre\": \"Nuevo producto\",\n  \"Descripcion\": \"Desc\",\n  \"Precio\": 99.99,\n  \"Stock\": 10,\n  \"CategoriaId\": 1\n}"
+                                           : "{\n  \"Nombre\": \"Actualizado\",\n  \"Precio\": 149.99\n}";
+        }
+        else jsonBody = "{}";
+    }
+
+    /// <summary>Ejecuta la operación REST orquestando llamadas a servicios y mapeo de UI.</summary>
+    private async Task ExecuteAsync()
+    {
+        if (NeedsId() && id <= 0) { NotificationStore.Warning("ID no válido"); return; }
+        
+        isExecuting = true; responseText = ""; StateHasChanged();
+        try
+        {
+            Result<object, DomainError> result = recurso == "productos" 
+                ? await ExecuteProductoOperation() 
+                : await ExecuteCategoriaOperation();
+
+            if (result.IsSuccess)
+            {
+                responseText = JsonSerializer.Serialize(result.Value, new JsonSerializerOptions { WriteIndented = true });
+                NotificationStore.Success("Operación exitosa");
+            }
+            else
+            {
+                responseText = $"ERROR: {result.Error.Message}";
+                NotificationStore.Error(result.Error.Message);
+            }
+        }
+        catch (Exception ex) { responseText = $"ERROR: {ex.Message}"; }
+        finally { isExecuting = false; StateHasChanged(); }
+    }
+
+    private async Task<Result<object, DomainError>> ExecuteProductoOperation()
+    {
+        return operacion switch
+        {
+            "get-list" => (await RestService.GetProductosAsync(new ProductoFilterDto())).Map(v => (object)v),
+            "get-by-id" => (await RestService.GetProductoByIdAsync(id)).Map(v => (object)v),
+            "post" => (await RestService.CreateProductoAsync(JsonSerializer.Deserialize<ProductoRequestDto>(jsonBody)!)).Map(v => (object)v),
+            "put" => (await RestService.UpdateProductoAsync(id, JsonSerializer.Deserialize<ProductoRequestDto>(jsonBody)!)).Map(v => (object)v),
+            "delete" => (await RestService.DeleteProductoAsync(id)).Map(v => (object)v),
+            _ => throw new NotSupportedException()
+        };
+    }
+
+    private async Task<Result<object, DomainError>> ExecuteCategoriaOperation()
+    {
+        return operacion switch
+        {
+            "get-list" => (await RestService.GetCategoriasAsync(new CategoriaFilterDto())).Map(v => (object)v),
+            "get-by-id" => (await RestService.GetCategoriaByIdAsync(id)).Map(v => (object)v),
+            _ => throw new NotSupportedException()
+        };
+    }
+}
