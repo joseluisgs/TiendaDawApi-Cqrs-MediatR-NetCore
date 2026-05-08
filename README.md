@@ -8,13 +8,13 @@
 [![EF Core](https://img.shields.io/badge/EF%20Core-10-blue)](https://docs.microsoft.com/en-us/ef/core/)
 
 
-**Ejemplo educativo de uso de APIS para el desarrollo de servicios backend en .NET 10 ASP.NET Core y C# 14.**
+**Ejemplo educativo de uso de APIs para el desarrollo de servicios backend en .NET 10 ASP.NET Core y C# 14, implementando arquitectura CQRS con MediatR.**
 
-Una API de comercio electrónico con arquitectura profesional, múltiples bases de datos, cacheo con Redis, GraphQL, WebSockets para notificaciones y versionado de API.
+Una API de comercio electrónico con arquitectura profesional, múltiples bases de datos, patrón CQRS con MediatR, cacheo con Redis, GraphQL, WebSockets para notificaciones en tiempo real y versionado de API.
 
 ## 🎯 Descripción
 
-TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET Core y C# 14 que implementa una API RESTful completa para una tienda en línea, además usa GraphQL y WebSockets. El proyecto está diseñado con una arquitectura en capas utilizando múltiples bases de datos (PostgreSQL, MongoDB y Redis) para diferentes propósitos educativos para la formación de Desarrollo Web en Entornos Servidor (DAW).
+TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET Core y C# 14 que implementa una API RESTful completa para una tienda en línea. El proyecto implementa el **patrón CQRS (Command Query Responsibility Segregation)** utilizando **MediatR** como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries). Además usa GraphQL, WebSockets y SignalR. El proyecto está diseñado con una arquitectura en capas utilizando múltiples bases de datos (PostgreSQL, MongoDB y Redis) para diferentes propósitos educativos para la formación de Desarrollo Web en Entornos Servidor (DAW).
 
 - 🏪 **Gestión de Productos y Categorías**: CRUD completo con validaciones
 - 🛒 **Sistema de Pedidos**: Documentos embebidos con MongoDB
@@ -25,6 +25,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - ⏰ **Background Jobs**: Tareas programadas con BackgroundService para reportes y sincronización
 - 📊 **Versionado de API**: Control de versiones por URL.
 - 🧪 **Testing**: Tests con NUnit, Moq, Tescontainers y Newman.
+- 🎯 **CQRS + MediatR**: Patrón Command Query Responsibility Segregation con MediatR para desacoplamiento y notificaciones asíncronas
 
 ## 📑 Tabla de Contenidos
 
@@ -110,9 +111,10 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 📈 **Versionado de API**: Control de versiones por URL
 - ✅ **Validaciones**: FluentValidation declarativo
 - 🛡️ **Exception Handling**: Middleware global de errores
-- 🧪 **Testing**: Unit tests con NUnit y Moq
+- 🧪 **Testing**: Unit tests con NUnit y Moq (CQRS Handlers)
 - 📊 **Code Coverage**: Métricas con Coverlet
 - 🐳 **Docker**: Contenedores para desarrollo y producción
+- 🔄 **E2E Tests**: Bruno CLI para pruebas de API
 
 ## 🚀 Tecnologías
 
@@ -123,13 +125,14 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - **MongoDB 7.0** - Base de datos de documentos
 - **Redis** - Cache distribuido
 - **JWT** - Autenticación basada en tokens
+- **MediatR** - Mediator pattern para CQRS Commands, Queries y Notifications
 - **FluentValidation** - Validaciones declarativas
 - **AutoMapper** - Mapeo de objetos
 - **Websockets/SignalR** - WebSockets en tiempo real puros y usando SignalR
 - **HotChocolate** - GraphQL server
-- **NUnit + Moq** - Testing unitario
+- **NUnit + Moq** - Testing unitario de Handlers
 - **CSharpFunctionalExtensions** - Railway Oriented Programming
-- **Testcontainers** - Tests con bases de datos reales
+- **Bruno CLI** - Pruebas E2E de API
 - **Swashbuckle/Swagger** - Documentación automática de API
 - **Coverlet** - Métricas de coverage
 - **Docker** - Containerización
@@ -220,10 +223,9 @@ API_PORT=5000
 
 TiendaDawApi implementa una pirámide de pruebas profesional:
 
-- **Unit Tests**: Validación de servicios, repositorios y lógica de negocio 
-- **Integration Tests**: Tests con bases de datos reales usando Testcontainers
+- **Unit Tests**: Validación de CQRS Handlers, Repositories y Controllers 
 - **Coverage**: Indicadores de cobertura con Coverlet
-- **Newman o Bruno**: Pruebas de API automatizadas
+- **Bruno CLI**: Pruebas E2E de API automatizadas
 
 ### Ejecución de Tests
 
@@ -259,35 +261,9 @@ open coverage/index.html
   - Job `test`: Unit tests siempre (parallel)
   - Job `test-integration`: Solo bajo demanda con `workflow_dispatch` en main
 
-### Tests E2E con Newman (Postman) y Bruno
+### Tests E2E con Bruno
 
-Pruebas end-to-end de la API usando Newman y Bruno CLI:
-
-#### Postman (Newman)
-
-```bash
-# Opción 1: Con Docker (recomendado)
-cd TiendaApi.ApiTests/Postman
-docker-compose up --build
-
-# Ver informes generados
-open reports/report.html
-
-# Opción 2: Con Newman local
-npm install -g newman
-newman run TiendaApi.ApiTests/Postman/TiendaApi.NetCore.postman_collection.json \
-  -e TiendaApi.ApiTests/Postman/TiendaApi.NetCore.postman_environment.json \
-  -r html,json,junit --reporter-html-export report.html \
-  --reporter-json-export report.json \
-  --reporter-junit-export junit-report.xml
-```
-
-**Colección disponible en:** `TiendaApi.ApiTests/Postman/TiendaApi.NetCore.postman_collection.json`
-
-**Informes generados:**
-- `report.html` - Informe visual
-- `report.json` - Datos estructurados
-- `junit-report.xml` - Para CI/CD
+Pruebas end-to-end de la API usando Bruno CLI:
 
 #### Bruno (CLI)
 
@@ -344,8 +320,9 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | #   | Documento                                                  | Descripción                       |
 | --- | ---------------------------------------------------------- | --------------------------------- |
 | 06  | [Patrón Result](doc/06-patron-result.md)                   | Railway Oriented Programming      |
-| 08  | [Servicios de Negocio](doc/08-servicios-negocio.md)        | Capa de servicios                 |
-| 15  | [Pedidos y Transacciones](doc/15-pedidos-transacciones.md) | Transacciones optimista/pesimista |
+| 08  | [CQRS Commands Queries](doc/08-cqrs-commands-queries.md)   | Commands, Queries, Notifications  |
+| 31  | [MediatR Eventos](doc/31-mediatr-cqrs-eventos.md)         | Pipeline Behaviors, Eventos      |
+| 15  | [Pedidos y Transacciones](doc/15-pedidos-transacciones.md) | Transacciones, CQRS en pedidos   |
 | 22  | [Mapeadores](doc/22-mapeadores.md)                         | AutoMapper vs extensiones         |
 
 ### Seguridad
@@ -615,16 +592,20 @@ TiendaDawApi-NetCore/
 ├── .env.example                      # Variables de entorno de ejemplo
 │
 ├── TiendaApi.Api/                    # Proyecto Principal (ASP.NET Core 10)
-│   ├── Program.cs                    # Configuración de Pipeline, DI y Middlewares
-│   ├── Controllers/                  # Controladores REST (Auth, Categorias, Productos, Pedidos, Users)
-│   ├── Services/                     # Lógica de negocio (Auth, Categorias, Productos, Users)
+│   ├── Program.cs                    # Configuración de Pipeline, DI y MediatR
+│   ├── Controllers/                  # Controladores REST que usan IMediator
+│   ├── Features/                     # CQRS Handlers con MediatR
+│   │   ├── Auth/                     # Commands de autenticación
+│   │   ├── Categorias/               # Commands, Queries y Notifications de categorías
+│   │   ├── Productos/               # Commands, Queries y Notifications de productos
+│   │   ├── Pedidos/                  # Commands, Queries y Notifications de pedidos
+│   │   └── Users/                    # Commands, Queries y Notifications de usuarios
+│   ├── Services/                     # Servicios de infraestructura
+│   │   ├── Auth/                     # Token JWT y autenticación
 │   │   ├── Background/               # Background Jobs y tareas programadas
-│   │   ├── Categorias/               # Servicios de categorías
+│   │   ├── Cache/                   # Servicio de cache con Redis
 │   │   ├── Email/                    # Servicio de email (MailKit)
-│   │   ├── Pedidos/                  # Servicios de pedidos
-│   │   ├── Productos/                # Servicios de productos
-│   │   ├── Storage/                  # Servicios de almacenamiento
-│   │   └── Usuarios/                 # Servicios de usuarios
+│   │   └── Storage/                  # Servicios de almacenamiento de archivos
 │   ├── Repositories/                 # Acceso a datos (Categoria, Producto, User, Pedidos)
 │   ├── Models/                       # Modelos de dominio (User, Producto, Categoria, Pedido)
 │   ├── Dtos/                         # Data Transfer Objects (Request/Response)
@@ -632,10 +613,10 @@ TiendaDawApi-NetCore/
 │   ├── Mappers/                      # Mapeadores (Modelos <-> DTO)
 │   ├── Validators/                   # Validadores FluentValidation
 │   ├── Middleware/                   # Manejo global de excepciones
-│   ├── GraphQL/                      # Schema y tipos HotChocolate
+│   ├── GraphQL/                      # Schema y tipos HotChocolate (usa MediatR)
 │   ├── Realtime/                     # WebSockets nativo y SignalR Hubs
 │   ├── Helpers/                      # Utilidades y extensiones
-│   ├── Errors/                       # Errores personalizados de dominio
+│   ├── Errors/                       # Errores personalizados de dominio (Result pattern)
 │   ├── Exceptions/                   # Excepciones personalizadas
 │   ├── Infrastructures/              # Extension Methods (DI, Pipeline, Bases de datos, Cache, SignalR, WebSockets, etc.)
 │   ├── Properties/                   # Configuración de lanzamiento
@@ -646,7 +627,7 @@ TiendaDawApi-NetCore/
 │   └── Dockerfile                    # Multi-stage build para producción
 │
 ├── TiendaApi.Tests/                  # Pruebas Unitarias y de Integración
-│   ├── Unit/                         # Tests unitarios (Services, Controllers, Repositories)
+│   ├── Unit/                         # Tests unitarios (Handlers, Controllers, Repositories)
 │   ├── Integration/                  # Tests de integración con bases de datos reales
 │   └── coverage/                     # Reporte de cobertura de código
 │
@@ -678,9 +659,9 @@ TiendaDawApi-NetCore/
 
 | Carpeta               | Propósito                  | Contenido                                                                                     |
 | --------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
-| **Controllers**       | Entry points HTTP          | AuthController, CategoriasController, ProductosController, PedidosController, UsersController |
-| **Services**          | Lógica de negocio          | AuthService, CategoriaService, ProductoService, UserService                                   |
-| **Background**        | Tareas programadas         | BackgroundJobService, ProductoReportTask para reportes                                        |
+| **Controllers**       | Entry points HTTP          | Controladores que usan IMediator para Commands/Queries/Notifications                           |
+| **Features**          | CQRS Handlers (MediatR)    | Commands (escritura), Queries (lectura), Notifications (eventos) por dominio                  |
+| **Services**          | Servicios de infraestructura | AuthService (JWT), CacheService (Redis), EmailService (MailKit), StorageService (archivos)    |
 | **Repositories**      | Abstracción de datos       | CategoriaRepository, ProductoRepository, UserRepository, PedidosRepository                    |
 | **Models**            | Modelos de dominio         | User, Producto, Categoria, Pedido, Direccion, Destinatario                                    |
 | **Dtos**              | Transferencia de datos     | Request/Response para API                                                                     |
@@ -734,8 +715,10 @@ graph TB
     end
 
     subgraph "🔷 Core Layer - Domain & Application"
-        subgraph "Application Services"
-            SVC[Services<br/>Auth, Categoria,<br/>Producto, User]
+        subgraph "CQRS Handlers (MediatR)"
+            CMD[Commands<br/>Create, Update, Delete]
+            QRY[Queries<br/>Get, GetAll, GetBy]
+            NOT[Notifications<br/>Events, Signals]
         end
         subgraph "Cross-Cutting Concerns"
             ROP[Result~T,E&gt;<br/>Railway Oriented<br/>Programming]
@@ -786,18 +769,18 @@ graph TB
     MID --> CORS
     MID --> LOG
     
-    CTRL --> SVC
-    SVC --> ROP
-    SVC --> VAL
-    SVC --> MAP
+    CTRL --> CMD
+    CMD --> ROP
+    CMD --> VAL
+    CMD --> MAP
     
-    SVC --> DTO
-    SVC --> DOM
+    CMD --> DTO
+    CMD --> DOM
     
     DTO --> MAP
     MAP --> DOM
     
-    SVC --> REPO
+    CMD --> REPO
     REPO --> EF
     REPO --> MONGO
     REPO --> REDIS
@@ -819,7 +802,8 @@ graph TB
     style WS fill:#9b59b6,color:#fff
     style BG fill:#8e44ad,color:#fff
     style CTRL fill:#2980b9,color:#fff
-    style SVC fill:#27ae60,color:#fff
+    style CQRS fill:#27ae60,color:#fff
+    style SVC fill:#16a085,color:#fff
     style DOM fill:#f39c12,color:#000
     style REPO fill:#16a085,color:#fff
     style PG fill:#3366cc,color:#fff
@@ -828,6 +812,9 @@ graph TB
     style ROP fill:#e91e63,color:#fff
     style VAL fill:#00bcd4,color:#fff
     style MAP fill:#ff9800,color:#000
+    style CMD fill:#2ecc71,color:#fff
+    style QRY fill:#3498db,color:#fff
+    style NOT fill:#9b59b6,color:#fff
 ```
 
 ### Estructura de Dependencias
@@ -849,7 +836,7 @@ graph TB
     end
 
     subgraph "🟠 Core Layer"
-        SVC["🏢 Services<br/>Auth, Categoria, Producto<br/>User, Pedidos, Background"]
+        CQRS["🎯 CQRS Handlers<br/>MediatR Commands<br/>Queries, Notifications"]
         CCC["🛠️ Cross-Cutting<br/>AutoMapper, FluentValidation<br/>Result~T,E&gt;, Errors"]
     end
 
@@ -859,18 +846,21 @@ graph TB
 
     subgraph "🔴 Infrastructure"
         DA["💾 Data Access<br/>Repositories, EF Core<br/>MongoDB, Redis"]
+        SVC["🏢 Services<br/>Auth, Cache, Email<br/>Storage, Background"]
         DS["🗄️ Data Stores<br/>PostgreSQL, MongoDB<br/>Redis Cache"]
         SEC["🔐 Security<br/>JWT, BCrypt, Claims<br/>Roles, Policies"]
-        EXT["📧 External Services<br/>SMTP, File System<br/>HTTP Clients, Background Jobs"]
+        EXT["📧 External Services<br/>SMTP, File System<br/>SignalR, Background Jobs"]
     end
 
     REST & GQL & WS & SMTP & FS & BG === CTRL
     CTRL === FILT
-    FILT === SVC
-    SVC === CCC
+    FILT === CQRS
+    CQRS === CCC
     CCC === REPO
-    REPO === DA
-    DA === DS & SEC & EXT
+    CQRS ==> SVC
+    SVC ==> DA
+    REPO ==> DA
+    DA ==> DS & SEC & EXT
 ```
 
 #### Ventajas de Esta Arquitectura
@@ -989,6 +979,145 @@ public async Task<IActionResult> Create([FromBody] ProductoRequestDto dto)
 | **Tipado**      | Exception genérica        | Error tipado específico |
 | **Composición** | Difícil                   | natural con Bind/Map    |
 | **Performance** | Costoso (stack unwinding) | Barato (simple wrapper) |
+
+## 🎯 Arquitectura CQRS con MediatR
+
+El proyecto implementa el patrón **CQRS (Command Query Responsibility Segregation)** utilizando **MediatR** como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries).
+
+### ¿Por qué CQRS?
+
+| Aspecto                  | Sin CQRS                         | Con CQRS                              |
+| ------------------------ | -------------------------------- | ------------------------------------- |
+| **Lectura/Escritura**    | Mismo modelo para ambos          | Modelos independientes                |
+| **Flexibilidad**        | Una forma de consultas          | Múltiples estrategias de lectura     |
+| **Rendimiento**         | Optimizado para escritura       | Lecturas optimizadas específicamente |
+| **Mantenimiento**       | Lógica mezclada                 | Responsabilidades claramente separadas|
+
+### Flujo CQRS con MediatR
+
+```mermaid
+sequenceDiagram
+    participant Client as Cliente (HTTP/GraphQL)
+    participant Controller as Controller
+    participant MediatR as MediatR
+    participant Handler as Handler
+    participant Repo as Repository
+    participant DB as Base de Datos
+
+    Note over Client, DB: COMMAND (Escritura)
+    Client->>Controller: POST /productos (CreateProductoCommand)
+    Controller->>MediatR: Send(command)
+    MediatR->>Handler: Route to CreateProductoCommandHandler
+    Handler->>Repo: AddAsync(producto)
+    Repo->>DB: INSERT
+    DB-->>Repo: producto creada
+    Repo-->>Handler: Result<Producto>
+    Handler-->>MediatR: Result<ProductoDto>
+    MediatR-->>Controller: Result<ProductoDto>
+    Controller-->>Client: 201 Created + producto
+
+    Note over Client, DB: QUERY (Lectura)
+    Client->>Controller: GET /productos/{id} (GetProductoByIdQuery)
+    Controller->>MediatR: Send(query)
+    MediatR->>Handler: Route to GetProductoByIdQueryHandler
+    Handler->>Repo: GetByIdAsync(id)
+    Repo->>DB: SELECT
+    DB-->>Repo: producto
+    Repo-->>Handler: Producto
+    Handler-->>MediatR: ProductoDto
+    MediatR-->>Controller: ProductoDto
+    Controller-->>Client: 200 OK + producto
+```
+
+### Estructura de Features
+
+```
+Features/
+├── Auth/
+│   └── Commands/
+│       └── LoginCommand.cs
+│       └── RegisterCommand.cs
+├── Categorias/
+│   ├── Commands/
+│   │   ├── CreateCategoriaCommand.cs
+│   │   ├── UpdateCategoriaCommand.cs
+│   │   └── DeleteCategoriaCommand.cs
+│   ├── Queries/
+│   │   ├── GetAllCategoriasQuery.cs
+│   │   └── GetCategoriaByIdQuery.cs
+│   └── Notifications/
+│       └── CategoriaEliminadaNotification.cs
+├── Productos/
+│   ├── Commands/
+│   ├── Queries/
+│   └── Notifications/
+│       ├── ProductoCreadoNotification.cs
+│       └── ProductoEliminadoNotification.cs
+├── Pedidos/
+│   ├── Commands/
+│   ├── Queries/
+│   └── Notifications/
+│       ├── PedidoCreadoNotification.cs
+│       └── EstadoPedidoActualizadoNotification.cs
+└── Users/
+    ├── Commands/
+    ├── Queries/
+    └── Notifications/
+        └── UsuarioRegistradoNotification.cs
+```
+
+### Componentes CQRS
+
+| Componente          | Propósito                                    | Ejemplo                                |
+| ------------------- | -------------------------------------------- | -------------------------------------- |
+| **Command**         | Solicitud de cambio de estado                | `CreateProductoCommand`               |
+| **Query**          | Solicitud de datos (sin副作用)              | `GetProductoByIdQuery`                |
+| **Notification**   | Evento que se publica sin respuesta esperada| `ProductoCreadoNotification`          |
+| **IRequest**       | Interfaz base para Commands/Queries         | `IRequest<TResponse>`                 |
+| **IRequestHandler**| Interfaz para procesar Requests            | `IRequestHandler<TRequest, TResponse>`|
+| **INotificationHandler** | Interfaz para procesar Notifications | `INotificationHandler<TNotification>` |
+
+### Notificaciones (Domain Events)
+
+Las **Notifications** en MediatR son equivalentes a los **Domain Events** en DDD. Se usan para:
+
+1. **Notificaciones en tiempo real**: SignalR/WebSocket cuando ocurre un cambio
+2. **Envío de emails**: Notificaciones asíncronas al usuario
+3. **Auditoría**: Registro de acciones del sistema
+4. **Integraciones**: Sincronización con sistemas externos
+
+```csharp
+// Publicar notificación (en un Handler)
+await _mediator.Publish(new PedidoCreadoNotification(pedido), cancellationToken);
+
+// Manejar notificación (múltiples handlers)
+public class PedidoCreadoSignalRHandler : INotificationHandler<PedidoCreadoNotification>
+{
+    public async Task Handle(PedidoCreadoNotification notification, CancellationToken ct)
+    {
+        await _hubContext.Clients.User(notification.Pedido.UsuarioId)
+            .SendAsync("PedidoCreado", notification.Pedido, ct);
+    }
+}
+
+public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotification>
+{
+    public async Task Handle(PedidoCreadoNotification notification, CancellationToken ct)
+    {
+        await _emailService.SendOrderConfirmationAsync(notification.Pedido, ct);
+    }
+}
+```
+
+### Beneficios de MediatR
+
+- **Desacoplamiento**: Controllers no conocen la implementación de los handlers
+- **Single Responsibility**: Cada handler hace una sola cosa
+- **Testabilidad**: Handlers fáciles de unit testear con mocking
+- **Pipeline Behaviors**: Logging, validación, caching transversales
+- **Mediator Pattern**: Comunicación indirecta entre componentes
+
+> **Documentación detallada**: Ver [doc/08-cqrs-commands-queries.md](./doc/08-cqrs-commands-queries.md) y [doc/31-mediatr-cqrs-eventos.md](./doc/31-mediatr-cqrs-eventos.md)
 
 ## 🗄️ Estrategia Multi-Base de Datos
 
