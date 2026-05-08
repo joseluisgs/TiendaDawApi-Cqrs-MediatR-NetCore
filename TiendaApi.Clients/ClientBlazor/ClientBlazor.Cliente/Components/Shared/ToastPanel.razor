@@ -1,0 +1,113 @@
+@using System.Reactive.Disposables
+@using ClientBlazor.Cliente.State.Notifications
+@implements IDisposable
+@inject INotificationStore NotificationStore
+@using System.Timers
+@implements IAsyncDisposable
+
+<div class="toast-container">
+    @foreach (var notification in activeNotifications)
+    {
+        <div class="toast-item @GetToastClass(notification.Type)" @onclick="() => NotificationStore.Dismiss(notification.Id)">
+            <div class="toast-icon">@GetToastIcon(notification.Type)</div>
+            <div class="toast-content">
+                @if (!string.IsNullOrEmpty(notification.Title))
+                {
+                    <div class="toast-title">@notification.Title</div>
+                }
+                <div class="toast-message">@notification.Message</div>
+            </div>
+            <button class="toast-close">&times;</button>
+            @if (notification.IsAutoDismiss)
+            {
+                <div class="toast-timer" style="width: @GetTimerWidth(notification)%"></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Notification> activeNotifications = new();
+    private System.Timers.Timer? _timer;
+    private CompositeDisposable subscriptions = new();
+    
+    protected override void OnInitialized()
+    {
+        subscriptions.Add(NotificationStore.Notifications.Subscribe(notifs => {
+            activeNotifications = notifs.ToList();
+            StateHasChanged();
+        }));
+        
+        _timer = new System.Timers.Timer(100);
+        _timer.Elapsed += (s, e) =>
+        {
+            var expired = activeNotifications.Where(n => n.IsExpired).ToList();
+            if (expired.Any())
+            {
+                foreach (var n in expired)
+                {
+                    NotificationStore.Dismiss(n.Id);
+                }
+            }
+        };
+        _timer.Start();
+    }
+
+    /// <summary>
+    /// Libera las suscripciones reactivas cuando el componente se destruye.
+    /// </summary>
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        subscriptions.Dispose();
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+    }
+
+    /// <summary>
+    /// Calcula el porcentaje de ancho del temporizador visual del Toast.
+    /// </summary>
+    /// <param name="notification">La notificación a procesar.</param>
+    /// <returns>Valor entre 0 y 100.</returns>
+    private double GetTimerWidth(Notification notification)
+    {
+        if (notification.DurationMs <= 0) return 0;
+        var elapsed = (DateTime.Now - notification.CreatedAt).TotalMilliseconds;
+        return Math.Max(0, 100 - (elapsed / notification.DurationMs * 100));
+    }
+
+    /// <summary>
+    /// Obtiene la clase CSS correspondiente al tipo de notificación.
+    /// </summary>
+    private string GetToastClass(NotificationType type)
+    {
+        return type switch
+        {
+            NotificationType.Success => "toast-success",
+            NotificationType.Error => "toast-error",
+            NotificationType.Warning => "toast-warning",
+            NotificationType.Info => "toast-info",
+            _ => ""
+        };
+    }
+
+    /// <summary>
+    /// Obtiene el icono Emoji representativo del tipo de alerta.
+    /// </summary>
+    private string GetToastIcon(NotificationType type)
+    {
+        return type switch
+        {
+            NotificationType.Success => "✅",
+            NotificationType.Error => "❌",
+            NotificationType.Warning => "⚠️",
+            NotificationType.Info => "ℹ️",
+            _ => ""
+        };
+    }
+}

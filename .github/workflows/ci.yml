@@ -1,0 +1,179 @@
+# GitHub Actions CI Pipeline for TiendaDawApi
+# This workflow builds, tests, and validates the application
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SOLUTION: 'TiendaApi.slnx'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION }} --configuration Release --no-restore
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: TiendaApi.Api/bin/Release/net10.0/
+          retention-days: 1
+
+  test:
+    name: Test (Unit - Parallel)
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: TiendaApi.Api/bin/Release/net10.0/
+
+      - name: Run unit tests (parallel)
+        run: dotnet test ${{ env.SOLUTION }} --configuration Release --no-build --filter "FullyQualifiedName~Unit" --verbosity minimal --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Find coverage files
+        id: find-coverage
+        run: |
+          if ls ./TestResults/**/coverage.cobertura.xml 2>/dev/null; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Coverage HTML Report
+        if: steps.find-coverage.outputs.found == 'true'
+        run: reportgenerator "-reports:./TestResults/**/coverage.cobertura.xml" "-targetdir:./TestResults/CoverageReport" "-reporttypes:HtmlInline_AzurePipelines"
+
+      - name: Upload coverage report
+        if: steps.find-coverage.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./TestResults/CoverageReport
+          retention-days: 7
+
+  test-integration:
+    name: Test (Integration)
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+
+    services:
+      mongo:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: TiendaApi.Api/bin/Release/net10.0/
+
+      - name: Run integration tests (sequential, non-parallel)
+        run: dotnet test ${{ env.SOLUTION }} --configuration Release --no-build --filter "FullyQualifiedName~Integration" --verbosity minimal
+
+  validate-docs:
+    name: Generate & Validate Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install DocFX
+        run: dotnet tool install --global docfx
+
+      - name: Create fallback docfx.json
+        run: |
+          if [ ! -f docfx.json ]; then
+            printf '%s\n' '{' '  "metadata": [' '    {' '      "src": [' '        {' '          "files": ["TiendaApi.Api/TiendaApi.Api.csproj"],' '          "properties": {' '            "TargetFramework": "net10.0"' '          }' '        }' '      ],' '      "dest": "api"' '    }' '  ],' '  "build": {' '    "content": [' '      {' '        "files": ["api/*.yml", "doc/*.md", "*.md"]' '      },' '      {' '        "files": ["api/**.yml"],' '        "src": "api"' '      }' '    ],' '    "dest": "_site",' '    "template": ["default"],' '    "globalMetadataFiles": [],' '    "fileMetadataFiles": []' '  }' '}' > docfx.json
+          fi
+
+      - name: Build Documentation (HTML)
+        run: docfx docfx.json
+
+      - name: Upload Documentation Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation-html
+          path: _site
+          if-no-files-found: warn
+          retention-days: 7
+
+  summary:
+    name: Summary
+    needs: [build, test, validate-docs]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Create summary comment
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test (Unit + Coverage) | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docs (HTML) | ${{ needs.validate-docs.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build.result }}" == "success" ]] && [[ "${{ needs.test.result }}" == "success" ]]; then
+            echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some checks failed. Please review the errors above." >> $GITHUB_STEP_SUMMARY
+          fi
