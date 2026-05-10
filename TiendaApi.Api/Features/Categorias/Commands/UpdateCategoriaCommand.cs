@@ -6,6 +6,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -20,7 +21,8 @@ public record UpdateCategoriaCommand(long Id, CategoriaRequestDto Dto)
 /// </summary>
 public class UpdateCategoriaCommandHandler(
     ICategoriaRepository repository,
-    IValidator<CategoriaRequestDto> validator)
+    IValidator<CategoriaRequestDto> validator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -45,6 +47,18 @@ public class UpdateCategoriaCommandHandler(
 
         categoria.Nombre = request.Dto.Nombre;
         var updated = await repository.UpdateAsync(categoria);
-        return Result.Success<CategoriaDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("categorias:all");
+                await cacheService.RemoveAsync($"categorias:{request.Id}");
+            }
+            catch { }
+        });
+
+        return Result.Success<CategoriaDto, DomainError>(dto);
     }
 }

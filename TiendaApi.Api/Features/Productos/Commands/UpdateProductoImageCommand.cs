@@ -8,6 +8,7 @@ using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
@@ -24,7 +25,8 @@ public record UpdateProductoImageCommand(long Id, IFormFile Image)
 public class UpdateProductoImageCommandHandler(
     IProductoRepository repository,
     IStorageService storageService,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -45,6 +47,16 @@ public class UpdateProductoImageCommandHandler(
         producto.Imagen = saveResult.Value;
         var updated = await repository.UpdateAsync(producto);
         var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("productos:all");
+                await cacheService.RemoveAsync($"productos:{request.Id}");
+            }
+            catch { }
+        });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
 

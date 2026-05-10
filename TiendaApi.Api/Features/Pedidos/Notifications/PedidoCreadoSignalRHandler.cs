@@ -1,20 +1,22 @@
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
+using Serilog;
 using TiendaApi.Api.Realtime.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
 /// Handler que emite por SignalR el alta de un pedido.
-/// 
-/// 🎓 OPEN/CLOSED: la reacción tiempo real vive fuera del comando principal.
 /// </summary>
 public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<PedidoCreadoNotification>
 {
     /// <inheritdoc/>
-    public Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("PedidoCreado", new
+    public async Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken)
+    {
+        Log.Information("📟 [SIGNALR] Recibida notificación PedidoCreado para ID: {PedidoId}", notification.Pedido.Id);
+
+        await hubContext.Clients.All.SendAsync("PedidoCreado", new
         {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
@@ -24,4 +26,7 @@ public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
             itemsCount = notification.Pedido.Items?.Count ?? 0,
             timestamp = DateTime.UtcNow
         }, cancellationToken);
+
+        Log.Information("📟 [SIGNALR] Evento enviado a todos los clientes: Pedido creado ID={PedidoId}", notification.Pedido.Id);
+    }
 }

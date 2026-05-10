@@ -7,7 +7,9 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -21,9 +23,11 @@ public record UpdateProductoCommand(long Id, ProductoRequestDto Dto)
 /// Handler del comando UpdateProductoCommand.
 /// </summary>
 public class UpdateProductoCommandHandler(
-    IProductoRepository repository,
+    IProductoRepository productoRepository,
+    ICategoriaRepository categoriaRepository,
     IValidator<ProductoRequestDto> validator,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>>
 {
     private const int StockBajoUmbral = 10;
@@ -32,7 +36,7 @@ public class UpdateProductoCommandHandler(
     public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoCommand request, CancellationToken cancellationToken)
     {
-        var producto = await repository.FindByIdAsync(request.Id);
+        var producto = await productoRepository.FindByIdAsync(request.Id);
         if (producto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
 
@@ -45,6 +49,18 @@ public class UpdateProductoCommandHandler(
             return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
         }
 
+        var categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
+        if (categoriaExists is null)
+        {
+            return Result.Failure<ProductoDto, DomainError>(
+                ProductoError.ValidacionConCampos(new Dictionary<string, string[]>
+                {
+                    { "CategoriaId", new[] { $"La categoría con ID {request.Dto.CategoriaId} no fue encontrada" } }
+                })
+            );
+        }
+
+        var oldCategoriaId = producto.CategoriaId;
         producto.Nombre = request.Dto.Nombre;
         producto.Descripcion = request.Dto.Descripcion;
         producto.Precio = request.Dto.Precio;
@@ -52,8 +68,21 @@ public class UpdateProductoCommandHandler(
         producto.Imagen = request.Dto.Imagen;
         producto.CategoriaId = request.Dto.CategoriaId;
 
-        var updated = await repository.UpdateAsync(producto);
+        var updated = await productoRepository.UpdateAsync(producto);
         var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("productos:all");
+                await cacheService.RemoveAsync($"productos:{request.Id}");
+                await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+                if (oldCategoriaId != request.Dto.CategoriaId)
+                    await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+            }
+            catch { }
+        });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
 

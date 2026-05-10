@@ -8,6 +8,7 @@ using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
@@ -37,12 +38,13 @@ public class DeleteMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         
         var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
         
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object);
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 
@@ -54,11 +56,12 @@ public class DeleteMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         
         var pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object);
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 
@@ -70,11 +73,12 @@ public class DeleteMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         
         var pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object);
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 

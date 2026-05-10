@@ -6,6 +6,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Usuarios;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Users.Commands;
 
@@ -20,7 +21,8 @@ public record UpdateUserCommand(long Id, UserUpdateDto Dto)
 /// </summary>
 public class UpdateUserCommandHandler(
     IUserRepository repository,
-    IValidator<UserUpdateDto> validator)
+    IValidator<UserUpdateDto> validator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateUserCommand, Result<UserDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -52,6 +54,18 @@ public class UpdateUserCommandHandler(
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Dto.Password, workFactor: 11);
 
         var updated = await repository.UpdateAsync(user);
-        return Result.Success<UserDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("usuarios:all");
+                await cacheService.RemoveAsync($"usuarios:{request.Id}");
+            }
+            catch { }
+        });
+
+        return Result.Success<UserDto, DomainError>(dto);
     }
 }

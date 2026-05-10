@@ -20,7 +20,7 @@ public class PedidoActualizadoAdminEmailHandler(
 
         var content = EmailTemplates.PedidoActualizadoAdmin(
             notification.Pedido.Id.ToString(),
-            notification.Estado,
+            notification.NuevoEstado,
             notification.Pedido.Total,
             notification.Pedido.UserId
         );

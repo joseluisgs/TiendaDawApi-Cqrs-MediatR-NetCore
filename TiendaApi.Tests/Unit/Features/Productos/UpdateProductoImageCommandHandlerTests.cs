@@ -10,6 +10,7 @@ using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Storage;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
@@ -20,6 +21,8 @@ public class UpdateProductoImageCommandHandlerTests
     {
         var repository = new Mock<IProductoRepository>();
         var storageService = new Mock<IStorageService>();
+        var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Imagen = "" });
         storageService.Setup(s => s.SaveFileAsync(It.IsAny<IFormFile>(), "productos"))
@@ -27,7 +30,7 @@ public class UpdateProductoImageCommandHandlerTests
         repository.Setup(r => r.UpdateAsync(It.IsAny<Producto>())).ReturnsAsync((Producto p) => p);
         
         var mockFile = new Mock<IFormFile>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object);
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdateProductoImageCommand(1, mockFile.Object), CancellationToken.None);
 
@@ -39,11 +42,13 @@ public class UpdateProductoImageCommandHandlerTests
     {
         var repository = new Mock<IProductoRepository>();
         var storageService = new Mock<IStorageService>();
+        var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
         
         var mockFile = new Mock<IFormFile>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object);
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdateProductoImageCommand(999, mockFile.Object), CancellationToken.None);
 

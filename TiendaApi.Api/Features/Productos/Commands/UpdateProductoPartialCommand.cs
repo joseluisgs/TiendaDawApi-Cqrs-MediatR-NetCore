@@ -7,6 +7,7 @@ using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -21,7 +22,8 @@ public record UpdateProductoPartialCommand(long Id, ProductoPatchDto Dto)
 /// </summary>
 public class UpdateProductoPartialCommandHandler(
     IProductoRepository repository,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateProductoPartialCommand, Result<ProductoDto, DomainError>>
 {
     private const int StockBajoUmbral = 10;
@@ -34,6 +36,8 @@ public class UpdateProductoPartialCommandHandler(
         if (producto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
 
+        var oldCategoriaId = producto.CategoriaId;
+
         if (!string.IsNullOrWhiteSpace(request.Dto.Nombre)) producto.Nombre = request.Dto.Nombre;
         if (!string.IsNullOrWhiteSpace(request.Dto.Descripcion)) producto.Descripcion = request.Dto.Descripcion;
         if (request.Dto.Precio.HasValue && request.Dto.Precio.Value > 0) producto.Precio = request.Dto.Precio.Value;
@@ -42,6 +46,17 @@ public class UpdateProductoPartialCommandHandler(
 
         var updated = await repository.UpdateAsync(producto);
         var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("productos:all");
+                await cacheService.RemoveAsync($"productos:{request.Id}");
+                await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+            }
+            catch { }
+        });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
 

@@ -6,6 +6,7 @@ using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
@@ -18,7 +19,9 @@ public record UpdateMyPedidoCommand(string Id, long UserId, UpdatePedidoDto Dto)
 /// <summary>
 /// Handler del comando UpdateMyPedidoCommand.
 /// </summary>
-public class UpdateMyPedidoCommandHandler(IPedidosRepository repository)
+public class UpdateMyPedidoCommandHandler(
+    IPedidosRepository repository,
+    ICacheService cacheService)
     : IRequestHandler<UpdateMyPedidoCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -35,6 +38,18 @@ public class UpdateMyPedidoCommandHandler(IPedidosRepository repository)
 
         if (!string.IsNullOrWhiteSpace(request.Dto.DireccionEnvio)) pedido.DireccionEnvio = request.Dto.DireccionEnvio;
         var updated = await repository.UpdateAsync(pedido);
-        return Result.Success<PedidoDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync($"pedidos:{request.Id}");
+                await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
+            }
+            catch { }
+        });
+
+        return Result.Success<PedidoDto, DomainError>(dto);
     }
 }
