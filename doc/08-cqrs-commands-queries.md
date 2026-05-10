@@ -17,6 +17,7 @@
   - [8.12. Cuándo Usar CQRS y Cuándo No](#812-cuándo-usar-cqrs-y-cuándo-no)
   - [8.13. Ventajas y Desventajas Reales](#813-ventajas-y-desventajas-reales)
   - [8.14. Resumen y Siguientes Pasos](#814-resumen-y-siguientes-pasos)
+  - [8.15. CQRS con Múltiples Bases de Datos (Teórico)](#815-cqrs-con-múltiples-bases-de-datos-teórico)
 
 ---
 
@@ -1482,3 +1483,49 @@ Con CQRS dominado, el siguiente paso es aprender sobre **Notificaciones y Evento
 - Documentación oficial de MediatR: https://github.com/jbogard/MediatR
 - CQRS Pattern - Microsoft: https://docs.microsoft.com/azure/architecture/patterns/cqrs
 - Artículo de Isaac Ojeda que inspiró este capítulo: https://dev.to/isaacojeda/parte-1-cqrs-y-mediatr-implementando-cqrs-en-aspnet-56oe
+
+---
+
+## 8.15. CQRS con Múltiples Bases de Datos (Teórico)
+
+En teoría, CQRS propone tener **bases de datos separadas** para Commands y Queries:
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│   Write DB      │     │   Read DB       │
+│  (PostgreSQL)   │     │   (MongoDB)     │
+│                 │     │                 │
+│ - Entidades     │     │ - Vistas        │
+│ - Relaciones    │     │ - Proyecciones  │
+└────────┬────────┘     └────────┬────────┘
+         │ sincronización        │
+         ▼                       ▼
+    (Eventos/CDC)          (Proyecciones)
+```
+
+### Patrones de Sincronización
+
+| Patrón | Cómo funciona | Pros | Contras |
+|--------|---------------|------|---------|
+| **Event Sourcing** | Guardar eventos, reconstruir estado | Trazabilidad completa | Complejo |
+| **Dual Write** | Escribir en ambas BD simultáneamente | Simple | Riesgo de inconsistencia |
+| **CDC (Change Data Capture)** | Debezium lee el WAL de PostgreSQL | Sin cambios en app | Requiere infraestructura extra |
+| **Message Queue** | Publicar eventos → Consumidor actualiza Read DB | Escalable | Consistencia eventual |
+
+### Nuestro Proyecto: Enfoque Práctico
+
+Este proyecto utiliza un **enfoque híbrido**:
+
+- PostgreSQL para datos relacionales (Users, Categorías, Productos)
+- MongoDB para documentos transaccionales (Pedidos con items embebidos)
+- Redis para caché
+
+Esto **no es CQRS puro** (tenemos una sola fuente de verdad), pero es un patrón válido y más simple para proyectos educativos. La separaciónCQRS se aplica a nivel de código (Commands/Queries), no a nivel de base de datos.
+
+### Cuándo merecía la pena ir a CQRS puro
+
+- Sistemas con alta carga de lectura vs escritura diferenciadas
+- Necesidad de vistas completamente diferentes entre write y read
+- Equipos grandes que necesitan aislar dominios
+
+Para este proyecto, el enfoque actual es suficiente y más mantenible.
