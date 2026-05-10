@@ -1,0 +1,201 @@
+@page "/graphql"
+@using ClientBlazor.Cliente.Components.Shared
+@using ClientBlazor.Cliente.Configuration
+@using ClientBlazor.Cliente.Services.GraphQL
+@using ClientBlazor.Cliente.DTOs.GraphQL
+@using ClientBlazor.Cliente.Domain.Errors
+@using ClientBlazor.Cliente.State.Notifications
+@using CSharpFunctionalExtensions
+@using System.Text.Json
+@using System.Reactive.Linq
+@using System.Collections.Generic
+
+@inject IGraphQLService GraphQLService
+@inject INotificationStore NotificationStore
+
+<NavMenu />
+
+<div class="config-section">
+    <h3 class="section-title">GraphQL Query</h3>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; justify-content: center; margin-bottom: 20px;">
+        <div class="form-group" style="min-width: 200px;">
+            <label>Tipo</label>
+            <select @bind="tipo" @bind:after="OnTipoChanged" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;">
+                <option value="query">Query (Publico)</option>
+                <option value="mutation">Mutation (Requiere JWT)</option>
+            </select>
+        </div>
+        <div class="form-group" style="min-width: 250px;">
+            <label>Operacion</label>
+            <select @bind="operacion" @bind:after="OnOperacionChanged" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;">
+                @if (tipo == "query") {
+                    <option value="productos">productos (Listar todos)</option>
+                    <option value="producto">producto(id) (Por ID)</option>
+                    <option value="categorias">categorias (Listar todas)</option>
+                    <option value="categoria">categoria(id) (Por ID)</option>
+                } else {
+                    <option value="createProducto">createProducto (Crear)</option>
+                    <option value="updateProducto">updateProducto(id) (Actualizar)</option>
+                    <option value="deleteProducto">deleteProducto(id) (Eliminar)</option>
+                }
+            </select>
+        </div>
+        @if (NeedsId()) {
+            <div class="form-group" style="min-width: 100px;">
+                <label>ID</label>
+                <input type="number" @bind="id" @bind:after="OnIdChanged" style="width: 100%; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white;" />
+            </div>
+        }
+        <button class="btn-connect" @onclick="ExecuteAsync" disabled="@isExecuting"> @(isExecuting ? "Ejecutando..." : "Ejecutar") </button>
+    </div>
+    @if (tipo == "mutation") {
+        <p style="color: #FF0000; text-align: center; font-weight: bold; margin-top: 10px;">🔐 Las mutaciones requieren autenticacion JWT (rol ADMIN)</p>
+    }
+</div>
+
+<div class="editor-section">
+    <h3 class="section-title">Query GraphQL</h3>
+    <textarea @bind="query" placeholder="La query se generara automaticamente..." style="min-height: 150px;"></textarea>
+    <button class="btn-quick" style="margin-top: 10px;" @onclick="LoadSampleQuery"> 💡 Restablecer Query </button>
+</div>
+
+@if (!string.IsNullOrEmpty(responseText)) {
+    <div class="response-section">
+        <h3 class="section-title">Respuesta GraphQL</h3>
+        <div class="response-display">
+            <pre style="white-space: pre-wrap; font-family: 'Balsamiq Sans', cursive;">@responseText</pre>
+        </div>
+    </div>
+}
+
+<div class="config-section" style="margin-top: 20px;">
+    <h3 class="section-title">GraphQL Subscriptions</h3>
+    <p style="color: var(--hk-red); margin-bottom: 15px;">Suscripciones en tiempo real reales</p>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: stretch; margin-bottom: 15px;">
+        <select @bind="subscriptionType" @bind:after="OnSubscriptionTypeChanged" style="min-width: 200px; height: 50px; padding: 12px 15px; border: 3px solid var(--hk-light-pink); border-radius: 25px; font-size: 1em; font-family: 'Balsamiq Sans', cursive; background: white; box-sizing: border-box;">
+            <option value="OnProductoCreado">🔔 OnProductoCreado</option>
+            <option value="OnProductoActualizado">🔔 OnProductoActualizado</option>
+            <option value="OnProductoEliminado">🔔 OnProductoEliminado</option>
+            <option value="OnStockBajo">🔔 OnStockBajo</option>
+        </select>
+        <button class="btn-quick" @onclick="StartSubscriptionAsync" disabled="@subscriptionRunning"> @(subscriptionRunning ? "🔴 Suscripción Activa" : "▶️ Iniciar Suscripción") </button>
+        <button class="btn-quick" @onclick="StopSubscription" disabled="@(!subscriptionRunning)"> ⏹️ Detener Suscripción </button>
+        <button class="btn-quick" @onclick="ClearSubscriptions"> 🧹 Limpiar </button>
+    </div>
+</div>
+
+@if (subscriptionRunning || !string.IsNullOrEmpty(subscriptionEvents)) {
+    <div class="response-section">
+        <h3 class="section-title">Subscription Events</h3>
+        <div class="response-display">
+            <pre style="white-space: pre-wrap; font-family: 'Balsamiq Sans', cursive; max-height: 300px; overflow-y: auto;">@(string.IsNullOrEmpty(subscriptionEvents) ? "Esperando eventos..." : subscriptionEvents)</pre>
+        </div>
+    </div>
+}
+
+<div class="info-box">
+    <h4>Operaciones GraphQL</h4>
+    <p><b>Queries:</b> productos, producto(id), categorias, categoria(id)</p>
+    <p><b>Mutations:</b> createProducto, updateProducto, deleteProducto</p>
+    <p><b>Subscriptions:</b> onProductoCreado, onStockBajo</p>
+</div>
+
+@code {
+    /// <summary>Tipo de operación GraphQL (query o mutation).</summary>
+    private string tipo = "query";
+    /// <summary>Campo de operación específico del esquema.</summary>
+    private string operacion = "productos";
+    /// <summary>ID para consultas o mutaciones por identificador.</summary>
+    private long id = 1;
+    /// <summary>String con la consulta o mutación formateada.</summary>
+    private string query = "";
+    /// <summary>Respuesta de la API en formato JSON.</summary>
+    private string responseText = "";
+    /// <summary>Estado de ejecución asíncrona.</summary>
+    private bool isExecuting = false;
+    /// <summary>Log de eventos de suscripción recibidos.</summary>
+    private string subscriptionEvents = "";
+    /// <summary>Indica si hay un flujo WebSocket abierto.</summary>
+    private bool subscriptionRunning = false;
+    /// <summary>Controlador para liberar la suscripción reactiva.</summary>
+    private IDisposable? subscription;
+    /// <summary>Tipo de suscripción seleccionada.</summary>
+    private string subscriptionType = "OnProductoCreado";
+
+    protected override void OnInitialized() => GenerateQuery();
+
+    private void OnTipoChanged() { operacion = (tipo == "query") ? "productos" : "createProducto"; id = 1; responseText = ""; GenerateQuery(); }
+    private void OnIdChanged() => GenerateQuery();
+    private void OnOperacionChanged() { id = (operacion == "producto" || operacion == "categoria" || operacion == "updateProducto" || operacion == "deleteProducto") ? 1 : 0; responseText = ""; GenerateQuery(); }
+    private void OnSubscriptionTypeChanged() { StopSubscription(); if (subscriptionEvents != "") subscriptionEvents += "[" + DateTime.Now.ToString("HH:mm:ss") + "] Desconectado de GraphQL\n"; StateHasChanged(); }
+    private bool NeedsId() => (tipo == "query" && (operacion == "producto" || operacion == "categoria")) || (tipo == "mutation" && (operacion == "updateProducto" || operacion == "deleteProducto"));
+
+    /// <summary>Genera la cadena de consulta GraphQL formateada según la selección actual.</summary>
+    private void GenerateQuery()
+    {
+        if (tipo == "query") {
+            if (operacion == "productos") query = "query {\n  productos {\n    id\n    nombre\n    precio\n    stock\n    categoria {\n      id\n      nombre\n    }\n  }\n}";
+            else if (operacion == "producto") query = "query {\n  producto(id: " + id + ") {\n    id\n    nombre\n    precio\n    stock\n  }\n}";
+            else if (operacion == "categorias") query = "query {\n  categorias {\n    id\n    nombre\n  }\n}";
+            else if (operacion == "categoria") query = "query {\n  categoria(id: " + id + ") {\n    id\n    nombre\n    productos {\n      id\n      nombre\n      precio\n    }\n  }\n}";
+        } else {
+            if (operacion == "createProducto") query = "mutation {\n  createProducto(input: {\n    nombre: \"Nuevo\", precio: 99.99, categoriaId: 1\n  }) {\n    id\n    nombre\n  }\n}";
+            else if (operacion == "updateProducto") query = "mutation {\n  updateProducto(id: " + id + ", input: {\n    nombre: \"Update\"\n  }) {\n    id\n    nombre\n  }\n}";
+            else if (operacion == "deleteProducto") query = "mutation {\n  deleteProducto(id: " + id + ")\n}";
+        }
+    }
+
+    /// <summary>Llama al servicio GraphQL para ejecutar la operación solicitada.</summary>
+    private async Task ExecuteAsync()
+    {
+        isExecuting = true; responseText = ""; StateHasChanged();
+        try {
+            var result = (tipo == "query") ? await GraphQLService.ExecuteQueryAsync<object>(query) : await GraphQLService.ExecuteMutationAsync<object>(query);
+            if (result.IsSuccess) {
+                responseText = JsonSerializer.Serialize(result.Value, new JsonSerializerOptions { WriteIndented = true });
+                NotificationStore.Success("Operacion exitosa");
+            } else {
+                responseText = "ERROR: " + result.Error.Message;
+                NotificationStore.Error(result.Error.Message);
+            }
+        } catch (Exception ex) { responseText = "ERROR: " + ex.Message; }
+        finally { isExecuting = false; StateHasChanged(); }
+    }
+
+    /// <summary>Inicia una suscripción real mediante el observable del servicio.</summary>
+    private async Task StartSubscriptionAsync()
+    {
+        if (subscriptionRunning) return;
+        
+        subscription?.Dispose();
+        subscriptionRunning = true;
+        subscriptionEvents = "[" + DateTime.Now.ToString("HH:mm:ss") + "] Conectado a GraphQL (" + subscriptionType + ")\n";
+        StateHasChanged();
+        try {
+            string q = "";
+            if (subscriptionType == "OnProductoCreado") q = "subscription { onProductoCreado { productoId nombre } }";
+            else if (subscriptionType == "OnProductoActualizado") q = "subscription { onProductoActualizado { productoId nombre } }";
+            else if (subscriptionType == "OnProductoEliminado") q = "subscription { onProductoEliminado { productoId } }";
+            else if (subscriptionType == "OnStockBajo") q = "subscription { onStockBajo { productoId stockActual } }";
+
+            subscriptionEvents += "[" + DateTime.Now.ToString("HH:mm:ss") + "] Query: " + q + "\n";
+
+            var observable = GraphQLService.SubscribeAsync<Dictionary<string, object>>(q);
+            subscription = observable.Subscribe(evento => {
+                var formatted = evento != null ? JsonSerializer.Serialize(evento, new JsonSerializerOptions { WriteIndented = true }) : "null";
+                subscriptionEvents += "[" + DateTime.Now.ToString("HH:mm:ss") + "] Evento: " + formatted + "\n";
+                InvokeAsync(StateHasChanged);
+            }, ex => {
+                subscriptionEvents += "[" + DateTime.Now.ToString("HH:mm:ss") + "] Error: " + ex.Message + "\n";
+                subscriptionRunning = false;
+                InvokeAsync(StateHasChanged);
+            });
+        } catch (Exception ex) { subscriptionEvents += "Error: " + ex.Message + "\n"; subscriptionRunning = false; }
+    }
+
+    /// <summary>Detiene y libera la suscripción activa.</summary>
+    private void StopSubscription() { subscription?.Dispose(); subscriptionRunning = false; }
+    /// <summary>Limpia el log de eventos.</summary>
+    private void ClearSubscriptions() { subscriptionEvents = ""; StateHasChanged(); }
+    private void LoadSampleQuery() => GenerateQuery();
+}
