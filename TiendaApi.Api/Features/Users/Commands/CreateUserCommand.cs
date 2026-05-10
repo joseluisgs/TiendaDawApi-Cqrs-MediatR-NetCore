@@ -8,6 +8,7 @@ using TiendaApi.Api.Features.Users.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Users.Commands;
 
@@ -23,7 +24,8 @@ public record CreateUserCommand(RegisterDto Dto)
 public class CreateUserCommandHandler(
     IUserRepository repository,
     IValidator<RegisterDto> validator,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<CreateUserCommand, Result<UserDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -52,6 +54,13 @@ public class CreateUserCommandHandler(
         user.Role = UserRoles.USER;
         var saved = await repository.SaveAsync(user);
         var dto = saved.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try { await cacheService.RemoveAsync("usuarios:all"); }
+            catch { }
+        });
+
         await mediator.Publish(new UsuarioRegistradoNotification(dto), cancellationToken);
         return Result.Success<UserDto, DomainError>(dto);
     }

@@ -1,11 +1,14 @@
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
@@ -21,7 +24,9 @@ public record UpdateProductoImageCommand(long Id, IFormFile Image)
 /// </summary>
 public class UpdateProductoImageCommandHandler(
     IProductoRepository repository,
-    IStorageService storageService)
+    IStorageService storageService,
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -41,6 +46,22 @@ public class UpdateProductoImageCommandHandler(
 
         producto.Imagen = saveResult.Value;
         var updated = await repository.UpdateAsync(producto);
-        return Result.Success<ProductoDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("productos:all");
+                await cacheService.RemoveAsync($"productos:{request.Id}");
+            }
+            catch { }
+        });
+
+        await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
+
+        Log.Information("Notificación publicada para producto imagen actualizada ID: {ProductoId}", dto.Id);
+
+        return Result.Success<ProductoDto, DomainError>(dto);
     }
 }

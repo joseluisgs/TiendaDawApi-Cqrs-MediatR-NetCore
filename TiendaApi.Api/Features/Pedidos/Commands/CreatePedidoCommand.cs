@@ -13,6 +13,7 @@ using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
@@ -31,7 +32,8 @@ public class CreatePedidoCommandHandler(
     IUserRepository userRepository,
     IValidator<PedidoRequestDto> pedidoValidator,
     IValidator<PedidoItemRequestDto> pedidoItemValidator,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
 {
     /// <summary>Reintentos para conflictos de concurrencia al crear pedidos simultáneos.</summary>
@@ -141,6 +143,16 @@ public class CreatePedidoCommandHandler(
 
             var pedidoGuardado = await pedidosRepository.SaveAsync(pedido);
             await transaction.CommitAsync(cancellationToken);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
+                    await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
+                }
+                catch { }
+            });
 
             var dto = pedidoGuardado.ToDto();
             await mediator.Publish(new PedidoCreadoNotification(dto), cancellationToken);

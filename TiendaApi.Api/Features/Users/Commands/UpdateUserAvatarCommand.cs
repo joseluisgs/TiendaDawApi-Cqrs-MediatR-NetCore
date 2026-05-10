@@ -6,6 +6,7 @@ using TiendaApi.Api.Errors.Usuarios;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Users.Commands;
 
@@ -19,7 +20,9 @@ public record UpdateUserAvatarCommand(long Id, string? AvatarUrl)
 /// <summary>
 /// Handler del comando UpdateUserAvatarCommand.
 /// </summary>
-public class UpdateUserAvatarCommandHandler(IUserRepository repository)
+public class UpdateUserAvatarCommandHandler(
+    IUserRepository repository,
+    ICacheService cacheService)
     : IRequestHandler<UpdateUserAvatarCommand, Result<UserDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -32,6 +35,18 @@ public class UpdateUserAvatarCommandHandler(IUserRepository repository)
 
         user.Avatar = string.IsNullOrWhiteSpace(request.AvatarUrl) ? User.AVATAR_DEFAULT : request.AvatarUrl;
         var updated = await repository.UpdateAsync(user);
-        return Result.Success<UserDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("usuarios:all");
+                await cacheService.RemoveAsync($"usuarios:{request.Id}");
+            }
+            catch { }
+        });
+
+        return Result.Success<UserDto, DomainError>(dto);
     }
 }

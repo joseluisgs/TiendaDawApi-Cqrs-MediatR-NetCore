@@ -5,6 +5,7 @@ using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
@@ -19,7 +20,8 @@ public record DeleteMyPedidoCommand(string Id, long UserId)
 /// </summary>
 public class DeleteMyPedidoCommandHandler(
     IPedidosRepository repository,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<DeleteMyPedidoCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -36,6 +38,17 @@ public class DeleteMyPedidoCommandHandler(
 
         pedido.IsDeleted = true;
         await repository.UpdateAsync(pedido);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync($"pedidos:{request.Id}");
+                await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
+            }
+            catch { }
+        });
+
         await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId), cancellationToken);
         return UnitResult.Success<DomainError>();
     }

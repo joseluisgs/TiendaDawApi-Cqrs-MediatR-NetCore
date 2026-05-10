@@ -4,6 +4,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
@@ -20,7 +21,8 @@ public record DeleteProductoCommand(long Id)
 public class DeleteProductoCommandHandler(
     IProductoRepository repository,
     IStorageService storageService,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<DeleteProductoCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -31,10 +33,24 @@ public class DeleteProductoCommandHandler(
         if (producto is null)
             return UnitResult.Failure<DomainError>(ProductoError.NotFound(request.Id));
 
+        var categoriaId = producto.CategoriaId;
+
         if (producto.IsLocalImage() && !string.IsNullOrWhiteSpace(producto.Imagen))
             await storageService.DeleteFileAsync(producto.Imagen);
 
         await repository.DeleteAsync(request.Id);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("productos:all");
+                await cacheService.RemoveAsync($"productos:{request.Id}");
+                await cacheService.RemoveAsync($"productos:categoria:{categoriaId}");
+            }
+            catch { }
+        });
+
         await mediator.Publish(new ProductoEliminadoNotification(request.Id), cancellationToken);
         return UnitResult.Success<DomainError>();
     }

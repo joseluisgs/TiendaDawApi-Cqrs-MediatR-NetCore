@@ -7,6 +7,7 @@ using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
@@ -21,7 +22,8 @@ public record UpdatePedidoEstadoCommand(string Id, string NuevoEstado)
 /// </summary>
 public class UpdatePedidoEstadoCommandHandler(
     IPedidosRepository repository,
-    IMediator mediator)
+    IMediator mediator,
+    ICacheService cacheService)
     : IRequestHandler<UpdatePedidoEstadoCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -39,6 +41,17 @@ public class UpdatePedidoEstadoCommandHandler(
         pedido.Estado = request.NuevoEstado;
         var updated = await repository.UpdateAsync(pedido);
         var dto = updated.ToDto();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync($"pedidos:{request.Id}");
+                await cacheService.RemoveAsync($"pedidos:user:{pedido.UserId}");
+            }
+            catch { }
+        });
+
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);
         return Result.Success<PedidoDto, DomainError>(dto);
     }

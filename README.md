@@ -12,6 +12,8 @@
 
 Una API de comercio electrónico con arquitectura profesional, múltiples bases de datos, patrón CQRS con MediatR, cacheo con Redis, GraphQL, WebSockets para notificaciones en tiempo real y versionado de API.
 
+Este proyecto es una versión avanzada del proyecto origen: [TiendaDawApi-NetCore](https://github.com/joseluisgs/TiendaDawApi-NetCore), donde se ha refactorizado completamente la arquitectura para implementar el patrón CQRS utilizando MediatR como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries) y utilizando Notifications para eventos asíncronos.
+
 ## 🎯 Descripción
 
 TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET Core y C# 14 que implementa una API RESTful completa para una tienda en línea. El proyecto implementa el **patrón CQRS (Command Query Responsibility Segregation)** utilizando **MediatR** como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries). Además usa GraphQL, WebSockets y SignalR. El proyecto está diseñado con una arquitectura en capas utilizando múltiples bases de datos (PostgreSQL, MongoDB y Redis) para diferentes propósitos educativos para la formación de Desarrollo Web en Entornos Servidor (DAW).
@@ -42,8 +44,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
       - [Comandos específicos por tipo de test](#comandos-específicos-por-tipo-de-test)
       - [Con coverage](#con-coverage)
       - [Configuración de tests](#configuración-de-tests)
-    - [Tests E2E con Newman (Postman) y Bruno](#tests-e2e-con-newman-postman-y-bruno)
-      - [Postman (Newman)](#postman-newman)
+    - [Tests E2E con Bruno](#tests-e2e-con-bruno)
       - [Bruno (CLI)](#bruno-cli)
   - [📚 Documentación](#-documentación)
     - [Fundamentos y Configuración](#fundamentos-y-configuración)
@@ -55,7 +56,6 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
     - [Servicios Externos](#servicios-externos)
     - [Tareas en Segundo Plano](#tareas-en-segundo-plano)
     - [Documentación](#documentación)
-    - [Servicios Externos](#servicios-externos-1)
     - [Testing y Calidad](#testing-y-calidad)
     - [DevOps y Producción](#devops-y-producción)
     - [Arquitectura](#arquitectura)
@@ -76,6 +76,13 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
       - [Beneficios de ROP](#beneficios-de-rop)
       - [Ejemplos de Uso](#ejemplos-de-uso)
       - [Comparación: ROP vs Try-Catch](#comparación-rop-vs-try-catch)
+  - [🎯 Arquitectura CQRS con MediatR](#-arquitectura-cqrs-con-mediatr)
+    - [¿Por qué CQRS?](#por-qué-cqrs)
+    - [Flujo CQRS con MediatR](#flujo-cqrs-con-mediatr)
+    - [Estructura de Features](#estructura-de-features)
+    - [Componentes CQRS](#componentes-cqrs)
+    - [Notificaciones (Domain Events)](#notificaciones-domain-events)
+    - [Beneficios de MediatR](#beneficios-de-mediatr)
   - [🗄️ Estrategia Multi-Base de Datos](#️-estrategia-multi-base-de-datos)
   - [🔐 Seguridad](#-seguridad)
   - [📡 Endpoints](#-endpoints)
@@ -297,7 +304,7 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 ### Fundamentos y Configuración
 | #   | Documento                                                          | Descripción                    |
 | --- | ------------------------------------------------------------------ | ------------------------------ |
-| 01  | [Configuración proyectos .NET](doc/01-configuracion-proyectos.md)  | IDEs, estructura, herramientas |
+| 01  | [Configuración proyectos .NET](doc/01-configuracion-proyectos-dotnet.md)  | IDEs, estructura, herramientas |
 | 02  | [Arquitectura Pipeline HTTP](doc/02-arquitectura-pipeline-http.md) | Middlewares, Request/Response  |
 | 03  | [Inyección Dependencias](doc/03-inyeccion-dependencias.md)         | DI Containers, Scopes          |
 
@@ -306,80 +313,73 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | --- | ----------------------------------------------------- | ------------------------------- |
 | 04  | [Controladores REST](doc/04-controladores-rest.md)    | Routing, Model Binding, Actions |
 | 05  | [Validación en Cascada](doc/05-validacion-cascada.md) | Data Annotations, validaciones  |
-| 18  | [REST Best Practices](doc/18-rest-best-practices.md)  | Convenciones REST               |
+| 06  | [REST Best Practices](doc/06-rest-best-practices.md)  | Convenciones REST               |
 
 ### Persistencia de Datos
 | #   | Documento                                          | Descripción          |
 | --- | -------------------------------------------------- | -------------------- |
 | 07  | [Repository Pattern](doc/07-repository-pattern.md) | Abstracción de datos |
-| 09  | [EF Core PostgreSQL](doc/09-ef-core-postgresql.md) | ORM relacional       |
-| 10  | [MongoDB](doc/10-mongodb.md)                       | Base de documentos   |
-| 11  | [Redis Caching](doc/11-redis-caching.md)           | Cache-Aside pattern  |
+| 08  | [EF Core PostgreSQL](doc/08-ef-core-postgresql.md) | ORM relacional       |
+| 09  | [MongoDB](doc/09-mongodb.md)                       | Base de documentos   |
+| 10  | [Redis Caching](doc/10-redis-caching.md)           | Cache-Aside pattern  |
 
 ### Lógica de Negocio
 | #   | Documento                                                  | Descripción                       |
 | --- | ---------------------------------------------------------- | --------------------------------- |
-| 06  | [Patrón Result](doc/06-patron-result.md)                   | Railway Oriented Programming      |
-| 08  | [CQRS Commands Queries](doc/08-cqrs-commands-queries.md)   | Commands, Queries, Notifications  |
-| 31  | [MediatR Eventos](doc/31-mediatr-cqrs-eventos.md)         | Pipeline Behaviors, Eventos      |
+| 11  | [Patrón Result](doc/11-patron-result.md)                   | Railway Oriented Programming      |
+| 12  | [CQRS Commands Queries](doc/12-cqrs-commands-queries.md)   | Commands, Queries, Notifications  |
+| 13  | [Servicios Negocio](doc/13-servicios-negocio.md)           | Servicios de aplicación           |
+| 14  | [MediatR Eventos](doc/14-mediatr-cqrs-eventos.md)         | Pipeline Behaviors, Eventos      |
 | 15  | [Pedidos y Transacciones](doc/15-pedidos-transacciones.md) | Transacciones, CQRS en pedidos   |
-| 22  | [Mapeadores](doc/22-mapeadores.md)                         | AutoMapper vs extensiones         |
+| 16  | [Mapeadores](doc/16-mapeadores.md)                         | AutoMapper vs extensiones         |
 
 ### Seguridad
 | #   | Documento                                          | Descripción              |
 | --- | -------------------------------------------------- | ------------------------ |
-| 12  | [JWT Authentication](doc/12-jwt-authentication.md) | Tokens, Claims           |
-| 13  | [Autorización Roles](doc/13-autorizacion-roles.md) | Policies, Roles          |
-| 27  | [Seguridad HTTP](doc/27-seguridad-http.md)         | HSTS, HTTPS, Headers     |
+| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Tokens, Claims           |
+| 18  | [Autorización Roles](doc/18-autorizacion-roles.md) | Policies, Roles          |
+| 19  | [Seguridad HTTP](doc/19-seguridad-http.md)         | HSTS, HTTPS, Headers     |
 
 ### APIs Avanzadas
 | #   | Documento                          | Descripción  |
 | --- | ---------------------------------- | ------------ |
-| 14  | [WebSockets](doc/14-websockets.md) | Tiempo real  |
-| 20  | [GraphQL](doc/20-graphql.md)       | HotChocolate |
+| 20  | [WebSockets](doc/20-websockets.md) | Tiempo real  |
+| 21  | [GraphQL](doc/21-graphql.md)       | HotChocolate |
 
 ### Servicios Externos
 | #   | Documento                                  | Descripción          |
 | --- | ------------------------------------------ | -------------------- |
-| 16  | [File Storage](doc/16-file-storage.md)     | Almacenamiento local |
-| 17  | [Email Services](doc/17-email-services.md) | MailKit              |
+| 22  | [File Storage](doc/22-file-storage.md)     | Almacenamiento local |
+| 23  | [Email Services](doc/23-email-services.md) | MailKit              |
 
 ### Tareas en Segundo Plano
 | #   | Documento                                    | Descripción        |
 | --- | -------------------------------------------- | ------------------ |
-| 25  | [Background Jobs](doc/25-background-jobs.md) | Tareas programadas |
+| 24  | [Background Jobs](doc/24-background-jobs.md) | Tareas programadas |
 
 ### Documentación
 | #   | Documento                                        | Descripción         |
 | --- | ------------------------------------------------ | ------------------- |
-| 19  | [Documentación API](doc/19-documentacion-api.md) | Swagger, Versionado |
-
-### Servicios Externos
-| #   | Documento                                  | Descripción          |
-| --- | ------------------------------------------ | -------------------- |
-| 16  | [File Storage](doc/16-file-storage.md)     | Almacenamiento local |
-| 17  | [Email Services](doc/17-email-services.md) | MailKit              |
+| 25  | [Documentación API](doc/25-documentacion-api.md) | Swagger, Versionado |
 
 ### Testing y Calidad
 | #   | Documento                    | Descripción            |
 | --- | ---------------------------- | ---------------------- |
-| 21  | [Testing](doc/21-testing.md) | Unit, Integración, E2E |
+| 26  | [Testing](doc/26-testing.md) | Unit, Integración, E2E |
 
 ### DevOps y Producción
 | #   | Documento                                    | Descripción              |
 | --- | -------------------------------------------- | ------------------------ |
-| 23  | [Docker](doc/23-docker-ci-cd.md)       | Contenedores, pipelines  |
-| 24  | [Logging](doc/24-logging.md)                 | Serilog, trazabilidad    |
-| 25  | [Background Jobs](doc/25-background-jobs.md) | Tareas programadas       |
-| 26  | [Optimización](doc/26-optimizacion.md)       | Rendimiento              |
-| 27  | [Seguridad HTTP](doc/27-seguridad-http.md)  | HSTS, HTTPS, Headers    |
-| 28  | [CI/CD con GitHub Actions](doc/28-ci-cd.md) | Pipelines, automatización |
+| 27  | [Docker](doc/27-docker-ci-cd.md)             | Contenedores, pipelines  |
+| 28  | [Logging](doc/28-logging.md)                 | Serilog, trazabilidad    |
+| 29  | [Optimización](doc/29-optimizacion.md)       | Rendimiento              |
+| 30  | [CI/CD con GitHub Actions](doc/30-ci-cd.md) | Pipelines, automatización |
 
 ### Arquitectura
 | #   | Documento                                                 | Descripción                       |
 | --- | --------------------------------------------------------- | --------------------------------- |
-| 29  | [Clean Architecture](doc/29-clean-architecture.md)        | Capas, estructura                 |
-| 30  | [Organización Program.cs](doc/30-organizacion-program.md) | Extension Methods, modularización |
+| 31  | [Clean Architecture](doc/31-clean-architecture.md)        | Capas, estructura                 |
+| 32  | [Organización Program.cs](doc/32-organizacion-program.md) | Extension Methods, modularización |
 
 ## ⚒️ Diagrama de Clases del Dominio
 

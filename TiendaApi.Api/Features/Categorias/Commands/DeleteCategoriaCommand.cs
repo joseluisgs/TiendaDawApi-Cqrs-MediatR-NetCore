@@ -3,6 +3,7 @@ using MediatR;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -15,7 +16,9 @@ public record DeleteCategoriaCommand(long Id)
 /// <summary>
 /// Handler del comando DeleteCategoriaCommand.
 /// </summary>
-public class DeleteCategoriaCommandHandler(ICategoriaRepository repository)
+public class DeleteCategoriaCommandHandler(
+    ICategoriaRepository repository,
+    ICacheService cacheService)
     : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -27,6 +30,17 @@ public class DeleteCategoriaCommandHandler(ICategoriaRepository repository)
             return UnitResult.Failure<DomainError>(CategoriaError.NotFound(request.Id));
 
         await repository.DeleteAsync(request.Id);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("categorias:all");
+                await cacheService.RemoveAsync($"categorias:{request.Id}");
+            }
+            catch { }
+        });
+
         return UnitResult.Success<DomainError>();
     }
 }

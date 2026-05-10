@@ -12,6 +12,7 @@ using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
@@ -26,6 +27,7 @@ public class CreatePedidoCommandHandlerTests
         var pedidoValidator = new Mock<IValidator<PedidoRequestDto>>();
         var itemValidator = new Mock<IValidator<PedidoItemRequestDto>>();
         var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         var transaction = new Mock<IDbContextTransaction>();
         var dto = new PedidoRequestDto { Destinatario = new DestinatarioDto(), Items = [new PedidoItemRequestDto { ProductoId = 1, Cantidad = 2 }] };
 
@@ -35,7 +37,7 @@ public class CreatePedidoCommandHandlerTests
         productoRepository.Setup(r => r.BeginTransactionAsync(It.IsAny<System.Data.IsolationLevel>())).ReturnsAsync(transaction.Object);
         productoRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Nombre = "Laptop", Precio = 5m, Stock = 10, CategoriaId = 1 });
         pedidosRepository.Setup(r => r.SaveAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object);
+        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new CreatePedidoCommand(1, dto), CancellationToken.None);
 
@@ -52,8 +54,9 @@ public class CreatePedidoCommandHandlerTests
         var pedidoValidator = new Mock<IValidator<PedidoRequestDto>>();
         var itemValidator = new Mock<IValidator<PedidoItemRequestDto>>();
         var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
         userRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync((User?)null);
-        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object);
+        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new CreatePedidoCommand(1, new PedidoRequestDto()), CancellationToken.None);
 

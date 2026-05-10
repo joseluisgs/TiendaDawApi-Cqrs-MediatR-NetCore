@@ -1,20 +1,23 @@
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
+using Serilog;
 using TiendaApi.Api.Realtime.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
 /// Handler que difunde por SignalR el cambio de estado de un pedido.
-/// 
-/// 🎓 OPEN/CLOSED: la comunicación en tiempo real se agrega como extensión del evento.
 /// </summary>
 public class EstadoPedidoActualizadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<EstadoPedidoActualizadoNotification>
 {
     /// <inheritdoc/>
-    public Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("PedidoActualizado", new
+    public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken)
+    {
+        Log.Information("📟 [SIGNALR] Recibida notificación EstadoPedidoActualizado para ID: {PedidoId}, NuevoEstado: {Estado}", 
+            notification.Pedido.Id, notification.NuevoEstado);
+
+        await hubContext.Clients.All.SendAsync("PedidoActualizado", new
         {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
@@ -23,4 +26,8 @@ public class EstadoPedidoActualizadoSignalRHandler(IHubContext<PedidosHub> hubCo
             total = notification.Pedido.Total,
             timestamp = DateTime.UtcNow
         }, cancellationToken);
+
+        Log.Information("📟 [SIGNALR] Evento enviado a todos los clientes: Pedido actualizado ID={PedidoId}, Estado={Estado}", 
+            notification.Pedido.Id, notification.NuevoEstado);
+    }
 }

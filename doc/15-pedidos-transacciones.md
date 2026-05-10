@@ -1,15 +1,15 @@
-# 15. Pedidos: Transacciones y Control de Concurrencia con CQRS
+﻿# 15. Pedidos y Transacciones
 
 ## Índice
 
 [15. Pedidos: Transacciones y Control de Concurrencia](#15-pedidos-transacciones-y-control-de-concurrencia)
   - [15.1. El Problema de la Concurrencia en Pedidos](#151-el-problema-de-la-concurrencia-en-pedidos)
-  - [15.2. CQRS y Pedidos: La Evolución](#152-cqrs-y-pedidos-la-evolución)
+  - [15.2. CQRS y Pedidos: La Evolución](#152-cqrs-y-pedidos-la-evolucin)
   - [15.3. Transacciones con EF Core en Handlers](#153-transacciones-con-ef-core-en-handlers)
   - [15.4. Enfoque Optimista](#154-enfoque-optimista)
   - [15.5. Enfoque Pesimista](#155-enfoque-pesimista)
   - [15.6. Enfoque Mixto (Usado en el Proyecto)](#156-enfoque-mixto-usado-en-el-proyecto)
-  - [15.7. Comparación de Enfoques](#157-comparación-de-enfoques)
+  - [15.7. Comparación de Enfoques](#157-comparacin-de-enfoques)
   - [15.8. Errores de Dominio para Pedidos](#158-errores-de-dominio-para-pedidos)
   - [15.9. Controller con MediatR](#159-controller-con-mediatr)
   - [15.10. Notifications y Efectos Secundarios](#1510-notifications-y-efectos-secundarios)
@@ -37,7 +37,7 @@ flowchart TD
     end
 ```
 
-### Escenario Real: Venta del Último Producto
+### Escenario Real: Venta del ášltimo Producto
 
 Imaginemos que tenemos un producto con stock = 1. Dos usuarios intentan comprarlo al mismo tiempo:
 
@@ -129,7 +129,7 @@ flowchart TB
     style N2 fill:#fcc419,color:#000
 ```
 
-### ¿Por qué usar CQRS para Pedidos?
+### Â¿Por qué usar CQRS para Pedidos?
 
 | Aspecto | Con Service | Con CQRS |
 |---------|-------------|----------|
@@ -143,29 +143,29 @@ flowchart TB
 
 ```
 Features/Pedidos/
-├── Commands/
-│   ├── CreatePedidoCommand.cs
-│   ├── CreatePedidoCommandHandler.cs
-│   ├── UpdatePedidoEstadoCommand.cs
-│   ├── UpdatePedidoEstadoCommandHandler.cs
-│   ├── UpdatePedidoAdminCommand.cs
-│   ├── UpdateMyPedidoCommand.cs
-│   ├── DeletePedidoAdminCommand.cs
-│   └── DeleteMyPedidoCommand.cs
-├── Queries/
-│   ├── GetAllPedidosQuery.cs
-│   ├── GetAllPedidosQueryHandler.cs
-│   ├── GetAllPedidosListQuery.cs
-│   ├── GetMyPedidosQuery.cs
-│   ├── GetMyPedidosQueryHandler.cs
-│   ├── GetPedidoByIdQuery.cs
-│   └── GetMyPedidoByIdQuery.cs
-└── Notifications/
-    ├── PedidoCreadoNotification.cs
-    ├── PedidoCreadoEmailHandler.cs
-    ├── PedidoCreadoSignalRHandler.cs
-    ├── EstadoPedidoActualizadoNotification.cs
-    └── PedidoCanceladoNotification.cs
+â”œâ”€â”€ Commands/
+â”‚   â”œâ”€â”€ CreatePedidoCommand.cs
+â”‚   â”œâ”€â”€ CreatePedidoCommandHandler.cs
+â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommand.cs
+â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommandHandler.cs
+â”‚   â”œâ”€â”€ UpdatePedidoAdminCommand.cs
+â”‚   â”œâ”€â”€ UpdateMyPedidoCommand.cs
+â”‚   â”œâ”€â”€ DeletePedidoAdminCommand.cs
+â”‚   â””â”€â”€ DeleteMyPedidoCommand.cs
+â”œâ”€â”€ Queries/
+â”‚   â”œâ”€â”€ GetAllPedidosQuery.cs
+â”‚   â”œâ”€â”€ GetAllPedidosQueryHandler.cs
+â”‚   â”œâ”€â”€ GetAllPedidosListQuery.cs
+â”‚   â”œâ”€â”€ GetMyPedidosQuery.cs
+â”‚   â”œâ”€â”€ GetMyPedidosQueryHandler.cs
+â”‚   â”œâ”€â”€ GetPedidoByIdQuery.cs
+â”‚   â””â”€â”€ GetMyPedidoByIdQuery.cs
+â””â”€â”€ Notifications/
+    â”œâ”€â”€ PedidoCreadoNotification.cs
+    â”œâ”€â”€ PedidoCreadoEmailHandler.cs
+    â”œâ”€â”€ PedidoCreadoSignalRHandler.cs
+    â”œâ”€â”€ EstadoPedidoActualizadoNotification.cs
+    â””â”€â”€ PedidoCanceladoNotification.cs
 ```
 
 Cada archivo tiene UNA responsabilidad. El `CreatePedidoCommandHandler` solo sabe crear pedidos. No conoce emails, no conoce SignalR, solo la lógica de negocio de creación.
@@ -325,7 +325,7 @@ flowchart TD
     A["Transacción comienza"] --> B["Leer datos"]
     B --> C["Procesar lógica"]
     C --> D["Validar conflictos"]
-    D --> E{"¿Sin conflictos?"}
+    D --> E{"Â¿Sin conflictos?"}
     E -->|Sí| F["Escribir cambios"]
     E -->|No| G["Rechazar cambios"]
     F --> H["Transacción exitosa"]
@@ -568,7 +568,7 @@ flowchart TD
     F --> G["Transacción exitosa"]
     
     subgraph "Otras transacciones"
-        H["Intentan leer"] --> I{"¿Bloqueado?"}
+        H["Intentan leer"] --> I{"Â¿Bloqueado?"}
         I -->|Sí| J["Esperar"]
         I -->|No| K["Leer datos"]
     end
@@ -689,10 +689,10 @@ COMMIT;
 
 | Nivel                | Dirty Read  | Non-repeatable | Phantom     | Bloqueo |
 | -------------------- | ----------- | -------------- | ----------- | ------- |
-| **Read Uncommitted** | ❌ Permitido | ❌ Permitido    | ❌ Permitido | Ninguno |
-| **Read Committed**   | ✅ Protegido | ❌ Permitido    | ❌ Permitido | Filas   |
-| **Repeatable Read**  | ✅ Protegido | ✅ Protegido    | ❌ Permitido | Filas   |
-| **Serializable**     | ✅ Protegido | ✅ Protegido    | ✅ Protegido | Tabla   |
+| **Read Uncommitted** | âŒ Permitido | âŒ Permitido    | âŒ Permitido | Ninguno |
+| **Read Committed**   | âœ… Protegido | âŒ Permitido    | âŒ Permitido | Filas   |
+| **Repeatable Read**  | âœ… Protegido | âœ… Protegido    | âŒ Permitido | Filas   |
+| **Serializable**     | âœ… Protegido | âœ… Protegido    | âœ… Protegido | Tabla   |
 
 ### Serializable con EF Core
 
@@ -867,7 +867,7 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
-### ¿Por qué este handler es mejor que un PedidoService tradicional?
+### Â¿Por qué este handler es mejor que un PedidoService tradicional?
 
 | Aspecto | PedidoService tradicional | CreatePedidoCommandHandler |
 |---------|--------------------------|----------------------------|
@@ -1055,10 +1055,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
+    A["Â¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
     A --> C["Lecturas frecuentes, pocas escrituras"]
     
-    B --> D{"¿Es inventario crítico?"}
+    B --> D{"Â¿Es inventario crítico?"}
     D -->|Sí, absolutamente crítico| E["Pesimista"]
     D -->|No, admite algunos reintentos| F["Mixto"]
     
@@ -1344,16 +1344,16 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 }
 ```
 
-### ¿Qué hace el controlador ahora?
+### Â¿Qué hace el controlador ahora?
 
 | Responsabilidad | Antes | Ahora |
 |-----------------|-------|-------|
-| Extraer userId del claim | ❌ En el servicio | ✅ En el controller |
-| Validar entrada | ❌ En el servicio | ✅ En el handler + FluentValidation |
-| Lógica de negocio | ❌ En el servicio | ✅ En el CommandHandler |
-| Transacciones | ❌ En el servicio | ✅ En el CommandHandler |
-| Efectos secundarios | ❌ En el servicio | ✅ En NotificationHandlers |
-| Mapear respuesta | ❌ En el servicio | ✅ En el handler |
+| Extraer userId del claim | âŒ En el servicio | âœ… En el controller |
+| Validar entrada | âŒ En el servicio | âœ… En el handler + FluentValidation |
+| Lógica de negocio | âŒ En el servicio | âœ… En el CommandHandler |
+| Transacciones | âŒ En el servicio | âœ… En el CommandHandler |
+| Efectos secundarios | âŒ En el servicio | âœ… En NotificationHandlers |
+| Mapear respuesta | âŒ En el servicio | âœ… En el handler |
 
 ---
 
