@@ -1,32 +1,32 @@
-# 20. GraphQL con HotChocolate
+﻿# 21. GraphQL
 
 ## Índice
 
-[20. GraphQL con HotChocolate](#20-graphql-con-hotchocolate)
-  - [20.1. ¿Qué es GraphQL?](#201-qué-es-graphql)
-  - [20.2. Instalación de HotChocolate](#202-instalación-de-hotchocolate)
-  - [20.3. Configuración en Program.cs](#203-configuración-en-programcs)
-  - [20.3.1. Autenticación y Autorización con HotChocolate](#2031-autenticación-y-autorización-con-hotchocolate)
-  - [20.4. Conceptos de Queries](#204-conceptos-de-queries)
-  - [20.5. TiendaQuery: Consultas del Proyecto](#205-tiendaquery-consultas-del-proyecto)
-  - [20.6. Tipos de GraphQL](#206-tipos-de-graphql)
-  - [20.7. Tipos de Datos en GraphQL](#207-tipos-de-datos-en-graphql)
-  - [20.8. GraphiQL: Herramienta de Desarrollo](#208-graphiql-herramienta-de-desarrollo)
-  - [20.9. Consultas de Ejemplo](#209-consultas-de-ejemplo)
-  - [20.10. Mutations](#2010-mutations)
-  - [20.11. Subscriptions](#2011-subscriptions)
-  - [20.12. Comparación REST vs GraphQL](#2012-comparación-rest-vs-graphql)
-  - [20.13. Input Types](#2013-input-types)
-  - [20.14. Events: Payloads de Eventos](#2014-events-payloads-de-eventos)
-  - [20.15. Publishers: Sistema Pub/Sub](#2015-publishers-sistema-pubsub)
-  - [20.16. Estructura de Carpetas GraphQL](#2016-estructura-de-carpetas-graphql)
-  - [20.17. Patrones Utilizados](#2017-patrones-utilizados)
-  - [20.18. Estado Actual del Proyecto](#2018-estado-actual-del-proyecto)
-  - [20.19. Resumen Completo](#2019-resumen-completo)
+[21. GraphQL con HotChocolate](#21-graphql-con-hotchocolate)
+  - [21.1. Â¿Qué es GraphQL?](#211-qu-es-graphql)
+  - [21.2. Instalación de HotChocolate](#212-instalacin-de-hotchocolate)
+  - [21.3. Configuración en Program.cs](#213-configuracin-en-programcs)
+  - [21.3.1. Autenticación y Autorización con HotChocolate](#21-autenticación-y-autorización-con-hotchocolate)
+  - [21.4. Conceptos de Queries](#214-conceptos-de-queries)
+  - [21.5. TiendaQuery: Consultas del Proyecto](#215-tiendaquery-consultas-del-proyecto)
+  - [21.6. Tipos de GraphQL](#216-tipos-de-graphql)
+  - [21.7. Tipos de Datos en GraphQL](#217-tipos-de-datos-en-graphql)
+  - [21.8. GraphiQL: Herramienta de Desarrollo](#218-graphiql-herramienta-de-desarrollo)
+  - [21.9. Consultas de Ejemplo](#219-consultas-de-ejemplo)
+  - [21.10. Mutations](#2110-mutations)
+  - [21.11. Subscriptions](#2111-subscriptions)
+  - [21.12. Comparación REST vs GraphQL](#2112-comparacin-rest-vs-graphql)
+  - [21.13. Input Types](#2113-input-types)
+  - [21.14. Events: Payloads de Eventos](#2114-events-payloads-de-eventos)
+  - [21.15. Publishers: Sistema Pub/Sub](#2115-publishers-sistema-pubsub)
+  - [21.16. Estructura de Carpetas GraphQL](#2116-estructura-de-carpetas-graphql)
+  - [21.17. Patrones Utilizados](#2117-patrones-utilizados)
+  - [21.18. Estado Actual del Proyecto](#2118-estado-actual-del-proyecto)
+  - [21.19. Resumen Completo](#2119-resumen-completo)
 
 ---
 
-## 20.1. ¿Qué es GraphQL?
+## 21.1. Â¿Qué es GraphQL?
 
 **GraphQL** es un lenguaje de consulta para APIs desarrollado por Facebook. A diferencia de REST, GraphQL permite al cliente especificar exactamente qué datos necesita, evitando el over-fetching y under-fetching.
 
@@ -58,7 +58,7 @@ flowchart LR
 
 ---
 
-## 20.2. Instalación de HotChocolate
+## 21.2. Instalación de HotChocolate
 
 ### Paquetes Necesarios
 
@@ -77,7 +77,7 @@ Del archivo `Program.cs`:
 
 ```csharp
 // GraphQL
-Log.Information("🔍 Configurando GraphQL con HotChocolate...");
+Log.Information("ðŸ” Configurando GraphQL con HotChocolate...");
 builder.Services
     .AddGraphQLServer()
     .AddQueryType<TiendaQuery>()
@@ -90,13 +90,13 @@ builder.Services
 
 ```csharp
 // GraphQL Endpoint
-Log.Information("🔍 Configurando endpoint GraphQL: /graphql");
+Log.Information("ðŸ” Configurando endpoint GraphQL: /graphql");
 app.MapGraphQL();
 ```
 
 ---
 
-## 20.3. Configuración en Program.cs
+## 21.3. Configuración en Program.cs
 
 ### Configuración Básica
 
@@ -149,7 +149,7 @@ builder.Services
 
 ---
 
-## 20.3.1. Autenticación y Autorización con HotChocolate
+## 21.3.1. Autenticación y Autorización con HotChocolate
 
 HotChocolate se integra de forma **transparente** con el sistema de autenticación y autorización de ASP.NET Core (Identity, JWT, Claims). Esto significa que puedes usar los mismos atributos y políticas de autorización que en los controladores REST.
 
@@ -175,7 +175,7 @@ builder.Services
 // HotChocolate lee automáticamente el contexto de autenticación
 builder.Services
     .AddGraphQLServer()
-    .AddAuthorization()  // ← Habilita soporte para [Authorize]
+    .AddAuthorization()  // â† Habilita soporte para [Authorize]
     .AddQueryType<TiendaQuery>();
 ```
 
@@ -194,7 +194,7 @@ public class TiendaQuery
     }
 
     // Query protegida - solo usuarios autenticados
-    [Authorize]  // ← Requiere JWT válido
+    [Authorize]  // â† Requiere JWT válido
     [UseFirstOrDefault]
     public async Task<Producto?> GetProducto(
         long id,
@@ -211,7 +211,7 @@ public class TiendaQuery
 public class ProductoMutation
 {
     // Solo administradores pueden crear productos
-    [Authorize(policy: "AdminOnly")]  // ← Policy que requiere rol Admin
+    [Authorize(policy: "AdminOnly")]  // â† Policy que requiere rol Admin
     public async Task<Result<Producto, DomainError>> CreateProducto(
         CreateProductoInput input,
         [Service] IProductoService productoService)
@@ -256,7 +256,7 @@ public class ProductoType : ObjectType<Producto>
         // Campo solo visible para administradores
         descriptor.Field(p => p.CostoProveedor)
             .Type<DecimalType>()
-            .Authorize(new[] { "Admin" });  // ← Solo Admin puede ver este campo
+            .Authorize(new[] { "Admin" });  // â† Solo Admin puede ver este campo
 
         descriptor.Field(p => p.Categoria)
             .Type<CategoriaType>();
@@ -322,7 +322,7 @@ public class TiendaQuery
 {
     public async Task<List<Producto>> GetMisProductos(
         [Service] IProductoRepository productoRepository,
-        [GlobalState("userId")] long userId)  // ← Injectado automáticamente
+        [GlobalState("userId")] long userId)  // â† Injectado automáticamente
     {
         // Obtener productos del usuario actual
         return await productoRepository.GetByUserIdAsync(userId);
@@ -449,7 +449,7 @@ builder.Services
 
 ---
 
-## 20.4. Conceptos de Queries
+## 21.4. Conceptos de Queries
 
 Las **Queries** (consultas) son el mecanismo principal para **leer datos** en GraphQL. Son el equivalente a las operaciones GET en REST, pero con una diferencia fundamental: el cliente define exactamente qué campos quiere recibir.
 
@@ -480,7 +480,7 @@ query NombreQuery($id: Long!) {
     id          # Campo solicitado
     nombre      # Campo solicitado
     precio      # Campo solicitado
-    # descripcion no se incluye → no se envía
+    # descripcion no se incluye â†’ no se envía
   }
 }
 ```
@@ -594,7 +594,7 @@ flowchart TD
 
 ---
 
-## 20.5. TiendaQuery: Consultas del Proyecto
+## 21.5. TiendaQuery: Consultas del Proyecto
 
 Del archivo `TiendaQuery.cs`:
 
@@ -671,7 +671,7 @@ public class TiendaQuery
 
 ---
 
-## 20.6. Tipos de GraphQL
+## 21.6. Tipos de GraphQL
 
 ### ProductoType
 
@@ -781,7 +781,7 @@ public class CategoriaType : ObjectType<Categoria>
 
 ---
 
-## 20.7. Tipos de Datos en GraphQL
+## 21.7. Tipos de Datos en GraphQL
 
 ### Escalares
 
@@ -809,7 +809,7 @@ descriptor.Field(p => p.Descripcion)
 
 ---
 
-## 20.8. GraphiQL: Herramienta de Desarrollo
+## 21.8. GraphiQL: Herramienta de Desarrollo
 
 El proyecto incluye una interfaz GraphiQL para probar las consultas:
 
@@ -850,7 +850,7 @@ Producción: http://tu-dominio/graphiql
 
 ---
 
-## 20.9. Consultas de Ejemplo
+## 21.9. Consultas de Ejemplo
 
 ### Obtener Todos los Productos
 
@@ -926,7 +926,7 @@ query {
 
 ---
 
-## 20.10. Mutations (Crear, Actualizar, Eliminar)
+## 21.10. Mutations (Crear, Actualizar, Eliminar)
 
 Las mutations son operaciones que modifican datos en el servidor. Son el equivalente a los métodos POST, PUT, PATCH y DELETE en REST. En GraphQL, las mutations se definen en una clase separada llamada `Mutation` y se registran en el esquema.
 
@@ -1133,7 +1133,7 @@ mutation DeleteProducto($id: Long!) {
 
 ---
 
-## 20.11. Subscriptions (Tiempo Real)
+## 21.11. Subscriptions (Tiempo Real)
 
 Las subscriptions permiten recibir actualizaciones en tiempo real cuando ocurren eventos en el servidor. Son ideales para notificaciones, dashboards en vivo, y aplicaciones que requieren datos actualizados instantáneamente. HotChocolate usa WebSockets para implementar subscriptions.
 
@@ -1270,7 +1270,7 @@ subscription OnPedidoUpdate($userId: Long!) {
 
 ---
 
-## 20.12. Comparación REST vs GraphQL
+## 21.12. Comparación REST vs GraphQL
 
 ```mermaid
 flowchart TD
@@ -1290,25 +1290,25 @@ flowchart TD
 
 | Escenario | Recomendación |
 |-----------|---------------|
-| **Clientes móviles** | ✅ GraphQL (menos datos, mejor rendimiento) |
-| **Dashboards complejos** | ✅ GraphQL (una sola query) |
-| **API pública** | ✅ GraphQL (flexibilidad para clientes) |
-| **CRUD simple** | ⚪ REST (más simple) |
-| **Arquitectura de microservicios** | ✅ GraphQL (stitching) |
-| **Streaming en tiempo real** | ✅ GraphQL + Subscriptions |
+| **Clientes móviles** | âœ… GraphQL (menos datos, mejor rendimiento) |
+| **Dashboards complejos** | âœ… GraphQL (una sola query) |
+| **API pública** | âœ… GraphQL (flexibilidad para clientes) |
+| **CRUD simple** | âšª REST (más simple) |
+| **Arquitectura de microservicios** | âœ… GraphQL (stitching) |
+| **Streaming en tiempo real** | âœ… GraphQL + Subscriptions |
 
 ### Cuándo Usar REST
 
 | Escenario | Recomendación |
 |-----------|---------------|
-| **Endpoints simples** | ✅ REST (más directo) |
-| **Documentación con Swagger** | ✅ REST (integración nativa) |
-| **Cacheo con CDNs** | ✅ REST (URLs únicas) |
-| **Equipo nuevo** | ✅ REST (mayor familiaridad) |
+| **Endpoints simples** | âœ… REST (más directo) |
+| **Documentación con Swagger** | âœ… REST (integración nativa) |
+| **Cacheo con CDNs** | âœ… REST (URLs únicas) |
+| **Equipo nuevo** | âœ… REST (mayor familiaridad) |
 
 ---
 
-## 20.13. Input Types: Estructuras de Entrada
+## 21.13. Input Types: Estructuras de Entrada
 
 Los **Input Types** son objetos que agrupan los parámetros de entrada para mutations. Son equivalentes a los DTOs en REST y permiten mantener las mutations organizadas y evolutivas.
 
@@ -1382,7 +1382,7 @@ input UpdateProductoInput {
 
 ---
 
-## 20.14. Events: Payloads de Eventos
+## 21.14. Events: Payloads de Eventos
 
 Los **Events** son los payloads que se publican cuando ocurre algo en el sistema. Son necesarios para las subscriptions y permiten que los clientes reciban datos estructurados.
 
@@ -1467,7 +1467,7 @@ public record ProductoStockBajoEvent
 
 ---
 
-## 20.15. Publishers: Sistema Pub/Sub
+## 21.15. Publishers: Sistema Pub/Sub
 
 Los **Publishers** son el mecanismo que conecta los eventos con las subscriptions. HotChocolate incluye un sistema de Pub/Sub integrado.
 
@@ -1525,7 +1525,7 @@ public class ProductoService(
                 NotificarWebSocketProductoCreado(dto);
                 EnviarEmailProductoCreado(saved);
                 
-                // 🚀 Publicar evento para GraphQL Subscription
+                // ðŸš€ Publicar evento para GraphQL Subscription
                 EventoSuscripcionProductoCreado(dto);
             });
     }
@@ -1562,40 +1562,40 @@ builder.Services
     .AddQueryType<TiendaQuery>()
     .AddMutationType<ProductoMutation>()
     .AddSubscriptionType<ProductoSubscription>()
-    .AddInMemorySubscriptions()  // ← Necesario para Pub/Sub
+    .AddInMemorySubscriptions()  // â† Necesario para Pub/Sub
     .AddType<ProductoType>()
     .AddType<CategoriaType>();
 ```
 
 ---
 
-## 20.16. Estructura de Carpetas GraphQL
+## 21.16. Estructura de Carpetas GraphQL
 
 ```
 GraphQL/
-├── Queries/
-│   └── TiendaQuery.cs              # Queries de productos y categorías
-│
-├── Mutations/
-│   └── ProductoMutation.cs          # Mutations de productos
-│
-├── Subscriptions/
-│   └── ProductoSubscription.cs      # Suscripciones en tiempo real
-│
-├── Events/
-│   └── ProductoEvent.cs            # Payloads de eventos
-│
-├── Inputs/
-│   ├── CategoriaInput.cs           # Input types de categorías
-│   └── ProductoInput.cs            # Input types de productos
-│
-├── Publishers/
-│   ├── IEventPublisher.cs          # Interfaz del publisher
-│   └── EventPublisher.cs           # Implementación Pub/Sub
-│
-└── Types/
-    ├── CategoriaType.cs            # Tipo GraphQL de categoría
-    └── ProductoType.cs              # Tipo GraphQL de producto
+â”œâ”€â”€ Queries/
+â”‚   â””â”€â”€ TiendaQuery.cs              # Queries de productos y categorías
+â”‚
+â”œâ”€â”€ Mutations/
+â”‚   â””â”€â”€ ProductoMutation.cs          # Mutations de productos
+â”‚
+â”œâ”€â”€ Subscriptions/
+â”‚   â””â”€â”€ ProductoSubscription.cs      # Suscripciones en tiempo real
+â”‚
+â”œâ”€â”€ Events/
+â”‚   â””â”€â”€ ProductoEvent.cs            # Payloads de eventos
+â”‚
+â”œâ”€â”€ Inputs/
+â”‚   â”œâ”€â”€ CategoriaInput.cs           # Input types de categorías
+â”‚   â””â”€â”€ ProductoInput.cs            # Input types de productos
+â”‚
+â”œâ”€â”€ Publishers/
+â”‚   â”œâ”€â”€ IEventPublisher.cs          # Interfaz del publisher
+â”‚   â””â”€â”€ EventPublisher.cs           # Implementación Pub/Sub
+â”‚
+â””â”€â”€ Types/
+    â”œâ”€â”€ CategoriaType.cs            # Tipo GraphQL de categoría
+    â””â”€â”€ ProductoType.cs              # Tipo GraphQL de producto
 ```
 
 ### Responsabilidades por Carpeta
@@ -1612,7 +1612,7 @@ GraphQL/
 
 ---
 
-## 20.17. Patrones Utilizados
+## 21.17. Patrones Utilizados
 
 ### 1. Result Pattern
 
@@ -1663,7 +1663,7 @@ HotChocolate resuelve automáticamente dependencias con `[Service]`:
 ```csharp
 public async Task<Producto?> GetProducto(
     long id,
-    [Service] IProductoRepository repository)  // ← Inyectado automáticamente
+    [Service] IProductoRepository repository)  // â† Inyectado automáticamente
 {
     return await repository.FindByIdAsync(id);
 }
@@ -1671,9 +1671,9 @@ public async Task<Producto?> GetProducto(
 
 ---
 
-## 20.18. Estado Actual del Proyecto ✅
+## 21.18. Estado Actual del Proyecto âœ…
 
-### Queries Implementadas ✅
+### Queries Implementadas âœ…
 
 | Query | Descripción | Auth |
 |-------|-------------|------|
@@ -1684,7 +1684,7 @@ public async Task<Producto?> GetProducto(
 | `categoria(id: Long!)` | Categoría por ID | No |
 | `categorias(first: Int)` | Categorías paginadas | No |
 
-### Mutations Implementadas ✅
+### Mutations Implementadas âœ…
 
 | Mutation | Descripción | Auth |
 |----------|-------------|------|
@@ -1692,7 +1692,7 @@ public async Task<Producto?> GetProducto(
 | `updateProducto(id: Long!, input: UpdateProductoInput!)` | Actualizar producto | ADMIN |
 | `deleteProducto(id: Long!)` | Eliminar producto | ADMIN |
 
-### Subscriptions Implementadas ✅
+### Subscriptions Implementadas âœ…
 
 | Subscription | Descripción | Auth |
 |--------------|-------------|------|
@@ -1744,7 +1744,7 @@ flowchart TD
 
 ---
 
-## 20.19. Resumen Completo
+## 21.19. Resumen Completo
 
 ### Arquitectura GraphQL
 
@@ -1809,9 +1809,9 @@ flowchart TD
 
 | Tipo | HTTP | WebSocket | Descripción |
 |------|------|-----------|-------------|
-| **Query** | ✅ POST /graphql | ❌ | Request-Response |
-| **Mutation** | ✅ POST /graphql | ❌ | Request-Response |
-| **Subscription** | ❌ | ✅ WS /graphql | Push en tiempo real |
+| **Query** | âœ… POST /graphql | âŒ | Request-Response |
+| **Mutation** | âœ… POST /graphql | âŒ | Request-Response |
+| **Subscription** | âŒ | âœ… WS /graphql | Push en tiempo real |
 
 ### Códigos de Error
 

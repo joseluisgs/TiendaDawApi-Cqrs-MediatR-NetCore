@@ -1,28 +1,28 @@
-# 14. WebSockets y Comunicación en Tiempo Real
+﻿# 20. WebSockets
 
 ## Índice
 
-[14. WebSockets y Comunicación en Tiempo Real](#14-websockets-y-comunicación-en-tiempo-real)
-  - [14.1. ¿Qué es la Comunicación en Tiempo Real?](#141-qué-es-la-comunicación-en-tiempo-real)
-  - [14.2. WebSocket vs SignalR - Comparación](#142-websocket-vs-signalr---comparación)
-  - [14.3. Conceptos Básicos](#143-conceptos-básicos)
-  - [14.4. WebSocket Nativo en ASP.NET Core](#144-websocket-nativo-en-aspnet-core)
-  - [14.5. Connection Manager](#145-connection-manager)
-  - [14.6. WebSocket Handler](#146-websocket-handler)
-  - [14.7. Servicio de Notificaciones WebSocket](#147-servicio-de-notificaciones-websocket)
-  - [14.8. Integración con Servicios de Negocio](#148-integración-con-servicios-de-negocio)
-  - [14.9. Cliente JavaScript WebSocket](#149-cliente-javascript-websocket)
-  - [14.10. SignalR como Alternativa](#1410-signalr-como-alternativa)
-  - [14.11. SignalR: Conceptos Fundamentales](#1411-signalr-conceptos-fundamentales)
-  - [14.12. SignalR: Servicio de Notificaciones](#1412-signalr-servicio-de-notificaciones)
-  - [14.13. SignalR: Integración con Servicios de Negocio](#1413-signalr-integración-con-servicios-de-negocio)
-  - [14.14. SignalR: Cliente JavaScript](#1414-signalr-cliente-javascript)
-  - [14.15. SignalR + Identity](#1415-signalr--identity)
-  - [14.16. Resumen y Buenas Prácticas](#1416-resumen-y-buenas-prácticas)
+[20. WebSockets y Comunicación en Tiempo Real](#20-websockets-y-comunicacin-en-tiempo-real)
+  - [20.1. Â¿Qué es la Comunicación en Tiempo Real?](#201-qu-es-la-comunicacin-en-tiempo-real)
+  - [20.2. WebSocket vs SignalR - Comparación](#202-websocket-vs-signalr---comparacin)
+  - [20.3. Conceptos Básicos](#203-conceptos-bsicos)
+  - [20.4. WebSocket Nativo en ASP.NET Core](#204-websocket-nativo-en-aspnet-core)
+  - [20.5. Connection Manager](#205-connection-manager)
+  - [20.6. WebSocket Handler](#206-websocket-handler)
+  - [20.7. Servicio de Notificaciones WebSocket](#207-servicio-de-notificaciones-websocket)
+  - [20.8. Integración con Servicios de Negocio](#208-integracin-con-servicios-de-negocio)
+  - [20.9. Cliente JavaScript WebSocket](#209-cliente-javascript-websocket)
+  - [20.10. SignalR como Alternativa](#2010-signalr-como-alternativa)
+  - [20.11. SignalR: Conceptos Fundamentales](#2011-signalr-conceptos-fundamentales)
+  - [20.12. SignalR: Servicio de Notificaciones](#2012-signalr-servicio-de-notificaciones)
+  - [20.13. SignalR: Integración con Servicios de Negocio](#2013-signalr-integracin-con-servicios-de-negocio)
+  - [20.14. SignalR: Cliente JavaScript](#2014-signalr-cliente-javascript)
+  - [20.15. SignalR + Identity](#2015-signalr--identity)
+  - [20.16. Resumen y Buenas Prácticas](#2016-resumen-y-buenas-prcticas)
 
 ---
 
-## 14.1. ¿Qué es la Comunicación en Tiempo Real?
+## 20.1. Â¿Qué es la Comunicación en Tiempo Real?
 
 La comunicación en tiempo real permite que el servidor envíe datos a los clientes sin que estos lo soliciten, eliminando el patrón tradicional de request-response.
 
@@ -42,20 +42,20 @@ flowchart LR
     end
 ```
 
-### ¿Cuándo Usar WebSockets?
+### Â¿Cuándo Usar WebSockets?
 
 | Caso de uso             | Ejemplo                     | Descripción       |
 | ----------------------- | --------------------------- | ----------------- |
-| **Notificaciones push** | "Tu pedido ha sido enviado" | ✅ WebSocket       |
-| **Chat en tiempo real** | Chat de soporte al cliente  | ✅ WebSocket       |
-| **Live updates**        | Dashboard de métricas       | ✅ WebSocket       |
-| **Colaboración**        | Editores colaborativos      | ✅ WebSocket       |
-| **Gaming**              | Multiplayer en tiempo real  | ✅ WebSocket (RAW) |
-| **API simple**          | Consultas esporádicas       | ❌ REST            |
+| **Notificaciones push** | "Tu pedido ha sido enviado" | âœ… WebSocket       |
+| **Chat en tiempo real** | Chat de soporte al cliente  | âœ… WebSocket       |
+| **Live updates**        | Dashboard de métricas       | âœ… WebSocket       |
+| **Colaboración**        | Editores colaborativos      | âœ… WebSocket       |
+| **Gaming**              | Multiplayer en tiempo real  | âœ… WebSocket (RAW) |
+| **API simple**          | Consultas esporádicas       | âŒ REST            |
 
 ---
 
-## 14.2. WebSocket vs SignalR - Comparación
+## 20.2. WebSocket vs SignalR - Comparación
 
 ### Diferencias Fundamentales
 
@@ -89,8 +89,8 @@ flowchart TB
 | **Grupos**               | Implementar tú       | Integrado            |
 | **Reconexión**           | Manual               | Automática           |
 | **Serialización**        | JSON manual          | Automática           |
-| **Rendimiento**          | ✅ Mejor              | ⚪ Buena              |
-| **Simplicidad**          | ⚠️ Más código         | ✅ Más fácil          |
+| **Rendimiento**          | âœ… Mejor              | âšª Buena              |
+| **Simplicidad**          | âš ï¸ Más código         | âœ… Más fácil          |
 | **Escalabilidad**        | Redis Pub/Sub manual | Redis backplane      |
 | **Debugging**            | Más difícil          | Más fácil            |
 
@@ -134,16 +134,16 @@ flowchart TD
 
 ---
 
-## 14.3. Conceptos Básicos
+## 20.3. Conceptos Básicos
 
 Antes de implementar, entendamos los conceptos fundamentales:
 
-### 14.3.1. WebSocket Handler
+### 20.3.1. WebSocket Handler
 
 Un **Handler** es una clase que gestiona la conexión WebSocket y el intercambio de mensajes.
 
 ```csharp
-// ¿Qué es un Handler?
+// Â¿Qué es un Handler?
 // Es un componente que:
 // 1. Acepta conexiones WebSocket
 // 2. Recibe mensajes del cliente
@@ -189,12 +189,12 @@ public class EchoWebSocketHandler
 }
 ```
 
-### 14.3.2. SignalR Hub
+### 20.3.2. SignalR Hub
 
 Un **Hub** es una abstracción de nivel superior que SignalR proporciona sobre WebSocket.
 
 ```csharp
-// ¿Qué es un Hub?
+// Â¿Qué es un Hub?
 // Es una clase que:
 // 1. Gestiona múltiples conexiones automáticamente
 // 2. Permite llamar métodos entre cliente y servidor
@@ -223,7 +223,7 @@ public class ChatHub : Hub
 }
 ```
 
-### 14.3.3. Comparación Conceptual
+### 20.3.3. Comparación Conceptual
 
 ```mermaid
 flowchart TB
@@ -247,7 +247,7 @@ flowchart TB
 
 ---
 
-## 14.4. WebSocket Nativo en ASP.NET Core
+## 20.4. WebSocket Nativo en ASP.NET Core
 
 ### Configuración de WebSockets
 
@@ -296,7 +296,7 @@ app.Run();
 
 ---
 
-## 14.5. Connection Manager
+## 20.5. Connection Manager
 
 ```csharp
 using System.Collections.Concurrent;
@@ -387,7 +387,7 @@ public class WebSocketMessage
 
 ---
 
-## 14.6. WebSocket Handler
+## 20.6. WebSocket Handler
 
 ```csharp
 public class WebSocketHandler
@@ -534,7 +534,7 @@ public class WebSocketHandler
 
 ---
 
-## 14.7. Servicio de Notificaciones WebSocket
+## 20.7. Servicio de Notificaciones WebSocket
 
 ```csharp
 namespace TiendaApi.Core.Services;
@@ -606,7 +606,7 @@ public class WebSocketNotificationService : IWebSocketNotificationService
 
 ---
 
-## 14.8. Integración con Servicios de Negocio
+## 20.8. Integración con Servicios de Negocio
 
 ```csharp
 public class PedidoService(
@@ -672,7 +672,7 @@ public class PedidoService(
 
 ---
 
-## 14.9. Cliente JavaScript WebSocket
+## 20.9. Cliente JavaScript WebSocket
 
 ```html
 <script>
@@ -799,7 +799,7 @@ wsClient.connect();
 
 ---
 
-## 14.10. SignalR como Alternativa
+## 20.10. SignalR como Alternativa
 
 SignalR proporciona una abstracción con características adicionales:
 
@@ -847,7 +847,7 @@ flowchart TD
 
 ---
 
-## 14.11. SignalR: Conceptos Fundamentales
+## 20.11. SignalR: Conceptos Fundamentales
 
 SignalR proporciona una abstracción sobre WebSocket con características adicionales:
 
@@ -871,7 +871,7 @@ SignalR proporciona una abstracción sobre WebSocket con características adicio
 ### Hub Básico vs Nuestra Implementación
 
 ```csharp
-// EJEMPLO BÁSICO (no lo usamos así en el proyecto)
+// EJEMPLO BáSICO (no lo usamos así en el proyecto)
 public class ChatHub : Hub
 {
     public async Task SendMessage(string message)
@@ -880,7 +880,7 @@ public class ChatHub : Hub
     }
 }
 
-// NUESTRO PATRÓN (usamos IHubContext en servicios)
+// NUESTRO PATRá“N (usamos IHubContext en servicios)
 [Authorize]
 public class PedidosHub : Hub
 {
@@ -934,7 +934,7 @@ flowchart TB
     subgraph "Opción 1: Filtrar en el Servicio"
         A1["_hubContext.Clients.All"]
         A2["Recibir mensaje"]
-        A3["¿Es el destinatario?"]
+        A3["Â¿Es el destinatario?"]
         A4["Sí: Procesar"]
         A5["No: Descartar"]
         A6["Pros: Sin auth requerida"]
@@ -1002,7 +1002,7 @@ public class PedidoService
     {
         await _repository.SaveAsync(pedido);
 
-        // ¡TRUCO! - Notificación selectiva sin que el cliente haga nada
+        // Â¡TRUCO! - Notificación selectiva sin que el cliente haga nada
         await _hubContext.Clients
             .Group($"user-{pedido.UsuarioId}")  // Solo este usuario
             .SendAsync("PedidoCreado", new { ... });
@@ -1039,12 +1039,12 @@ app.Run();
 
 ---
 
-## 14.11. SignalR: Servicio de Notificaciones
+## 20.11. SignalR: Servicio de Notificaciones
 
 En lugar de crear un servicio de notificaciones separado, en nuestro proyecto usamos `IHubContext` directamente inyectado en los servicios de negocio. Esto es más simple y directo:
 
 ```csharp
-// PATRÓN DEL PROYECTO: IHubContext directamente en servicios
+// PATRá“N DEL PROYECTO: IHubContext directamente en servicios
 
 public class ProductoService
 {
@@ -1144,7 +1144,7 @@ public class PedidoService
     {
         var pedido = await _repository.SaveAsync(request.ToEntity());
 
-        // 🚀 TRUCO: Notificar SOLO al usuario (grupo: user-{id})
+        // ðŸš€ TRUCO: Notificar SOLO al usuario (grupo: user-{id})
         // El usuario ya está en este grupo gracias a OnConnectedAsync en el Hub
         await _hubContext.Clients
             .Group($"user-{request.UsuarioId}")
@@ -1156,7 +1156,7 @@ public class PedidoService
                 timestamp = DateTime.UtcNow
             });
 
-        // 🚀 TRUCO: Notificar a TODOS los administradores
+        // ðŸš€ TRUCO: Notificar a TODOS los administradores
         await _hubContext.Clients
             .Group("admins")
             .SendAsync("NuevoPedido", new
@@ -1200,7 +1200,7 @@ public class PedidoService
 
 ```csharp
 // Program.cs - SignalR registra automaticamente IHubContext<T>
-// ¡No se necesita configuración adicional!
+// Â¡No se necesita configuración adicional!
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -1233,7 +1233,7 @@ public class MiServicio
 
 ---
 
-## 14.12. SignalR: Integración con Servicios de Negocio
+## 20.12. SignalR: Integración con Servicios de Negocio
 
 ```csharp
 public class PedidoService(
@@ -1306,7 +1306,7 @@ public class PedidoService(
 
 ---
 
-## 14.13. SignalR: Cliente JavaScript
+## 20.13. SignalR: Cliente JavaScript
 
 ```html
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
@@ -1432,7 +1432,7 @@ client.connect();
 
 ---
 
-## 14.14. SignalR + Identity: Autenticación y Autorización
+## 20.14. SignalR + Identity: Autenticación y Autorización
 
 SignalR se integra nativamente con el sistema de autenticación de ASP.NET Core Identity, permitiendo proteger los hubs y endpoints con JWT.
 
@@ -1516,7 +1516,7 @@ public class SignalRNotificationService
         _hubContext = hubContext;
     }
 
-    // 🚀 TRUCO: Notificar SOLO al usuario específico
+    // ðŸš€ TRUCO: Notificar SOLO al usuario específico
     public async Task NotifyUserAsync(long userId, object message)
     {
         await _hubContext.Clients
@@ -1524,7 +1524,7 @@ public class SignalRNotificationService
             .SendAsync("Notificacion", message);
     }
 
-    // 🚀 TRUCO: Notificar SOLO a administradores
+    // ðŸš€ TRUCO: Notificar SOLO a administradores
     public async Task NotifyAdminsAsync(object message)
     {
         await _hubContext.Clients
@@ -1585,7 +1585,7 @@ public class PedidoService
     {
         var pedido = await _repository.AddAsync(request);
 
-        // 🚀 Notificar SOLO al usuario que hizo el pedido
+        // ðŸš€ Notificar SOLO al usuario que hizo el pedido
         await _hubContext.Clients
             .Group($"user-{request.UsuarioId}")
             .SendAsync("PedidoCreado", new
@@ -1596,7 +1596,7 @@ public class PedidoService
                 timestamp = DateTime.UtcNow
             });
 
-        // 🚀 Notificar a TODOS los administradores
+        // ðŸš€ Notificar a TODOS los administradores
         await _hubContext.Clients
             .Group("admins")
             .SendAsync("NuevoPedido", new
@@ -1666,7 +1666,7 @@ flowchart TD
 
 ---
 
-## 14.15. SignalR: Persistencia y Escalabilidad
+## 20.15. SignalR: Persistencia y Escalabilidad
 
 Para escalar SignalR en múltiples instancias, usar Redis Backplane:
 
@@ -1735,7 +1735,7 @@ flowchart TD
 
 ---
 
-## 14.16. Resumen y Buenas Prácticas
+## 20.16. Resumen y Buenas Prácticas
 
 ### Cuándo Usar Qué
 

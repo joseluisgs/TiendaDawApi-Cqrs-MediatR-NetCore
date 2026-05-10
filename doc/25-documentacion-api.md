@@ -1,25 +1,25 @@
-# 19. Documentación y Versionado de APIs
+﻿# 25. Documentación API
 
 ## Índice
 
-[19. Documentación y Versionado de APIs](#19-documentación-y-versionado-de-apis)
-  - [19.1. ¿Por qué Documentar y Versionar APIs?](#191-por-qué-documentar-y-versionar-apis)
-  - [19.2. Swagger/OpenAPI](#192-swaggeropenapi)
-  - [19.3. Anotaciones Swagger](#193-anotaciones-swagger)
-  - [19.4. Versionado de APIs](#194-versionado-de-apis)
-  - [19.5. OpenAPI Avanzado](#195-openapi-avanzado)
-  - [19.6. Resumen y Buenas Prácticas](#196-resumen-y-buenas-prácticas)
+[25. Documentación y Versionado de APIs](#25-documentacin-y-versionado-de-apis)
+  - [25.1. Â¿Por qué Documentar y Versionar APIs?](#251-por-qu-documentar-y-versionar-apis)
+  - [25.2. Swagger/OpenAPI](#252-swaggeropenapi)
+  - [25.3. Anotaciones Swagger](#253-anotaciones-swagger)
+  - [25.4. Versionado de APIs](#254-versionado-de-apis)
+  - [25.5. OpenAPI Avanzado](#255-openapi-avanzado)
+  - [25.6. Resumen y Buenas Prácticas](#256-resumen-y-buenas-prcticas)
 
 ---
 
-## 19.1. ¿Por qué Documentar y Versionar APIs?
+## 25.1. Â¿Por qué Documentar y Versionar APIs?
 
 ### Importancia de la Documentación
 
 ```mermaid
 flowchart LR
     subgraph "Sin documentación"
-        A1["Desarrollador"] --> A2["¿Cómo uso la API?"]
+        A1["Desarrollador"] --> A2["Â¿Cómo uso la API?"]
         A2 --> A3["Trial and error"]
         A3 --> A4["Frustración"]
     end
@@ -31,7 +31,7 @@ flowchart LR
     end
 ```
 
-### ¿Cuándo Versionar?
+### Â¿Cuándo Versionar?
 
 | Señal | Acción |
 |-------|--------|
@@ -42,7 +42,7 @@ flowchart LR
 
 ---
 
-## 19.2. Swagger/OpenAPI
+## 25.2. Swagger/OpenAPI
 
 ### Instalación
 
@@ -135,7 +135,7 @@ app.Run();
 
 ---
 
-## 19.3. Anotaciones Swagger
+## 25.3. Anotaciones Swagger
 
 ### Documentación de Endpoints
 
@@ -368,7 +368,7 @@ public class PagedResponse<T>
 
 ---
 
-## 19.4. Versionado de APIs
+## 25.4. Versionado de APIs
 
 ### Estrategias de Versionado
 
@@ -521,7 +521,7 @@ app.UseSwaggerUI(options =>
 
 ---
 
-## 19.5. OpenAPI Avanzado
+## 25.5. OpenAPI Avanzado
 
 ### Schemas Personalizados
 
@@ -619,7 +619,7 @@ public class ErrorDetail
 
 ---
 
-## 19.6. Resumen y Buenas Prácticas
+## 25.6. Resumen y Buenas Prácticas
 
 ### Documentación
 

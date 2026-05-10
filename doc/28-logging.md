@@ -1,21 +1,21 @@
-# 24. Logging y Monitoreo
+﻿# 28. Logging
 
 ## Índice
 
-[24. Logging y Monitoreo](#24-logging-y-monitoreo)
-  - [24.1. ¿Por qué Logging y Monitoreo?](#241-por-qué-logging-y-monitoreo)
-  - [24.2. Logging Estructurado con Serilog](#242-logging-estructurado-con-serilog)
-  - [24.2.1. Configuración desde appsettings.json](#2421-configuración-desde-appsettingsjson)
-  - [24.3. Logs en Servicios](#243-logs-en-servicios)
-  - [24.4. Correlation ID](#244-correlation-id)
-  - [24.5. Métricas con Application Insights](#245-métricas-con-application-insights)
-  - [24.6. OpenTelemetry](#246-opentelemetry)
-  - [24.7. Health Checks](#247-health-checks)
-  - [24.8. Resumen y Buenas Prácticas](#248-resumen-y-buenas-prácticas)
+[28. Logging y Monitoreo](#28-logging-y-monitoreo)
+  - [28.1. Â¿Por qué Logging y Monitoreo?](#281-por-qu-logging-y-monitoreo)
+  - [28.2. Logging Estructurado con Serilog](#282-logging-estructurado-con-serilog)
+  - [28.2.1. Configuración desde appsettings.json](#28-configuración-desde-appsettingsjson)
+  - [28.3. Logs en Servicios](#283-logs-en-servicios)
+  - [28.4. Correlation ID](#284-correlation-id)
+  - [28.5. Métricas con Application Insights](#285-mtricas-con-application-insights)
+  - [28.6. OpenTelemetry](#286-opentelemetry)
+  - [28.7. Health Checks](#287-health-checks)
+  - [28.8. Resumen y Buenas Prácticas](#288-resumen-y-buenas-prcticas)
 
 ---
 
-## 24.1. ¿Por qué Logging y Monitoreo?
+## 28.1. Â¿Por qué Logging y Monitoreo?
 
 El **logging** registra eventos de la aplicación para debugging y auditoría. El **monitoreo** supervisa la salud y rendimiento de la aplicación en producción.
 
@@ -58,9 +58,9 @@ flowchart LR
 
 ---
 
-## 24.2. Logging Estructurado con Serilog
+## 28.2. Logging Estructurado con Serilog
 
-### ¿Qué es Logging Estructurado?
+### Â¿Qué es Logging Estructurado?
 
 En lugar de logs de texto plano, el logging estructurado usa JSON con campos específicos, permitiendo queries y análisis eficientes.
 
@@ -171,9 +171,9 @@ app.Run();
 
 ---
 
-## 24.2.1. Configuración desde appsettings.json
+## 28.2.1. Configuración desde appsettings.json
 
-En lugar de configurar Serilog directamente en código, es recomendable usar `appsettings.json` para mayor flexibilidad y возможность de cambiar configuraciones sin recompilar.
+En lugar de configurar Serilog directamente en código, es recomendable usar `appsettings.json` para mayor flexibilidad y Ð²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ de cambiar configuraciones sin recompilar.
 
 ### appsettings.json
 
@@ -311,7 +311,7 @@ var app = builder.Build();
 app.Run();
 ```
 
-### Diferencia entre ClearProviders() y Sin Él
+### Diferencia entre ClearProviders() y Sin á‰l
 
 | Opción                        | Comportamiento                         | Cuándo Usar                      |
 | ----------------------------- | -------------------------------------- | -------------------------------- |
@@ -386,7 +386,7 @@ builder.Services.AddLogging(loggingBuilder =>
 
 ---
 
-## 24.3. Logs en Servicios
+## 28.3. Logs en Servicios
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -499,7 +499,7 @@ public class ProductoService
 
 ---
 
-## 24.4. Correlation ID (Trazabilidad de Requests)
+## 28.4. Correlation ID (Trazabilidad de Requests)
 
 ```csharp
 // CorrelationIdMiddleware.cs
@@ -561,7 +561,7 @@ public class ProductoService
 
 ---
 
-## 24.5. Métricas con Application Insights
+## 28.5. Métricas con Application Insights
 
 ### Instalación
 
@@ -652,7 +652,7 @@ public class MetricsService
 
 ---
 
-## 24.6. OpenTelemetry (Alternativa Moderna)
+## 28.6. OpenTelemetry (Alternativa Moderna)
 
 ### Instalación
 
@@ -699,7 +699,7 @@ builder.Services.AddOpenTelemetryTracing(options =>
 
 ---
 
-## 24.7. Health Checks
+## 28.7. Health Checks
 
 ### Health Checks Básicos
 
@@ -771,7 +771,7 @@ public class CustomHealthCheck : IHealthCheck
 
 ---
 
-## 24.8. Resumen y Buenas Prácticas
+## 28.8. Resumen y Buenas Prácticas
 
 ### Estructura de Logging
 

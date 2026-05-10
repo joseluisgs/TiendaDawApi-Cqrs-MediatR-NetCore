@@ -1,21 +1,21 @@
-# 27. Seguridad HTTP: HSTS, HTTPS y Security Headers
+﻿# 19. Seguridad HTTP
 
 ## Índice
 
-[27. Seguridad HTTP](#27-seguridad-http)
-  - [27.1. Por Qué HTTPS es Obligatorio](#271-por-qué-https-es-obligatorio)
-  - [27.2. HTTP Strict Transport Security (HSTS)](#272-http-strict-transport-security-hsts)
-  - [27.3. Redirección HTTP a HTTPS](#273-redirección-http-a-https)
-  - [27.4. Security Headers](#274-security-headers)
-  - [27.5. Configuración en Desarrollo vs Producción](#275-configuración-en-desarrollo-vs-producción)
-  - [27.6. Implementación en Program.cs](#276-implementación-en-programcs)
-  - [27.7. Verificación de Seguridad](#277-verificación-de-seguridad)
-  - [27.8. Resumen y Buenas Prácticas](#278-resumen-y-buenas-prácticas)
-  - [27.9. Rate Limiting](#279-rate-limiting)
+[19. Seguridad HTTP](#19-seguridad-http)
+  - [19.1. Por Qué HTTPS es Obligatorio](#191-por-qu-https-es-obligatorio)
+  - [19.2. HTTP Strict Transport Security (HSTS)](#192-http-strict-transport-security-hsts)
+  - [19.3. Redirección HTTP a HTTPS](#193-redireccin-http-a-https)
+  - [19.4. Security Headers](#194-security-headers)
+  - [19.5. Configuración en Desarrollo vs Producción](#195-configuracin-en-desarrollo-vs-produccin)
+  - [19.6. Implementación en Program.cs](#196-implementacin-en-programcs)
+  - [19.7. Verificación de Seguridad](#197-verificacin-de-seguridad)
+  - [19.8. Resumen y Buenas Prácticas](#198-resumen-y-buenas-prcticas)
+  - [19.9. Rate Limiting](#199-rate-limiting)
 
 ---
 
-## 27.1. Por qué HTTPS es Obligatorio
+## 19.1. Por qué HTTPS es Obligatorio
 
 ### El Problema con HTTP
 
@@ -73,9 +73,9 @@ flowchart LR
 
 ---
 
-## 27.2. HTTP Strict Transport Security (HSTS)
+## 19.2. HTTP Strict Transport Security (HSTS)
 
-### ¿Qué es HSTS?
+### Â¿Qué es HSTS?
 
 HSTS es un mecanismo de seguridad que indica al navegador que solo debe acceder al sitio web mediante HTTPS, rechazando todas las conexiones HTTP. Esto previene ataques de downgrade y cookie hijacking.
 
@@ -128,7 +128,7 @@ Los sitios con `preload=true` pueden ser incluidos en las listas de preload de n
 
 ---
 
-## 27.3. Redirección HTTP a HTTPS
+## 19.3. Redirección HTTP a HTTPS
 
 ### Redirección 301 (Permanente)
 
@@ -136,7 +136,7 @@ La redirección 301 indica al navegador que el recurso ha sido movido permanente
 
 ```mermaid
 flowchart TD
-    A["Request HTTP<br/>http://api.com"] --> B{"¿Esta en HSTS<br/>cache?"}
+    A["Request HTTP<br/>http://api.com"] --> B{"Â¿Esta en HSTS<br/>cache?"}
     B -->|Sí| C["Rechazar request"]
     B -->|No| D["301 Redirect<br/>https://api.com"]
     D --> E["Navegador guarda<br/>HSTS para dominio"]
@@ -168,9 +168,9 @@ builder.Services.AddHttpsRedirection(options =>
 
 ---
 
-## 27.4. Security Headers
+## 19.4. Security Headers
 
-### ¿Por Qué Security Headers?
+### Â¿Por Qué Security Headers?
 
 Los security headers añaden capas adicionales de protección contra ataques comunes web. Se envían en cada respuesta HTTP y son procesados por el navegador.
 
@@ -235,7 +235,7 @@ public static class SecurityHeadersMiddlewareExtensions
 }
 ```
 
-### 27.4.1. Vulnerabilidades y Ataques Comunes
+### 19.4.1. Vulnerabilidades y Ataques Comunes
 
 A continuación se explican las principales vulnerabilidades que los security headers mitigan:
 
@@ -436,11 +436,11 @@ X-Content-Type-Options: nosniff
 
 | Vulnerabilidad | Antes (Sin Headers) | Después (Con Headers) |
 |----------------|---------------------|----------------------|
-| **HTTP→HTTPS** | Manual, vulnerable a downgrade | Automático, 301 redirect |
-| **HSTS** | ❌ Navegador puede usar HTTP | ✅ 365 días, subdominios, preload |
-| **XSS** | ❌ Sin protección | ✅ X-XSS-Protection: 1; mode=block |
-| **Clickjacking** | ❌ Página puede iframearse | ✅ X-Frame-Options: DENY |
-| **MIME Sniffing** | ❌ Navegador adivina tipos | ✅ X-Content-Type-Options: nosniff |
+| **HTTPâ†’HTTPS** | Manual, vulnerable a downgrade | Automático, 301 redirect |
+| **HSTS** | âŒ Navegador puede usar HTTP | âœ… 365 días, subdominios, preload |
+| **XSS** | âŒ Sin protección | âœ… X-XSS-Protection: 1; mode=block |
+| **Clickjacking** | âŒ Página puede iframearse | âœ… X-Frame-Options: DENY |
+| **MIME Sniffing** | âŒ Navegador adivina tipos | âœ… X-Content-Type-Options: nosniff |
 
 ### Explicación de Cada Header
 
@@ -457,14 +457,14 @@ graph TD
 
 ---
 
-## 27.5. Configuración en Desarrollo vs Producción
+## 19.5. Configuración en Desarrollo vs Producción
 
 ### Estrategia de Configuración
 
 ```mermaid
 flowchart TD
-    A["¿Entorno de desarrollo?"] -->|Sí| B["HTTP permitido<br/>Sin HSTS<br/>Sin redirect"]
-    A -->|No| C["HTTPS obligatorio<br/>HSTS activo (365 días)<br/>Redirect HTTP→HTTPS"]
+    A["Â¿Entorno de desarrollo?"] -->|Sí| B["HTTP permitido<br/>Sin HSTS<br/>Sin redirect"]
+    A -->|No| C["HTTPS obligatorio<br/>HSTS activo (365 días)<br/>Redirect HTTPâ†’HTTPS"]
     
     B --> D["Puerto 5000 (HTTP)"]
     C --> E["Puerto 443 (HTTPS)"]
@@ -496,7 +496,7 @@ if (!isDevelopment)
 else
 {
     // Log informativo para desarrollo
-    Log.Information("🔓 Modo desarrollo: HTTP permitido");
+    Log.Information("ðŸ”“ Modo desarrollo: HTTP permitido");
 }
 ```
 
@@ -505,13 +505,13 @@ else
 | Configuración | Desarrollo | Producción |
 |---------------|------------|------------|
 | **Puerto** | 5000 (HTTP) | 443 (HTTPS) |
-| **UseHsts()** | ❌ Desactivado | ✅ Activado |
-| **UseHttpsRedirection()** | ❌ Desactivado | ✅ Activado |
-| **Security Headers** | ✅ Activos | ✅ Activos |
+| **UseHsts()** | âŒ Desactivado | âœ… Activado |
+| **UseHttpsRedirection()** | âŒ Desactivado | âœ… Activado |
+| **Security Headers** | âœ… Activos | âœ… Activos |
 
 ---
 
-## 27.6. Implementación en Program.cs
+## 19.6. Implementación en Program.cs
 
 ### Configuración Completa
 
@@ -529,7 +529,7 @@ Log.Logger = SerilogConfig.Configure().CreateLogger();
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
-Log.Information("🚀 Inicializando TiendaApi...");
+Log.Information("ðŸš€ Inicializando TiendaApi...");
 
 // Servicios
 var services = builder.Services;
@@ -558,7 +558,7 @@ services.AddAutoMapper();
 var app = builder.Build();
 var isDevelopment = app.Environment.IsDevelopment();
 
-Log.Information("✅ Aplicación construida");
+Log.Information("âœ… Aplicación construida");
 
 // Pipeline de middlewares
 app.UseSwaggerUI(isDevelopment);
@@ -576,7 +576,7 @@ if (!isDevelopment)
 }
 else
 {
-    Log.Information("🔓 Modo desarrollo: HTTP permitido (sin redirección HTTPS)");
+    Log.Information("ðŸ”“ Modo desarrollo: HTTP permitido (sin redirección HTTPS)");
 }
 
 app.UseCorsPolicy();
@@ -602,7 +602,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "💥 La aplicación falló al iniciar");
+    Log.Fatal(ex, "ðŸ’¥ La aplicación falló al iniciar");
     throw;
 }
 finally
@@ -637,7 +637,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("Documentacion Swagger:  {BaseUrl}/", baseUrl);
     Log.Information("GraphiQL UI:            {BaseUrl}/graphiql", baseUrl);
     Log.Information("=================================================================");
-    Log.Information("🚀 Aplicacion iniciada correctamente en {BaseUrl} ({Mode})",
+    Log.Information("ðŸš€ Aplicacion iniciada correctamente en {BaseUrl} ({Mode})",
         baseUrl, mode);
     Log.Information("=================================================================");
 }
@@ -645,7 +645,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
 
 ---
 
-## 27.7. Verificación de Seguridad
+## 19.7. Verificación de Seguridad
 
 ### Verificar Headers con curl
 
@@ -685,12 +685,12 @@ curl -I https://tu-dominio.com/api/categorias
 
 ```mermaid
 graph TD
-    A["Verificación de Seguridad"] --> B["✅ HTTPS activo"]
-    A --> C["✅ HSTS configurado"]
-    A --> D["✅ Redirect HTTP→HTTPS"]
-    A --> E["✅ Security headers presentes"]
-    A --> F["✅ Certificados válidos"]
-    A --> G["✅ No hay información sensible en headers"]
+    A["Verificación de Seguridad"] --> B["âœ… HTTPS activo"]
+    A --> C["âœ… HSTS configurado"]
+    A --> D["âœ… Redirect HTTPâ†’HTTPS"]
+    A --> E["âœ… Security headers presentes"]
+    A --> F["âœ… Certificados válidos"]
+    A --> G["âœ… No hay información sensible en headers"]
     
     style A fill:#3498db,color:#fff
     style B fill:#27ae60,color:#fff
@@ -703,7 +703,7 @@ graph TD
 
 ---
 
-## 27.8. Resumen y Buenas Prácticas
+## 19.8. Resumen y Buenas Prácticas
 
 ### Configuración Recomendada
 
@@ -734,13 +734,13 @@ app.UseSecurityHeaders();
 
 | Práctica | Descripción | Prioridad |
 |----------|-------------|-----------|
-| **Usar HTTPS siempre** | En producción, HTTPS es obligatorio | 🔴 Alta |
-| **HSTS con max-age largo** | 31536000 segundos (1 año) mínimo | 🔴 Alta |
-| **Incluir subdominios** | Proteger todos los subdominios | 🟡 Media |
-| **Security Headers** | Implementar todos los headers básicos | 🔴 Alta |
-| **Preload HSTS** | Agregar a listas de preload | 🟡 Media |
-| **Certificados válidos** | Usar Let's Encrypt o CA comercial | 🔴 Alta |
-| **TLS 1.3** | Usar versión más reciente de TLS | 🔴 Alta |
+| **Usar HTTPS siempre** | En producción, HTTPS es obligatorio | ðŸ”´ Alta |
+| **HSTS con max-age largo** | 31536000 segundos (1 año) mínimo | ðŸ”´ Alta |
+| **Incluir subdominios** | Proteger todos los subdominios | ðŸŸ¡ Media |
+| **Security Headers** | Implementar todos los headers básicos | ðŸ”´ Alta |
+| **Preload HSTS** | Agregar a listas de preload | ðŸŸ¡ Media |
+| **Certificados válidos** | Usar Let's Encrypt o CA comercial | ðŸ”´ Alta |
+| **TLS 1.3** | Usar versión más reciente de TLS | ðŸ”´ Alta |
 
 ### Resumen de Headers de Seguridad
 
@@ -764,9 +764,9 @@ graph LR
     style G fill:#27ae60,color:#fff
 ```
 
-## 27.9. Rate Limiting (Protección contra Abuso)
+## 19.9. Rate Limiting (Protección contra Abuso)
 
-### ¿Qué es Rate Limiting?
+### Â¿Qué es Rate Limiting?
 
 Rate Limiting es una técnica de seguridad que limita el número de solicitudes que un cliente puede hacer a una API en un período de tiempo específico. Protege contra ataques de denegación de servicio (DDoS), fuerza bruta y abuso de la API.
 
@@ -929,6 +929,6 @@ public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder app)
 
 | Documento | Descripción |
 |-----------|-------------|
-| [12. JWT Authentication](doc/12-jwt-authentication.md) | Autenticación con tokens JWT |
-| [13. Autorización Roles](doc/13-autorizacion-roles.md) | Control de acceso basado en roles |
-| [23. Docker CI/CD](doc/23-docker-ci-cd.md) | Despliegue en contenedores |
+| [19. JWT Authentication](doc/12-jwt-authentication.md) | Autenticación con tokens JWT |
+| [19. Autorización Roles](doc/13-autorizacion-roles.md) | Control de acceso basado en roles |
+| [19. Docker CI/CD](doc/23-docker-ci-cd.md) | Despliegue en contenedores |

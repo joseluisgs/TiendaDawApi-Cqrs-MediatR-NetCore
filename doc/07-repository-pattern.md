@@ -1,14 +1,14 @@
-# 7. Repository Pattern
+﻿# 7. Repository Pattern
 
 ## Índice
 
 [7. Repository Pattern](#7-repository-pattern)
-  - [7.1. Qué es el Repository Pattern](#71-qué-es-el-repository-pattern)
-  - [7.2. Contratos: Definición de Interfaces](#72-contratos-definición-de-interfaces)
-  - [7.3. Implementación con Entity Framework Core](#73-implementación-con-entity-framework-core)
-  - [7.4. Unit of Work Implícito](#74-unit-of-work-implícito)
-  - [7.5. Separación de Responsabilidades](#75-separación-de-responsabilidades)
-  - [7.6. Resumen y Buenas Prácticas](#76-resumen-y-buenas-prácticas)
+  - [7.1. Qué es el Repository Pattern](#71-qu-es-el-repository-pattern)
+  - [7.2. Contratos: Definición de Interfaces](#72-contratos-definicin-de-interfaces)
+  - [7.3. Implementación con Entity Framework Core](#73-implementacin-con-entity-framework-core)
+  - [7.4. Unit of Work Implícito](#74-unit-of-work-implcito)
+  - [7.5. Separación de Responsabilidades](#75-separacin-de-responsabilidades)
+  - [7.6. Resumen y Buenas Prácticas](#76-resumen-y-buenas-prcticas)
 
 ---
 
@@ -21,7 +21,7 @@ Imagina que tienes un servicio de productos que necesita obtener datos de la bas
 Sin un repositorio, los servicios contienen lógica de acceso a datos mezclada con lógica de negocio. Esto hace el código difícil de testear porque no puedes facilmente substituir el acceso a base de datos. También hace que cambiar la tecnología de persistencia requiera modificar código en múltiples lugares.
 
 ```csharp
-// ❌ INCORRECTO: Lógica de datos en el servicio
+// âŒ INCORRECTO: Lógica de datos en el servicio
 public class ProductoService
 {
     private readonly TiendaDbContext _context;
@@ -55,7 +55,7 @@ public class ProductoService
 Con el Repository Pattern, el servicio solo conoce la interfaz del repositorio, no su implementación. El repositorio encapsula todo el acceso a datos, exponiendo métodos claros y específicos. Esto hace los servicios más simples, más testables, y la persistencia fácilmente substituible.
 
 ```csharp
-// ✅ CORRECTO: Repository con interfaz
+// âœ… CORRECTO: Repository con interfaz
 public interface IProductoRepository
 {
     Task<Producto?> FindById(long id);

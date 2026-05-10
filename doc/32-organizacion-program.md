@@ -1,20 +1,20 @@
-# 30. Organización de Program.cs y Formas de Estructurar el Startup
+﻿# 32. Organización Program.cs
 
 ## Índice
 
-[30. Organización de Program.cs y Formas de Estructurar el Startup](#27-organización-de-programcs-y-formas-de-estructurar-el-startup)
-  - [30.1. El Problema del Program.cs Monolítico](#301-el-problema-del-programcs-monolítico)
-  - [30.2. Patrón de Extension Methods para Configuración](#302-patrón-de-extension-methods-para-configuración)
-  - [30.3. Estructura de Carpetas: Infrastructures/](#303-estructura-de-carpetas-infrastructures)
-  - [30.4. Ejemplos de Implementación](#304-ejemplos-de-implementación)
-  - [30.5. Program.cs Refactorizado](#305-programcs-refactorizado)
-  - [30.6. Otras Formas de Estructurar el Startup](#306-otras-formas-de-estructurar-el-startup)
-  - [30.7. Buenas Prácticas y Recomendaciones](#307-buenas-prácticas-y-recomendaciones)
-  - [30.8. Resumen](#308-resumen)
+[32. Organización de Program.cs y Formas de Estructurar el Startup](#32-organizacin-de-programcs-y-formas-de-estructurar-el-startup)
+  - [32.1. El Problema del Program.cs Monolítico](#321-el-problema-del-programcs-monoltico)
+  - [32.2. Patrón de Extension Methods para Configuración](#322-patrn-de-extension-methods-para-configuracin)
+  - [32.3. Estructura de Carpetas: Infrastructures/](#323-estructura-de-carpetas-infrastructures)
+  - [32.4. Ejemplos de Implementación](#324-ejemplos-de-implementacin)
+  - [32.5. Program.cs Refactorizado](#325-programcs-refactorizado)
+  - [32.6. Otras Formas de Estructurar el Startup](#326-otras-formas-de-estructurar-el-startup)
+  - [32.7. Buenas Prácticas y Recomendaciones](#327-buenas-prcticas-y-recomendaciones)
+  - [32.8. Resumen](#328-resumen)
 
 ---
 
-## 30.1. El Problema del Program.cs Monolítico
+## 32.1. El Problema del Program.cs Monolítico
 
 Cuando una aplicación crece, `Program.cs` acumula responsabilidades de configuración de servicios, middlewares, inicialización de bases de datos,Logging, autenticación, CORS, Swagger, y muchas otras configuraciones. Este crecimiento desorganizado genera varios problemas que afectan la mantenibilidad y la calidad del código a largo plazo.
 
@@ -187,7 +187,7 @@ Este código, aunque funcional, presenta todos los problemas mencionados anterio
 
 ---
 
-## 30.2. Patrón de Extension Methods para Configuración
+## 32.2. Patrón de Extension Methods para Configuración
 
 El patrón de extension methods es una técnica elegant para organizar el código de configuración de ASP.NET Core. Consiste en crear métodos de extensión para `IServiceCollection` (para configuración de servicios) y `WebApplication` (para configuración de middlewares), agrupando configuraciones relacionadas en archivos separados.
 
@@ -255,7 +255,7 @@ El módulo de **Additional** incluye email, almacenamiento de archivos, WebSocke
 
 ---
 
-## 30.3. Estructura de Carpetas: Infrastructures/
+## 32.3. Estructura de Carpetas: Infrastructures/
 
 La carpeta `Infrastructures/` (o `Infrastructure/`) es el lugar recomendado para almacenar todos los métodos de extensión relacionados con la configuración de la aplicación. Esta estructura sigue el patrón de arquitectura limpia (Clean Architecture) donde la infraestructura contiene detalles de implementación técnica.
 
@@ -263,29 +263,29 @@ La carpeta `Infrastructures/` (o `Infrastructure/`) es el lugar recomendado para
 
 ```
 TiendaApi.Apis/
-├── Program.cs
-├── Infrastructures/
-│   ├── SerilogConfig.cs
-│   ├── ControllersConfig.cs
-│   ├── ApiVersioningConfig.cs
-│   ├── SwaggerConfig.cs
-│   ├── CorsConfig.cs
-│   ├── DatabaseConfig.cs
-│   ├── AuthenticationConfig.cs
-│   ├── RepositoriesConfig.cs
-│   ├── ServicesConfig.cs
-│   ├── CacheConfig.cs
-│   ├── EmailConfig.cs
-│   ├── StorageConfig.cs
-│   ├── WebSocketsConfig.cs
-│   ├── GraphQLConfig.cs
-│   ├── AutoMapperConfig.cs
-│   ├── SwaggerExtensions.cs
-│   ├── GraphQLExtensions.cs
-│   ├── CorsExtensions.cs
-│   ├── WebSocketExtensions.cs
-│   ├── DatabaseInitializationExtensions.cs
-│   └── StorageInitializationExtensions.cs
+â”œâ”€â”€ Program.cs
+â”œâ”€â”€ Infrastructures/
+â”‚   â”œâ”€â”€ SerilogConfig.cs
+â”‚   â”œâ”€â”€ ControllersConfig.cs
+â”‚   â”œâ”€â”€ ApiVersioningConfig.cs
+â”‚   â”œâ”€â”€ SwaggerConfig.cs
+â”‚   â”œâ”€â”€ CorsConfig.cs
+â”‚   â”œâ”€â”€ DatabaseConfig.cs
+â”‚   â”œâ”€â”€ AuthenticationConfig.cs
+â”‚   â”œâ”€â”€ RepositoriesConfig.cs
+â”‚   â”œâ”€â”€ ServicesConfig.cs
+â”‚   â”œâ”€â”€ CacheConfig.cs
+â”‚   â”œâ”€â”€ EmailConfig.cs
+â”‚   â”œâ”€â”€ StorageConfig.cs
+â”‚   â”œâ”€â”€ WebSocketsConfig.cs
+â”‚   â”œâ”€â”€ GraphQLConfig.cs
+â”‚   â”œâ”€â”€ AutoMapperConfig.cs
+â”‚   â”œâ”€â”€ SwaggerExtensions.cs
+â”‚   â”œâ”€â”€ GraphQLExtensions.cs
+â”‚   â”œâ”€â”€ CorsExtensions.cs
+â”‚   â”œâ”€â”€ WebSocketExtensions.cs
+â”‚   â”œâ”€â”€ DatabaseInitializationExtensions.cs
+â”‚   â””â”€â”€ StorageInitializationExtensions.cs
 ```
 
 ### Convenciones de Nomenclatura
@@ -359,7 +359,7 @@ flowchart TB
 
 ---
 
-## 30.4. Ejemplos de Implementación
+## 32.4. Ejemplos de Implementación
 
 ### Ejemplo 1: Configuración de Base de Datos
 
@@ -612,7 +612,7 @@ public static class CacheConfig
             var redisConnection = environment.Configuration.GetConnectionString("Redis");
             services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnection));
             services.TryAddSingleton<ICacheService, RedisCacheService>();
-            Log.Information("Redis configurado (PRODUCCIÓN)");
+            Log.Information("Redis configurado (PRODUCCIá“N)");
         }
 
         return services;
@@ -622,7 +622,7 @@ public static class CacheConfig
 
 ---
 
-## 30.5. Program.cs Refactorizado
+## 32.5. Program.cs Refactorizado
 
 El resultado de aplicar este patrón es un `Program.cs` limpio, legible y mantenible:
 
@@ -639,13 +639,13 @@ using TiendaApi.Apis.WebSockets.Productos;
 Log.Logger = SerilogConfig.Configure().CreateLogger();
 builder.Host.UseSerilog();
 
-Log.Information("🚀 Inicializando TiendaApi...");
+Log.Information("ðŸš€ Inicializando TiendaApi...");
 
 var services = builder.Services;
 var configuration = builder.Configuration;
 var environment = builder.Environment;
 
-// === CONFIGURACIÓN DE SERVICIOS ===
+// === CONFIGURACIá“N DE SERVICIOS ===
 services.AddMvcControllers();
 services.AddFluentValidationServices();
 
@@ -667,11 +667,11 @@ services.AddWebSockets();
 services.AddGraphQL(environment);
 services.AddAutoMapper();
 
-// === CONSTRUCCIÓN DE LA APLICACIÓN ===
+// === CONSTRUCCIá“N DE LA APLICACIá“N ===
 var app = builder.Build();
 var isDevelopment = app.Environment.IsDevelopment();
 
-Log.Information("✅ Aplicación construida");
+Log.Information("âœ… Aplicación construida");
 
 // === PIPELINE DE MIDDLEWARES ===
 app.UseSwaggerUI(isDevelopment);
@@ -687,7 +687,7 @@ app.UseStaticFiles();
 app.MapControllers();
 app.MapGraphQL();
 
-// === INICIALIZACIÓN ===
+// === INICIALIZACIá“N ===
 await app.InitializeDatabaseAsync(isDevelopment);
 app.InitializeStorage(isDevelopment);
 
@@ -700,7 +700,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "💥 La aplicación falló al iniciar");
+    Log.Fatal(ex, "ðŸ’¥ La aplicación falló al iniciar");
     throw;
 }
 finally
@@ -719,8 +719,8 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("Swagger: http://localhost:{Port}/", port);
     Log.Information("GraphiQL: http://localhost:{Port}/graphiql", port);
     Log.Information("========================================");
-    Log.Information("🚀 Aplicación iniciada en {Mode}", 
-        isDevelopment ? "DESARROLLO" : "PRODUCCIÓN");
+    Log.Information("ðŸš€ Aplicación iniciada en {Mode}", 
+        isDevelopment ? "DESARROLLO" : "PRODUCCIá“N");
 }
 ```
 
@@ -736,7 +736,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
 
 ---
 
-## 30.6. Otras Formas de Estructurar el Startup
+## 32.6. Otras Formas de Estructurar el Startup
 
 ### Opción 1: Módulos con Clase de Configuración
 
@@ -820,22 +820,22 @@ Esta opción organiza las configuraciones en subcarpetas dentro de `Configuratio
 
 ```
 Configuration/
-├── Database/
-│   ├── PostgreSQLConfig.cs
-│   ├── MongoDBConfig.cs
-│   └── CacheConfig.cs
-├── Security/
-│   ├── AuthenticationConfig.cs
-│   ├── AuthorizationConfig.cs
-│   └── CorsConfig.cs
-├── Api/
-│   ├── VersioningConfig.cs
-│   ├── SwaggerConfig.cs
-│   └── RoutingConfig.cs
-└── Infrastructure/
-    ├── LoggingConfig.cs
-    ├── HealthChecksConfig.cs
-    └── TelemetryConfig.cs
+â”œâ”€â”€ Database/
+â”‚   â”œâ”€â”€ PostgreSQLConfig.cs
+â”‚   â”œâ”€â”€ MongoDBConfig.cs
+â”‚   â””â”€â”€ CacheConfig.cs
+â”œâ”€â”€ Security/
+â”‚   â”œâ”€â”€ AuthenticationConfig.cs
+â”‚   â”œâ”€â”€ AuthorizationConfig.cs
+â”‚   â””â”€â”€ CorsConfig.cs
+â”œâ”€â”€ Api/
+â”‚   â”œâ”€â”€ VersioningConfig.cs
+â”‚   â”œâ”€â”€ SwaggerConfig.cs
+â”‚   â””â”€â”€ RoutingConfig.cs
+â””â”€â”€ Infrastructure/
+    â”œâ”€â”€ LoggingConfig.cs
+    â”œâ”€â”€ HealthChecksConfig.cs
+    â””â”€â”€ TelemetryConfig.cs
 ```
 
 ### Opción 4: Usando Minimal APIs con Registros
@@ -871,7 +871,7 @@ app.Run();
 
 ---
 
-## 30.7. Buenas Prácticas y Recomendaciones
+## 32.7. Buenas Prácticas y Recomendaciones
 
 ### Principios de Diseño
 
@@ -962,7 +962,7 @@ public void AddDatabases_ValidConfiguration_RegistersServices()
 
 ---
 
-## 30.8. Resumen
+## 32.8. Resumen
 
 A lo largo de este documento hemos explorado el problema del `Program.cs` monolítico y presentado soluciones prácticas para organizar el código de configuración de aplicaciones ASP.NET Core.
 

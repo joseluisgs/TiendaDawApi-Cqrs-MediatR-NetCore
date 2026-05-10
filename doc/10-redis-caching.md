@@ -1,24 +1,24 @@
-# 11. Cache y Redis
+﻿# 10. Redis Caching
 
 ## Índice
 
-[11. Cache y Redis](#11-cache-y-redis)
-  - [11.1. Conceptos Fundamentales de Cache](#111-conceptos-fundamentales-de-cache)
-  - [11.2. Cache-Aside Pattern (Lazy Loading)](#112-cache-aside-pattern-lazy-loading)
-  - [11.3. MemoryCache vs Redis](#113-memorycache-vs-redis)
-  - [11.4. Configuración según Entorno](#114-configuración-según-entorno)
-  - [11.5. ICacheService Interface Contracts](#115-icacheservice-interface-contracts)
-  - [11.6. Implementación de Cache de Productos](#116-implementación-de-cache-de-productos)
-  - [11.7. Cache en Servicios de Negocio](#117-cache-en-servicios-de-negocio)
-  - [11.8. Invalidación de Cache](#118-invalidación-de-cache)
-  - [11.9. Cache de Segundo Nivel (Fallback)](#119-cache-de-segundo-nivel-fallback)
-  - [11.10. Resumen y Buenas Prácticas](#1110-resumen-y-buenas-prácticas)
+[10. Cache y Redis](#10-cache-y-redis)
+  - [10.1. Conceptos Fundamentales de Cache](#101-conceptos-fundamentales-de-cache)
+  - [10.2. Cache-Aside Pattern (Lazy Loading)](#102-cache-aside-pattern-lazy-loading)
+  - [10.3. MemoryCache vs Redis](#103-memorycache-vs-redis)
+  - [10.4. Configuración según Entorno](#104-configuracin-segn-entorno)
+  - [10.5. ICacheService Interface Contracts](#105-icacheservice-interface-contracts)
+  - [10.6. Implementación de Cache de Productos](#106-implementacin-de-cache-de-productos)
+  - [10.7. Cache en Servicios de Negocio](#107-cache-en-servicios-de-negocio)
+  - [10.8. Invalidación de Cache](#108-invalidacin-de-cache)
+  - [10.9. Cache de Segundo Nivel (Fallback)](#109-cache-de-segundo-nivel-fallback)
+  - [10.10. Resumen y Buenas Prácticas](#1010-resumen-y-buenas-prcticas)
 
 ---
 
-## 11.1. Conceptos Fundamentales de Cache
+## 10.1. Conceptos Fundamentales de Cache
 
-### ¿Qué es un Cache?
+### Â¿Qué es un Cache?
 
 Un cache es una capa de almacenamiento temporal que guarda copias de datos frecuentemente accedidos para reducir el tiempo de acceso. El principio fundamental se basa en la **localidad de referencia**: los datos recientemente accedidos tienen mayor probabilidad de ser accedidos de nuevo.
 
@@ -26,7 +26,7 @@ Un cache es una capa de almacenamiento temporal que guarda copias de datos frecu
 
 ```mermaid
 flowchart TD
-    A["Solicitud de dato"] --> B{"¿Existe en cache?"}
+    A["Solicitud de dato"] --> B{"Â¿Existe en cache?"}
     
     B -->|Sí - Cache Hit| C["Retornar dato cacheado"]
     C --> D["Tiempo: ~1ms"]
@@ -58,7 +58,7 @@ public class CacheMetrics
 
 ---
 
-## 11.2. Cache-Aside Pattern (Lazy Loading)
+## 10.2. Cache-Aside Pattern (Lazy Loading)
 
 El patrón cache-aside (también conocido como lazy caching) es el más utilizado en aplicaciones web. Funciona así:
 
@@ -310,7 +310,7 @@ public class CacheService : ICacheService
 
 ---
 
-## 11.3. MemoryCache vs Redis
+## 10.3. MemoryCache vs Redis
 
 ### Comparación Detallada
 
@@ -511,7 +511,7 @@ public class RedisCacheService : IDistributedCacheService
 
 ---
 
-## 11.4. Configuración según Entorno (Development vs Production)
+## 10.4. Configuración según Entorno (Development vs Production)
 
 ### appsettings.json
 
@@ -739,7 +739,7 @@ if (cacheProvider.ToLower() == "redis")
 
 ---
 
-## 11.5. ICacheService Interface Contracts
+## 10.5. ICacheService Interface Contracts
 
 ```csharp
 namespace TiendaApi.Core.Interfaces;
@@ -822,7 +822,7 @@ public interface IRedisCacheService : ICacheService
 
 ---
 
-## 11.6. Implementación de Cache de Productos
+## 10.6. Implementación de Cache de Productos
 
 ```csharp
 using TiendaApi.Core.Interfaces;
@@ -898,7 +898,7 @@ public class ProductCacheService : IProductCacheService
 
 ---
 
-## 11.7. Cache en Servicios de Negocio
+## 10.7. Cache en Servicios de Negocio
 
 El cache se integra en los servicios de negocio usando el patrón Cache-Aside: primero intentamos obtener de cache, si no está, consultamos la base de datos y guardamos en cache.
 
@@ -1065,7 +1065,7 @@ public class ProductoService(
 ```mermaid
 flowchart TD
     subgraph "Operación de Lectura"
-        A1["GetByCategoria(catId)"] --> A2{"¿En cache?"}
+        A1["GetByCategoria(catId)"] --> A2{"Â¿En cache?"}
         A2 -->|Sí| A3["Retornar datos cacheados"]
         A2 -->|No| A4["Consultar BD"]
         A4 --> A5["Guardar en cache"]
@@ -1081,7 +1081,7 @@ flowchart TD
 
 ---
 
-## 11.8. Invalidación de Cache
+## 10.8. Invalidación de Cache
 
 La invalidación es el proceso de eliminar o actualizar entradas de cache cuando los datos fuente cambian. Es uno de los desafíos más importantes del caching.
 
@@ -1147,7 +1147,7 @@ public class ProductoService(
 
         if (result.IsSuccess)
         {
-            // Invalidar cache de categoría DESPUÉS de escribir
+            // Invalidar cache de categoría DESPUá‰S de escribir
             await productCache.InvalidateCategoriaCacheAsync(request.CategoriaId);
         }
 
@@ -1287,7 +1287,7 @@ public class CacheInvalidationService
 
 ---
 
-## 11.9. Cache de Segundo Nivel (Fallback)
+## 10.9. Cache de Segundo Nivel (Fallback)
 
 ```csharp
 public class CacheWithFallbackService : ICacheService
@@ -1398,7 +1398,7 @@ public class CacheWithFallbackService : ICacheService
 
 ---
 
-## 11.10. Resumen y Buenas Prácticas
+## 10.10. Resumen y Buenas Prácticas
 
 ### Puntos Clave del Módulo
 
@@ -1448,7 +1448,7 @@ flowchart TB
     D1 --> D2 --> D3 --> D4
 ```
 
-### Commands Útiles
+### Commands áštiles
 
 ```bash
 # Conectar a Redis CLI

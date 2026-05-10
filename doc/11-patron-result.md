@@ -1,20 +1,20 @@
-# 6. Patrón Result con CSharpFunctionalExtensions
+﻿# 11. Patrón Result
 
 ## Índice
 
-[6. Patrón Result con CSharpFunctionalExtensions](#6-patrón-result-con-csharpextensions)
-  - [6.1. Por Qué Excepciones No Son Para Errores de Negocio](#61-por-qué-excepciones-no-son-para-errores-de-negocio)
-  - [6.2. CSharpFunctionalExtensions: Result<T, Error>](#62-csharpextensions-resultt-error)
-  - [6.3. DomainError y ErrorType Enum](#63-domainerror-y-errortype-enum)
-  - [6.4. Result.Match() en Servicios](#64-resultmatch-en-servicios)
-  - [6.5. UnitResult para Operaciones Sin Retorno](#65-unitresult-para-operaciones-sin-retorno)
-  - [6.6. Integración Result + Controladores](#66-integración-result--controladores)
-  - [6.7. Ventajas del Patrón Result](#67-ventajas-del-patrón-result)
-  - [6.8. Resumen y Buenas Prácticas](#68-resumen-y-buenas-prácticas)
+[11. Patrón Result con CSharpFunctionalExtensions](#11-patrn-result-con-csharpfunctionalextensions)
+  - [11.1. Por Qué Excepciones No Son Para Errores de Negocio](#111-por-qu-excepciones-no-son-para-errores-de-negocio)
+  - [11.2. CSharpFunctionalExtensions: Result<T, Error>](#112-csharpfunctionalextensions-resultt-error)
+  - [11.3. DomainError y ErrorType Enum](#113-domainerror-y-errortype-enum)
+  - [11.4. Result.Match() en Servicios](#114-resultmatch-en-servicios)
+  - [11.5. UnitResult para Operaciones Sin Retorno](#115-unitresult-para-operaciones-sin-retorno)
+  - [11.6. Integración Result + Controladores](#116-integracin-result--controladores)
+  - [11.7. Ventajas del Patrón Result](#117-ventajas-del-patrn-result)
+  - [11.8. Resumen y Buenas Prácticas](#118-resumen-y-buenas-prcticas)
 
 ---
 
-## 6.1. Por Qué Excepciones No Son Para Errores de Negocio
+## 11.1. Por Qué Excepciones No Son Para Errores de Negocio
 
 Las excepciones están diseñadas para situaciones excepcionales e inesperadas: un archivo que no existe, una conexión a base de datos que falla, un error de programación. Sin embargo, en una API de negocio, muchas situaciones que los clientes consideran "normales" requieren devolver un error: credenciales inválidas, recurso no encontrado, datos duplicados. Usar excepciones para estos casos hace el código más lento, más difícil de seguir, y oculta el flujo de control.
 
@@ -23,7 +23,7 @@ Las excepciones están diseñadas para situaciones excepcionales e inesperadas: 
 Imagina un método que valida el login de un usuario. Hay múltiples formas en que puede fallar: email vacío, email no válido, contraseña incorrecta, cuenta bloqueada. Si usas excepciones para cada caso, terminas con un try-catch gigante que no dice nada sobre los posibles caminos del código, el rendimiento se ve afectado porque las excepciones tienen overhead, y es fácil olvidar capturar una excepción y que el error llegue al cliente en un formato inesperado.
 
 ```csharp
-// ❌ INCORRECTO: Excepciones para errores de negocio
+// âŒ INCORRECTO: Excepciones para errores de negocio
 public class AuthService
 {
     public User Login(string email, string password)
@@ -64,7 +64,7 @@ catch (ForbiddenException ex) { /* mostrar cuenta bloqueada */ }
 Con el patrón Result, cada método devuelve explícitamente si tuvo éxito o falló, junto con el valor o el error. Esto hace el código auto-documentado: puedes ver todos los posibles resultados leyendo la firma del método. No hay excepciones ocultas, el flujo de control es explícito, y el rendimiento es óptimo porque no hay overhead de stack trace.
 
 ```csharp
-// ✅ CORRECTO: Result Pattern
+// âœ… CORRECTO: Result Pattern
 public class AuthService
 {
     public Result<User, DomainError> Login(string email, string password)
@@ -142,7 +142,7 @@ sequenceDiagram
     Svc-->>Ctrl: Result.Failure(ConflictError)
     Ctrl-->>Client: 409 Conflict
 
-    Note over Client,DB: ESCENARIO 4: Éxito
+    Note over Client,DB: ESCENARIO 4: á‰xito
     Client->>Ctrl: POST /api/productos {nombre: "Mouse", precio: 29.99}
     Ctrl->>Svc: CreateAsync(dto)
     Svc->>Repo: SaveAsync(producto)
@@ -181,7 +181,7 @@ flowchart TB
 
 ---
 
-## 6.2. CSharpFunctionalExtensions: Result<T, Error>
+## 11.2. CSharpFunctionalExtensions: Result<T, Error>
 
 CSharpFunctionalExtensions es una librería que proporciona tipos funcionales como `Result`, `Maybe`, y `Either`. La librería maneja la complejidad de implementar el patrón Result manualmente y proporciona métodos útiles como `Map`, `Bind`, y `Match` para encadenar operaciones de forma funcional.
 
@@ -319,9 +319,9 @@ var finalResult = Result.FirstFailureOrSuccess(result1, result2, result3);
 
 ---
 
-## 6.3. DomainError: Factory + Fachada + Herencia
+## 11.3. DomainError: Factory + Fachada + Herencia
 
-### Árbol de Herencia
+### árbol de Herencia
 
 ```mermaid
 classDiagram
@@ -374,7 +374,7 @@ classDiagram
     DomainError <|-- InternalError
 ```
 
-### ¿Qué es un Factory Method? (Patrón Factory)
+### Â¿Qué es un Factory Method? (Patrón Factory)
 
 Un **Factory Method** es un método estático que encapsula la creación de objetos. Su función es:
 - **Ocultar** la complejidad de creación
@@ -382,12 +382,12 @@ Un **Factory Method** es un método estático que encapsula la creación de obje
 - **Centralizar** la lógica de construcción
 
 ```csharp
-// ❌ Sin factory: formato inconsistente, repetitivo
+// âŒ Sin factory: formato inconsistente, repetitivo
 new NotFoundError("Recurso con ID 5 no encontrado")
 new NotFoundError("Usuario 10 no existe")
 new NotFoundError("El producto 7 no fue encontrado")
 
-// ✅ Con factory: mensaje estandarizado
+// âœ… Con factory: mensaje estandarizado
 NotFoundError.FromId(5, "Producto")     // "Recurso con ID 5 no encontrado"
 NotFoundError.FromId(10, "Usuario")     // "Recurso con ID 10 no encontrado"
 NotFoundError.FromId(7, "Producto")     // "Recurso con ID 7 no encontrado"
@@ -431,7 +431,7 @@ public sealed record ConflictError(string Message) : DomainError(Message)
 }
 ```
 
-### ¿Qué es una Fachada? (Patrón Fachada)
+### Â¿Qué es una Fachada? (Patrón Fachada)
 
 Una **Fachada** es una clase estática que actúa como punto de entrada único a un subsistema complejo. Su función es:
 - **Centralizar** todos los errores de un dominio
@@ -439,12 +439,12 @@ Una **Fachada** es una clase estática que actúa como punto de entrada único a
 - **Delegar** a los factories base
 
 ```csharp
-// ❌ Sinfachada: dispersión y duplicación
+// âŒ Sinfachada: dispersión y duplicación
 NotFoundError.FromId(5, "Producto")
 ConflictError.Duplicate("email", "user@test.com")
 new BusinessRuleError("No se puede eliminar el usuario 3")
 
-// ✅ Confachada: organización y semántica
+// âœ… Confachada: organización y semántica
 ProductoError.NotFound(5)                    // Delega a FromId()
 UsuarioError.EmailExistente("user@test.com")  // Delega a Duplicate()
 UsuarioError.NoSePuedeEliminarConPedidos(3)  // Crea BusinessRuleError con mensaje semántico
@@ -657,14 +657,14 @@ flowchart TB
 
 | Aspecto | Excepciones | Result |
 |---------|-------------|--------|
-| Rendimiento | ~100x más lento | Óptimo |
+| Rendimiento | ~100x más lento | á“ptimo |
 | Legibilidad | try-catch oculto | Explícito |
 | Completitud | Se olvida capturar | Match fuerza manejo |
 | Testabilidad | Assert.Throws | Tests directos |
 
 ---
 
-## 6.4. Result.Match() en Servicios
+## 11.4. Result.Match() en Servicios
 
 El método `Match` es la forma principal de trabajar con Results. Permite ejecutar código diferente dependiendo de si el Result fue éxito o fracaso, de forma similar a cómo funcionan las expresiones switch pero para Results. Match fuerza al desarrollador a manejar ambos casos, haciendo el código más seguro.
 
@@ -750,7 +750,7 @@ public IActionResult GetById(long id)
 
 ---
 
-## 6.5. UnitResult para Operaciones Sin Retorno
+## 11.5. UnitResult para Operaciones Sin Retorno
 
 UnitResult es la versión de Result para operaciones que no devuelven un valor significativo, como operaciones de delete o update donde solo te importa si tuvieron éxito. Es análogo a usar `void` pero con soporte para errores.
 
@@ -813,7 +813,7 @@ public class ProductoService
 
 ---
 
-## 6.6. Integración Result + Controladores
+## 11.6. Integración Result + Controladores
 
 La integración del patrón Result con controladores es natural una vez que entiendes cómo usar Match. El patrón típico es que los servicios devuelven Result, y los controladores usan Match para convertir esos Results en respuestas HTTP apropiadas.
 
@@ -946,7 +946,7 @@ private IActionResult GetHttpResult(DomainError error)
 
 ---
 
-## 6.7. Ventajas del Patrón Result
+## 11.7. Ventajas del Patrón Result
 
 El patrón Result proporciona múltiples ventajas sobre el uso de excepciones para errores de negocio, desde rendimiento hasta mantenibilidad del código.
 
@@ -958,8 +958,8 @@ El código con Result es más fácil de leer porque todos los posibles caminos e
 flowchart TB
     subgraph "Con Excepciones"
         A1["Método con throw"]
-        A2["¿Dónde está el try-catch?"]
-        A3["¿Qué excepciones pueden saltar?"]
+        A2["Â¿Dónde está el try-catch?"]
+        A3["Â¿Qué excepciones pueden saltar?"]
         A4["Flow decontrol oculto"]
     end
     
@@ -1031,7 +1031,7 @@ El Result no tiene el overhead de las excepciones: no stack trace, no búsqueda 
 
 ---
 
-## 6.8. Resumen y Buenas Prácticas
+## 11.8. Resumen y Buenas Prácticas
 
 A lo largo de este documento hemos explorado el patrón Result como alternativa a las excepciones para errores de negocio.
 

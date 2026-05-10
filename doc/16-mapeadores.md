@@ -1,21 +1,21 @@
-# 22. Mapeadores: AutoMapper vs Funciones de Extensión
+﻿# 16. Mapeadores
 
 ## Índice
 
-[22. Mapeadores: AutoMapper vs Funciones de Extensión](#22-mapeadores-automapper-vs-funciones-de-extensión)
-  - [22.1. ¿Por Qué Usar Mapeadores?](#221-por-qué-usar-mapeadores)
-  - [22.2. AutoMapper](#222-automapper)
-  - [22.3. Funciones de Extensión (Alternativa)](#223-funciones-de-extensión-alternativa)
-  - [22.4. Comparación AutoMapper vs Extensiones](#224-comparación-automapper-vs-extensiones)
-  - [22.5. Benchmarks de Rendimiento](#225-benchmarks-de-rendimiento)
-  - [22.6. Cuándo Usar Cada Enfoque](#226-cuándo-usar-cada-enfoque)
-  - [22.7. Patrón Híbrido](#227-patrón-híbrido)
-  - [22.8. Errores Comunes](#228-errores-comunes)
-  - [22.9. Resumen](#229-resumen)
+[16. Mapeadores: AutoMapper vs Funciones de Extensión](#16-mapeadores-automapper-vs-funciones-de-extensin)
+  - [16.1. Â¿Por Qué Usar Mapeadores?](#161-por-qu-usar-mapeadores)
+  - [16.2. AutoMapper](#162-automapper)
+  - [16.3. Funciones de Extensión (Alternativa)](#163-funciones-de-extensin-alternativa)
+  - [16.4. Comparación AutoMapper vs Extensiones](#164-comparacin-automapper-vs-extensiones)
+  - [16.5. Benchmarks de Rendimiento](#165-benchmarks-de-rendimiento)
+  - [16.6. Cuándo Usar Cada Enfoque](#166-cundo-usar-cada-enfoque)
+  - [16.7. Patrón Híbrido](#167-patrn-hbrido)
+  - [16.8. Errores Comunes](#168-errores-comunes)
+  - [16.9. Resumen](#169-resumen)
 
 ---
 
-## 22.1. ¿Por Qué Usar Mapeadores?
+## 16.1. Â¿Por Qué Usar Mapeadores?
 
 En arquitecturas limpias, las **entidades** (modelos de dominio) y los **DTOs** (Data Transfer Objects) suelen tener estructuras diferentes. Los mapeadores facilitan la conversión entre ambos sin duplicar lógica.
 
@@ -47,7 +47,7 @@ flowchart LR
 
 | Beneficio | Descripción |
 |-----------|-------------|
-| **Separación de responsabilidades** | Entidades ≠ DTOs |
+| **Separación de responsabilidades** | Entidades â‰  DTOs |
 | **Reutilización** | Un mapeo, múltiples usos |
 | **Mantenibilidad** | Cambios centralizados |
 | **Tipado** | Errores en compilación |
@@ -55,7 +55,7 @@ flowchart LR
 
 ---
 
-## 22.2. AutoMapper
+## 16.2. AutoMapper
 
 ### Instalación
 
@@ -73,7 +73,7 @@ Del archivo `Program.cs`:
 
 ```csharp
 // AutoMapper
-Log.Information("🔄 Configurando AutoMapper...");
+Log.Information("ðŸ”„ Configurando AutoMapper...");
 builder.Services.AddAutoMapper(
     typeof(MappingProfile), 
     typeof(PedidoProfile));
@@ -194,7 +194,7 @@ public class ProductoService
 
 ---
 
-## 22.3. Funciones de Extensión (Alternativa)
+## 16.3. Funciones de Extensión (Alternativa)
 
 ### Implementación con Extensiones
 
@@ -204,7 +204,7 @@ namespace TiendaApi.Apis.Extensions;
 // Clase de extensiones para Producto
 public static class ProductoExtensions
 {
-    // Entidad → DTO
+    // Entidad â†’ DTO
     public static ProductoDto ToDto(this Producto producto)
     {
         return new ProductoDto
@@ -219,7 +219,7 @@ public static class ProductoExtensions
         };
     }
 
-    // DTO → Entidad
+    // DTO â†’ Entidad
     public static Producto ToEntity(this ProductoRequestDto dto)
     {
         return new Producto
@@ -233,7 +233,7 @@ public static class ProductoExtensions
         };
     }
 
-    // Lista de entidades → lista de DTOs
+    // Lista de entidades â†’ lista de DTOs
     public static List<ProductoDto> ToDtoList(this IEnumerable<Producto> productos)
     {
         return productos.Select(p => p.ToDto()).ToList();
@@ -291,7 +291,7 @@ public static class PedidoExtensions
 
 ---
 
-## 22.4. Comparación AutoMapper vs Extensiones
+## 16.4. Comparación AutoMapper vs Extensiones
 
 ```mermaid
 flowchart TD
@@ -365,7 +365,7 @@ flowchart TD
 
 ---
 
-## 22.5. Benchmarks de Rendimiento
+## 16.5. Benchmarks de Rendimiento
 
 ```csharp
 // Benchmark comparativo (ejemplo de resultado típico)
@@ -421,12 +421,12 @@ public class MappersBenchmarks
 
 ---
 
-## 22.6. Cuándo Usar Cada Enfoque
+## 16.6. Cuándo Usar Cada Enfoque
 
 ```mermaid
 flowchart TD
-    A["¿Complexidad del mapeo?"] --> B{"¿Mapeo simple?"}
-    B -->|Sí, nombres similares| C["¿Rendimiento crítico?"]
+    A["Â¿Complexidad del mapeo?"] --> B{"Â¿Mapeo simple?"}
+    B -->|Sí, nombres similares| C["Â¿Rendimiento crítico?"]
     B -->|No, lógica compleja| D["AutoMapper"]
     
     C -->|Sí| E["Extensiones"]
@@ -442,7 +442,7 @@ flowchart TD
 | Escenario | Recomendación | Razón |
 |-----------|---------------|-------|
 | **API simple, pocos mapeos** | Extensiones | Sin dependencia, rápido |
-| **Mapeos complejos con lógica** | AutoMapper | Configuración централизованная |
+| **Mapeos complejos con lógica** | AutoMapper | Configuración Ñ†ÐµÐ½Ñ‚Ñ€Ð°Ð»Ð¸Ð·Ð¾Ð²Ð°Ð½Ð½Ð°Ñ |
 | **Alto rendimiento crítico** | Extensiones | Código compilado, sin overhead |
 | **Equipo nuevo en .NET** | Extensiones | Curva más baja |
 | **Múltiples perfiles de dominio** | AutoMapper | Organización por Profile |
@@ -450,7 +450,7 @@ flowchart TD
 
 ---
 
-## 22.7. Patrón Híbrido
+## 16.7. Patrón Híbrido
 
 Combinar ambos enfoques según necesidad:
 
@@ -484,10 +484,10 @@ public static class ProductoExtensions
     {
         return producto.Estado switch
         {
-            PedidoEstado.Pendiente => "⏳ Pendiente",
-            PedidoEstado.Confirmado => "✅ Confirmado",
-            PedidoEstado.Entregado => "📦 Entregado",
-            PedidoEstado.Cancelado => "❌ Cancelado",
+            PedidoEstado.Pendiente => "â³ Pendiente",
+            PedidoEstado.Confirmado => "âœ… Confirmado",
+            PedidoEstado.Entregado => "ðŸ“¦ Entregado",
+            PedidoEstado.Cancelado => "âŒ Cancelado",
             _ => "Desconocido"
         };
     }
@@ -496,7 +496,7 @@ public static class ProductoExtensions
 
 ---
 
-## 22.8. Errores Comunes
+## 16.8. Errores Comunes
 
 ### AutoMapper: Miembro no mapeado
 
@@ -521,7 +521,7 @@ public static string GetCategoriaNombre(this Producto producto)
 
 ---
 
-## 22.9. Resumen
+## 16.9. Resumen
 
 ### Arquitectura de Mapeo
 
@@ -554,14 +554,14 @@ flowchart TD
 
 ### Checklist de Decisión
 
-| Pregunta | Si → AutoMapper | Si → Extensiones |
+| Pregunta | Si â†’ AutoMapper | Si â†’ Extensiones |
 |----------|-----------------|------------------|
-| ¿Mapeos simples? | | ✅ |
-| ¿Lógica compleja? | ✅ | |
-| ¿Sin dependencias externas? | | ✅ |
-| ¿Equipo experimentado? | ✅ | |
-| ¿Alto rendimiento crítico? | | ✅ |
-| ¿Múltiples perfiles? | ✅ | |
+| Â¿Mapeos simples? | | âœ… |
+| Â¿Lógica compleja? | âœ… | |
+| Â¿Sin dependencias externas? | | âœ… |
+| Â¿Equipo experimentado? | âœ… | |
+| Â¿Alto rendimiento crítico? | | âœ… |
+| Â¿Múltiples perfiles? | âœ… | |
 
 ### Siguientes Pasos
 

@@ -1,30 +1,30 @@
-# 21. Testing con NUnit
+﻿# 26. Testing
 
 ## Índice
 
-[21. Testing con NUnit](#21-testing-con-nunit)
-  - [21.1. ¿Qué es Testing?](#211-qué-es-testing)
-  - [21.2. Tipos de Tests](#212-tipos-de-tests)
-  - [21.3. Frameworks de Testing en .NET](#213-frameworks-de-testing-en-net)
-  - [21.4. Estructura del Proyecto de Tests](#214-estructura-del-proyecto-de-tests)
-  - [21.5. Tests en Paralelo vs Secuenciales](#215-tests-en-paralelo-vs-secuenciales)
-  - [21.6. TestContainers](#216-testcontainers)
-  - [21.7. Anatomy de un Test Unitario](#217-anatomy-de-un-test-unitario)
-  - [21.8. NUnit Basics](#218-nunit-basics)
-  - [21.9. FluentAssertions](#219-fluentassertions)
-  - [21.10. Moq - Creando Mocks](#2110-moq---creando-mocks)
-  - [21.11. Tests de Controladores](#2111-tests-de-controladores)
-  - [21.12. Resumen y Buenas Prácticas](#2112-resumen-y-buenas-prácticas)
-  - [21.13. Testing E2E con Postman y Newman](#2113-testing-e2e-con-postman-y-newman)
-  - [21.14. Testing E2E con Bruno CLI](#2114-testing-e2e-con-bruno-cli)
+[26. Testing con NUnit](#26-testing-con-nunit)
+  - [26.1. Â¿Qué es Testing?](#261-qu-es-testing)
+  - [26.2. Tipos de Tests](#262-tipos-de-tests)
+  - [26.3. Frameworks de Testing en .NET](#263-frameworks-de-testing-en-net)
+  - [26.4. Estructura del Proyecto de Tests](#264-estructura-del-proyecto-de-tests)
+  - [26.5. Tests en Paralelo vs Secuenciales](#265-tests-en-paralelo-vs-secuenciales)
+  - [26.6. TestContainers](#266-testcontainers)
+  - [26.7. Anatomy de un Test Unitario](#267-anatomy-de-un-test-unitario)
+  - [26.8. NUnit Basics](#268-nunit-basics)
+  - [26.9. FluentAssertions](#269-fluentassertions)
+  - [26.10. Moq - Creando Mocks](#2610-moq---creando-mocks)
+  - [26.11. Tests de Controladores](#2611-tests-de-controladores)
+  - [26.12. Resumen y Buenas Prácticas](#2612-resumen-y-buenas-prcticas)
+  - [26.13. Testing E2E con Postman y Newman](#2613-testing-e2e-con-postman-y-newman)
+  - [26.14. Testing E2E con Bruno CLI](#2614-testing-e2e-con-bruno-cli)
 
 ---
 
-## 21.1. ¿Qué es Testing?
+## 26.1. Â¿Qué es Testing?
 
 **Testing** es el proceso de verificar que el código funciona correctamente. En lugar de esperar a que los usuarios encuentren errores, los tests automatizados detectan problemas antes de llegar a producción.
 
-### ¿Por qué hacer Testing?
+### Â¿Por qué hacer Testing?
 
 ```mermaid
 flowchart LR
@@ -51,7 +51,7 @@ flowchart LR
 
 ---
 
-## 21.2. Tipos de Tests
+## 26.2. Tipos de Tests
 
 No todos los tests son iguales. Cada tipo tiene un propósito diferente:
 
@@ -88,7 +88,7 @@ flowchart TD
 | **Integration** | Múltiples componentes juntos | Medio (~s) | Medio | Medio |
 | **E2E** | Flujo completo de usuario | Lento (~min) | Bajo | Pocos |
 
-### ¿Qué es un Test Unitario?
+### Â¿Qué es un Test Unitario?
 
 Un test unitario verifica que una **única unidad** de código funciona correctamente. Esta unidad suele ser un método. Un buen test unitario:
 
@@ -99,7 +99,7 @@ Un test unitario verifica que una **única unidad** de código funciona correcta
 
 ---
 
-## 21.3. Frameworks de Testing en .NET
+## 26.3. Frameworks de Testing en .NET
 
 .NET tiene tres frameworks principales de testing:
 
@@ -123,32 +123,32 @@ En este proyecto usamos **NUnit** por su sintaxis clara y atributos descriptivos
 
 ---
 
-## 21.4. Estructura del Proyecto de Tests
+## 26.4. Estructura del Proyecto de Tests
 
 ```
 TiendaApi.Tests/
-├── Unit/
-│   ├── Services/
-│   │   ├── ProductoServiceTests.cs
-│   │   └── CategoriaServiceTests.cs
-│   ├── Validators/
-│   │   └── ProductoValidatorTests.cs
-│   └── Repositories/
-│       └── ProductoRepositoryTests.cs
-├── Integration/
-│   ├── Controllers/
-│   │   └── ProductosControllerTests.cs
-│   ├── Repositories/
-│   │   └── ProductoRepositoryIntegrationTests.cs
-│   └── Services/
-│       └── ProductoServiceIntegrationTests.cs
-├── Fixtures/
-│   ├── TiendaApiWebApplicationFactory.cs
-│   └── TestContainersFixture.cs
-├── Helpers/
-│   ├── TestDataFactory.cs
-│   └── AssertionHelpers.cs
-└── TiendaApi.Tests.csproj
+â”œâ”€â”€ Unit/
+â”‚   â”œâ”€â”€ Services/
+â”‚   â”‚   â”œâ”€â”€ ProductoServiceTests.cs
+â”‚   â”‚   â””â”€â”€ CategoriaServiceTests.cs
+â”‚   â”œâ”€â”€ Validators/
+â”‚   â”‚   â””â”€â”€ ProductoValidatorTests.cs
+â”‚   â””â”€â”€ Repositories/
+â”‚       â””â”€â”€ ProductoRepositoryTests.cs
+â”œâ”€â”€ Integration/
+â”‚   â”œâ”€â”€ Controllers/
+â”‚   â”‚   â””â”€â”€ ProductosControllerTests.cs
+â”‚   â”œâ”€â”€ Repositories/
+â”‚   â”‚   â””â”€â”€ ProductoRepositoryIntegrationTests.cs
+â”‚   â””â”€â”€ Services/
+â”‚       â””â”€â”€ ProductoServiceIntegrationTests.cs
+â”œâ”€â”€ Fixtures/
+â”‚   â”œâ”€â”€ TiendaApiWebApplicationFactory.cs
+â”‚   â””â”€â”€ TestContainersFixture.cs
+â”œâ”€â”€ Helpers/
+â”‚   â”œâ”€â”€ TestDataFactory.cs
+â”‚   â””â”€â”€ AssertionHelpers.cs
+â””â”€â”€ TiendaApi.Tests.csproj
 ```
 
 ### Archivo de Proyecto (.csproj)
@@ -192,7 +192,7 @@ TiendaApi.Tests/
 
 ---
 
-## 21.5. Tests en Paralelo vs Secuenciales
+## 26.5. Tests en Paralelo vs Secuenciales
 
 NUnit puede ejecutar tests en paralelo para acelerar el tiempo de ejecución.
 
@@ -329,11 +329,11 @@ public class SequentialIntegrationTests
 
 ---
 
-## 21.6. TestContainers
+## 26.6. TestContainers
 
 **TestContainers** es una librería que permite crear contenedores Docker durante los tests de integración. Esto proporciona bases de datos reales y otros servicios en entornos aislados.
 
-### ¿Por qué usar TestContainers?
+### Â¿Por qué usar TestContainers?
 
 ```mermaid
 flowchart LR
@@ -648,7 +648,7 @@ public class GlobalTestFixture
 
 ---
 
-## 21.7. Anatomy de un Test Unitario
+## 26.7. Anatomy de un Test Unitario
 
 Un test unitario sigue el patrón **Arrange-Act-Assert**:
 
@@ -731,7 +731,7 @@ flowchart TD
 
 ---
 
-## 21.8. NUnit Basics
+## 26.8. NUnit Basics
 
 ### Atributos Principales
 
@@ -838,7 +838,7 @@ public class ProductoServiceTests
 
 ---
 
-## 21.9. FluentAssertions
+## 26.9. FluentAssertions
 
 **FluentAssertions** permite escribir assertions de forma más legible y con mensajes de error claros.
 
@@ -930,7 +930,7 @@ public class FluentAssertionsExamples
 
 ---
 
-## 21.10. Moq - Creando Mocks
+## 26.10. Moq - Creando Mocks
 
 **Moq** es una librería que permite crear objetos falsos (mocks) para aislar el código bajo test.
 
@@ -1076,7 +1076,7 @@ public class MoqExamples
 
 ---
 
-## 21.11. Tests de Controladores
+## 26.11. Tests de Controladores
 
 Los tests de controladores verifican que los endpoints de la API funcionan correctamente usando `HttpClient` para simular requests.
 
@@ -1547,7 +1547,7 @@ public class ProductosControllerTests
 
 ---
 
-## 21.12. Resumen y Buenas Prácticas
+## 26.12. Resumen y Buenas Prácticas
 
 ### Estructura de un Buen Test
 
@@ -1626,7 +1626,7 @@ flowchart TB
     E1 --> E2 --> E3
 ```
 
-### Comandos Útiles
+### Comandos áštiles
 
 ```bash
 # Ejecutar todos los tests
@@ -1661,15 +1661,15 @@ Con testing dominado, tienes todas las herramientas para crear APIs robustas en 
 
 ---
 
-## 21.13. Testing E2E con Postman y Newman
+## 26.13. Testing E2E con Postman y Newman
 
 Los tests **End-to-End (E2E)** verifican que la API completa funciona correctamente desde la perspectiva del cliente, incluyendo autenticación, validación y flujos de negocio completos.
 
-### ¿Qué es Postman?
+### Â¿Qué es Postman?
 
 **Postman** es una herramienta gráfica para probar APIs que permite crear colecciones de requests, organizarlos en carpetas, añadir scripts de pre-request y assertions.
 
-### ¿Qué es Newman?
+### Â¿Qué es Newman?
 
 **Newman** es el CLI de Postman que permite ejecutar colecciones de tests desde la línea de comandos, ideal para integración continua (CI/CD).
 
@@ -1719,30 +1719,30 @@ npm install -g newman-reporter-htmlextra
 
 ```
 TiendaApi Collection/
-├── Auth/
-│   ├── Signup POST /v1/auth/signup
-│   ├── Signin POST /v1/auth/signin
-│   └── Refresh Token POST /v1/auth/refresh
-├── Categorias/
-│   ├── GET All GET /api/categorias
-│   ├── GET by ID GET /api/categorias/{id}
-│   ├── POST Create POST /api/categorias
-│   ├── PUT Update PUT /api/categorias/{id}
-│   └── DELETE Delete DELETE /api/categorias/{id}
-├── Productos/
-│   ├── GET All GET /api/productos
-│   ├── GET by ID GET /api/productos/{id}
-│   ├── POST Create POST /api/productos
-│   ├── PUT Update PUT /api/productos/{id}
-│   ├── DELETE Delete DELETE /api/productos/{id}
-│   └── GET by Categoria GET /api/productos/categoria/{id}
-├── Pedidos/
-│   ├── GET All GET /api/pedidos
-│   ├── GET by ID GET /api/pedidos/{id}
-│   ├── POST Create POST /api/pedidos
-│   └── PUT Estado PUT /api/pedidos/{id}/estado
-└── Health/
-    └── GET Health GET /health
+â”œâ”€â”€ Auth/
+â”‚   â”œâ”€â”€ Signup POST /v1/auth/signup
+â”‚   â”œâ”€â”€ Signin POST /v1/auth/signin
+â”‚   â””â”€â”€ Refresh Token POST /v1/auth/refresh
+â”œâ”€â”€ Categorias/
+â”‚   â”œâ”€â”€ GET All GET /api/categorias
+â”‚   â”œâ”€â”€ GET by ID GET /api/categorias/{id}
+â”‚   â”œâ”€â”€ POST Create POST /api/categorias
+â”‚   â”œâ”€â”€ PUT Update PUT /api/categorias/{id}
+â”‚   â””â”€â”€ DELETE Delete DELETE /api/categorias/{id}
+â”œâ”€â”€ Productos/
+â”‚   â”œâ”€â”€ GET All GET /api/productos
+â”‚   â”œâ”€â”€ GET by ID GET /api/productos/{id}
+â”‚   â”œâ”€â”€ POST Create POST /api/productos
+â”‚   â”œâ”€â”€ PUT Update PUT /api/productos/{id}
+â”‚   â”œâ”€â”€ DELETE Delete DELETE /api/productos/{id}
+â”‚   â””â”€â”€ GET by Categoria GET /api/productos/categoria/{id}
+â”œâ”€â”€ Pedidos/
+â”‚   â”œâ”€â”€ GET All GET /api/pedidos
+â”‚   â”œâ”€â”€ GET by ID GET /api/pedidos/{id}
+â”‚   â”œâ”€â”€ POST Create POST /api/pedidos
+â”‚   â””â”€â”€ PUT Estado PUT /api/pedidos/{id}/estado
+â””â”€â”€ Health/
+    â””â”€â”€ GET Health GET /health
 ```
 
 ### Variables de Entorno en Postman
@@ -2248,7 +2248,7 @@ jobs:
       - name: Check Results
         if: failure()
         run: |
-          echo "❌ E2E Tests failed!"
+          echo "âŒ E2E Tests failed!"
           echo "Check the test results artifact for details."
           exit 1
 ```
@@ -2280,9 +2280,9 @@ jobs:
 
 ```bash
 # Desde Postman App:
-# 1. Seleccionar colección
-# 2. Click en "..."
-# 3. Export -> JSON file
+# 26. Testing
+# 26. Testing
+# 26. Testing
 
 # Desde línea de comandos (Linux/Mac)
 newman run collection.json \
@@ -2300,11 +2300,11 @@ newman run collection.json \
 
 ---
 
-## 21.14. Testing E2E con Bruno CLI
+## 26.14. Testing E2E con Bruno CLI
 
 **Bruno** es una alternativa open source a Postman que permite crear y ejecutar tests de API desde archivos de texto plano (`.bru`), ideal para control de versiones y CI/CD.
 
-### ¿Qué es Bruno CLI?
+### Â¿Qué es Bruno CLI?
 
 Bruno CLI es la versión de línea de comandos de Bruno que permite ejecutar colecciones de tests sin necesidad de la interfaz gráfica.
 
@@ -2351,27 +2351,27 @@ docker run --rm -it -v $(pwd):/app node:20-alpine sh
 
 ```
 Bruno/
-├── 00-Setup/
-│   ├── health-check.bru
-│   └── cleanup.bru
-├── 01-Authentication/
-│   ├── signup-usuario-nuevo.bru
-│   ├── signin-admin.bru
-│   └── signin-usuario.bru
-├── 02-Categorias/
-│   ├── get-all.bru
-│   ├── get-by-id.bru
-│   ├── post-crear.bru
-│   ├── put-actualizar.bru
-│   └── delete-eliminar.bru
-├── 03-Productos/
-│   ├── get-all.bru
-│   ├── post-crear.bru
-│   └── ...
-├── environments/
-│   └── local.bru
-└── assets/
-    └── test-image.png
+â”œâ”€â”€ 00-Setup/
+â”‚   â”œâ”€â”€ health-check.bru
+â”‚   â””â”€â”€ cleanup.bru
+â”œâ”€â”€ 01-Authentication/
+â”‚   â”œâ”€â”€ signup-usuario-nuevo.bru
+â”‚   â”œâ”€â”€ signin-admin.bru
+â”‚   â””â”€â”€ signin-usuario.bru
+â”œâ”€â”€ 02-Categorias/
+â”‚   â”œâ”€â”€ get-all.bru
+â”‚   â”œâ”€â”€ get-by-id.bru
+â”‚   â”œâ”€â”€ post-crear.bru
+â”‚   â”œâ”€â”€ put-actualizar.bru
+â”‚   â””â”€â”€ delete-eliminar.bru
+â”œâ”€â”€ 03-Productos/
+â”‚   â”œâ”€â”€ get-all.bru
+â”‚   â”œâ”€â”€ post-crear.bru
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ environments/
+â”‚   â””â”€â”€ local.bru
+â””â”€â”€ assets/
+    â””â”€â”€ test-image.png
 ```
 
 ### Formato de Archivo .bru
@@ -2643,7 +2643,7 @@ jobs:
 | **Interfaz** | GUI completa | CLI + archivos de texto |
 | **Variables** | GUI + scripts JS | bru.setVar() / bru.getVar() |
 | **Reportes** | HTML nativo | JSON (requiere conversión) |
-| **SignalR** | ✅ Soportado | ⚠️ Bug abierto (#5969) |
+| **SignalR** | âœ… Soportado | âš ï¸ Bug abierto (#5969) |
 | **Comunidad** | Muy grande | En crecimiento |
 
 ### Cuándo Usar Bruno vs Postman

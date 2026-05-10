@@ -1,24 +1,24 @@
-# 25. Background Jobs y Tareas Programadas
+﻿# 24. Background Jobs
 
 ## Índice
 
-[25. Background Jobs y Tareas Programadas](#25-background-jobs-y-tareas-programadas)
-  - [25.1. ¿Qué son Background Jobs?](#251-qué-son-background-jobs)
-  - [25.2. Arquitectura de Background Jobs](#252-arquitectura-de-background-jobs)
-  - [25.3. Implementación del Job de Reporte de Productos](#253-implementación-del-job-de-reporte-de-productos)
-  - [25.4. Background Service Orchestrator](#254-background-service-orchestrator)
-  - [25.5. Configuración DI con Extension Methods](#255-configuración-di-con-extension-methods)
-  - [25.6. Configuración en appsettings.json](#256-configuración-en-appsettingsjson)
-  - [25.7. Métodos de Repositorio](#257-métodos-de-repositorio)
-  - [25.8. Flujo de Ejecución](#258-flujo-de-ejecución)
-  - [25.9. Pruebas Unitarias](#259-pruebas-unitarias)
-  - [25.10. Beneficios y Consideraciones](#2510-beneficios-y-consideraciones)
-  - [25.11. Comparación con Otras Soluciones](#2511-comparación-con-otras-soluciones)
-  - [25.12. Resumen](#2512-resumen)
+[24. Background Jobs y Tareas Programadas](#24-background-jobs-y-tareas-programadas)
+  - [24.1. Â¿Qué son Background Jobs?](#241-qu-son-background-jobs)
+  - [24.2. Arquitectura de Background Jobs](#242-arquitectura-de-background-jobs)
+  - [24.3. Implementación del Job de Reporte de Productos](#243-implementacin-del-job-de-reporte-de-productos)
+  - [24.4. Background Service Orchestrator](#244-background-service-orchestrator)
+  - [24.5. Configuración DI con Extension Methods](#245-configuracin-di-con-extension-methods)
+  - [24.6. Configuración en appsettings.json](#246-configuracin-en-appsettingsjson)
+  - [24.7. Métodos de Repositorio](#247-mtodos-de-repositorio)
+  - [24.8. Flujo de Ejecución](#248-flujo-de-ejecucin)
+  - [24.9. Pruebas Unitarias](#249-pruebas-unitarias)
+  - [24.10. Beneficios y Consideraciones](#2410-beneficios-y-consideraciones)
+  - [24.11. Comparación con Otras Soluciones](#2411-comparacin-con-otras-soluciones)
+  - [24.12. Resumen](#2412-resumen)
 
 ---
 
-## 25.1. ¿Qué son Background Jobs?
+## 24.1. Â¿Qué son Background Jobs?
 
 Los **background jobs** son tareas que se ejecutan fuera del flujo principal de las solicitudes HTTP, permitiendo operaciones largas sin bloquear la respuesta al usuario.
 
@@ -72,21 +72,21 @@ flowchart TB
 
 ---
 
-## 25.2. Arquitectura de Background Jobs
+## 24.2. Arquitectura de Background Jobs
 
 ### Estructura del Proyecto
 
 ```
 Services/
-└── Background/
-    ├── Jobs/                          ← Tareas individuales
-    │   ├── IProductoReportTask.cs     ← Interfaz del job
-    │   └── ProductoReportTask.cs      ← Implementación del job
-    └── Host/                          ← Orchestrator
-        └── BackgroundJobService.cs    ← Hosted Service
+â””â”€â”€ Background/
+    â”œâ”€â”€ Jobs/                          â† Tareas individuales
+    â”‚   â”œâ”€â”€ IProductoReportTask.cs     â† Interfaz del job
+    â”‚   â””â”€â”€ ProductoReportTask.cs      â† Implementación del job
+    â””â”€â”€ Host/                          â† Orchestrator
+        â””â”€â”€ BackgroundJobService.cs    â† Hosted Service
 
 Infrastructures/
-└── BackgroundJobsConfig.cs            ← Configuración DI
+â””â”€â”€ BackgroundJobsConfig.cs            â† Configuración DI
 ```
 
 ```mermaid
@@ -121,7 +121,7 @@ classDiagram
 
 ---
 
-## 25.3. Implementación del Job de Reporte de Productos
+## 24.3. Implementación del Job de Reporte de Productos
 
 ### Interfaz del Job
 
@@ -280,7 +280,7 @@ public class ProductoReportTask(
 
 ---
 
-## 25.4. Background Service Orchestrator
+## 24.4. Background Service Orchestrator
 
 ### Implementación del Host
 
@@ -353,7 +353,7 @@ public class BackgroundJobService(
 
 ---
 
-## 25.5. Configuración DI con Extension Methods
+## 24.5. Configuración DI con Extension Methods
 
 ### BackgroundJobsConfig.cs
 
@@ -393,12 +393,12 @@ services.AddCache(environment);
 services.AddEmail(environment);
 services.AddStorage();
 services.AddWebSockets();
-services.AddBackgroundJobs();  // ← Registrar aquí
+services.AddBackgroundJobs();  // â† Registrar aquí
 ```
 
 ---
 
-## 25.6. Configuración en appsettings.json
+## 24.6. Configuración en appsettings.json
 
 ### appsettings.json (Base)
 
@@ -450,7 +450,7 @@ services.AddBackgroundJobs();  // ← Registrar aquí
 
 ---
 
-## 25.7. Métodos de Repositorio
+## 24.7. Métodos de Repositorio
 
 ### GetRecentlyCreatedAsync en IProductoRepository
 
@@ -504,7 +504,7 @@ public async Task<IEnumerable<User>> GetActiveUsersAsync()
 
 ---
 
-## 25.8. Flujo de Ejecución
+## 24.8. Flujo de Ejecución
 
 ```mermaid
 sequenceDiagram
@@ -533,7 +533,7 @@ sequenceDiagram
 
 ---
 
-## 25.9. Pruebas Unitarias
+## 24.9. Pruebas Unitarias
 
 ### Tests de GetRecentlyCreatedAsync
 
@@ -585,7 +585,7 @@ public async Task GetActiveUsersAsync_ConUsuariosEliminados_ExcluyeEliminados()
 
 ---
 
-## 25.10. Beneficios y Consideraciones
+## 24.10. Beneficios y Consideraciones
 
 ### Beneficios
 
@@ -607,7 +607,7 @@ public async Task GetActiveUsersAsync_ConUsuariosEliminados_ExcluyeEliminados()
 
 ---
 
-## 25.11. Comparación con Otras Soluciones
+## 24.11. Comparación con Otras Soluciones
 
 | Solución | Pros | Contras |
 |----------|------|---------|
@@ -620,7 +620,7 @@ Para este proyecto usamos **BackgroundService nativo** por su simplicidad y falt
 
 ---
 
-## 25.12. Resumen
+## 24.12. Resumen
 
 Los background jobs son esenciales para operaciones que no deben bloquear solicitudes HTTP. La arquitectura implementada:
 

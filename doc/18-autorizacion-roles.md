@@ -1,32 +1,32 @@
-# 13. Autorización y Roles en ASP.NET Core
+﻿# 18. Autorización Roles
 
 ## Índice
 
-[13. Autorización y Roles en ASP.NET Core](#13-autorización-y-roles-en-aspnet-core)
-  - [13.1. Relación entre Autenticación y Autorización](#131-relación-entre-autenticación-y-autorización)
-  - [13.2. Middleware de Autorización](#132-middleware-de-autorización)
-  - [13.3. Autorización Basada en Roles](#133-autorización-basada-en-roles)
-  - [13.4. Políticas de Autorización (Policies)](#134-políticas-de-autorización-policies)
-  - [13.5. Requirements Personalizados](#135-requirements-personalizados)
-  - [13.6. Autorización Basada en Recursos](#136-autorización-basada-en-recursos)
-  - [13.7. Autorización con Scopes (OAuth2)](#137-autorización-con-scopes-oauth2)
-  - [13.8. Resumen de Métodos de Autorización](#138-resumen-de-métodos-de-autorización)
-  - [13.9. Buenas Prácticas de Autorización](#139-buenas-prácticas-de-autorización)
+[18. Autorización y Roles en ASP.NET Core](#18-autorizacin-y-roles-en-aspnet-core)
+  - [18.1. Relación entre Autenticación y Autorización](#181-relacin-entre-autenticacin-y-autorizacin)
+  - [18.2. Middleware de Autorización](#182-middleware-de-autorizacin)
+  - [18.3. Autorización Basada en Roles](#183-autorizacin-basada-en-roles)
+  - [18.4. Políticas de Autorización (Policies)](#184-polticas-de-autorizacin-policies)
+  - [18.5. Requirements Personalizados](#185-requirements-personalizados)
+  - [18.6. Autorización Basada en Recursos](#186-autorizacin-basada-en-recursos)
+  - [18.7. Autorización con Scopes (OAuth2)](#187-autorizacin-con-scopes-oauth2)
+  - [18.8. Resumen de Métodos de Autorización](#188-resumen-de-mtodos-de-autorizacin)
+  - [18.9. Buenas Prácticas de Autorización](#189-buenas-prcticas-de-autorizacin)
 
 ---
 
-## 13.1. Relación entre Autenticación y Autorización
+## 18.1. Relación entre Autenticación y Autorización
 
 ```mermaid
 flowchart TD
-    subgraph "Authentication (¿Quién eres?)"
+    subgraph "Authentication (Â¿Quién eres?)"
         A1["Identificar al usuario"]
         A2["Verificar credenciales"]
         A3["Generar token JWT"]
         A4["Establecer identidad"]
     end
     
-    subgraph "Authorization (¿Qué puedes hacer?)"
+    subgraph "Authorization (Â¿Qué puedes hacer?)"
         B1["Verificar permisos"]
         B2["Evaluar roles/claims"]
         C3["Autorizar o denegar"]
@@ -40,7 +40,7 @@ flowchart TD
 
 | Aspecto | Autenticación | Autorización |
 |---------|---------------|--------------|
-| **Pregunta** | ¿Quién eres? | ¿Qué puedes hacer? |
+| **Pregunta** | Â¿Quién eres? | Â¿Qué puedes hacer? |
 | **Proceso** | Verificar identidad | Verificar permisos |
 | **Outcome** | ClaimsPrincipal | Allow/Deny |
 | **HTTP Header** | Authorization: Bearer | [Authorize] attribute |
@@ -48,7 +48,7 @@ flowchart TD
 
 ---
 
-## 13.2. Middleware de Autorización
+## 18.2. Middleware de Autorización
 
 El middleware de autorización es parte fundamental del pipeline de ASP.NET Core. Se configura en `Program.cs` y ejecuta después del middleware de autenticación.
 
@@ -82,7 +82,7 @@ sequenceDiagram
     C->>M: Request + Bearer Token
     M->>Auth: Extraer y validar token
     Auth-->>M: ClaimsPrincipal (identidad)
-    M->>Authz: ¿Acceso permitido?
+    M->>Authz: Â¿Acceso permitido?
     
     alt Autorizado
         Authz-->>M: Allow
@@ -106,7 +106,7 @@ builder.Services.AddAuthorization(options =>
 });
 ```
 
-## 13.3. La Autorizacion Funciona Igual con Identity o Personalizado
+## 18.3. La Autorizacion Funciona Igual con Identity o Personalizado
 
 El sistema de autorizacion de ASP.NET Core es **independiente** del sistema de autenticacion. Esto significa que `[Authorize]`, `User.IsInRole()` y las politicas funcionan **exactamente igual** tanto si usamos ASP.NET Core Identity como si usamos nuestro metodo personalizado con JWT.
 
@@ -135,11 +135,11 @@ flowchart TB
 
 | Funcionabilidad | Con Identity | Personalizado |
 |----------------|--------------|---------------|
-| `[Authorize]` | ✅ | ✅ |
-| `[Authorize(Roles="ADMIN")]` | ✅ | ✅ |
-| `User.IsInRole("ADMIN")` | ✅ | ✅ |
-| `User.Identity.Name` | ✅ | ✅ |
-| Politicas personalizadas | ✅ | ✅ |
+| `[Authorize]` | âœ… | âœ… |
+| `[Authorize(Roles="ADMIN")]` | âœ… | âœ… |
+| `User.IsInRole("ADMIN")` | âœ… | âœ… |
+| `User.Identity.Name` | âœ… | âœ… |
+| Politicas personalizadas | âœ… | âœ… |
 
 #### Conclusion
 
@@ -147,7 +147,7 @@ Nuestro sistema de autorizacion con roles funciona **perfectamente** con el meto
 
 ---
 
-## 13.4. Autorizacion Basada en Roles
+## 18.4. Autorizacion Basada en Roles
 
 Los roles son una forma simple de agrupar permisos. Un usuario puede tener uno o varios roles.
 
@@ -286,7 +286,7 @@ public async Task<IActionResult> ManageProduct(...)
 
 ---
 
-## 13.5. Políticas de Autorización (Policies)
+## 18.5. Políticas de Autorización (Policies)
 
 Las políticas permiten definir condiciones de autorización más complejas que simples roles.
 
@@ -426,7 +426,7 @@ public class AdminController : ControllerBase
 
 ---
 
-## 13.6. Requirements Personalizados (IAuthorizationRequirement)
+## 18.6. Requirements Personalizados (IAuthorizationRequirement)
 
 Para condiciones de autorización muy específicas, puedes crear tus propios requirements y handlers.
 
@@ -621,7 +621,7 @@ builder.Services.AddAuthorization(options =>
 
 ---
 
-## 13.7. Autorización Basada en Recursos (Resource-Based)
+## 18.7. Autorización Basada en Recursos (Resource-Based)
 
 Cuando la autorización depende del recurso específico que se está accediendo, usamos el servicio `IAuthorizationService`.
 
@@ -727,7 +727,7 @@ public class ProductoService
 
 ---
 
-## 13.8. Autorización con Scopes (OAuth2)
+## 18.8. Autorización con Scopes (OAuth2)
 
 Para APIs que consumen aplicaciones de terceros, los scopes definen los permisos específicos.
 
@@ -759,7 +759,7 @@ builder.Services.AddAuthorization(options =>
 
 ---
 
-## 13.9. Resumen de Métodos de Autorización
+## 18.9. Resumen de Métodos de Autorización
 
 | Método | Uso | Ejemplo |
 |--------|-----|---------|
@@ -811,7 +811,7 @@ flowchart TB
 
 ---
 
-## 13.10. Buenas Prácticas de Autorización
+## 18.10. Buenas Prácticas de Autorización
 
 ```mermaid
 flowchart TB

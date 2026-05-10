@@ -1,22 +1,22 @@
-# 17. Email Services: Envío de Correos Electrónicos
+﻿# 23. Email Services
 
 ## Índice
 
-[17. Email Services: Envío de Correos Electrónicos](#17-email-services-envío-de-correos-electrónicos)
-  - [17.1. ¿Por Qué un Sistema de Emails Robusto?](#171-por-qué-un-sistema-de-emails-robusto)
-  - [17.2. Interfaz IEmailService](#172-interfaz-iemailservice)
-  - [17.3. Implementación con MailKit](#173-implementación-con-mailkit)
-  - [17.4. Servicio de Desarrollo (MemoryEmailService)](#174-servicio-de-desarrollo-memoryemailservice)
-  - [17.5. Sistema de Plantillas](#175-sistema-de-plantillas)
-  - [17.6. Cola de Emails con BackgroundService](#176-cola-de-emails-con-backgroundservice)
-  - [17.7. Envío de Emails desde Servicios de Negocio](#177-envío-de-emails-desde-servicios-de-negocio)
-  - [17.8. Configuración](#178-configuración)
-  - [17.9. docker-compose para Testing de Emails](#179-docker-compose-para-testing-de-emails)
-  - [17.10. Resumen y Buenas Prácticas](#1710-resumen-y-buenas-prácticas)
+[23. Email Services: Envío de Correos Electrónicos](#23-email-services-envo-de-correos-electrnicos)
+  - [23.1. Â¿Por Qué un Sistema de Emails Robusto?](#231-por-qu-un-sistema-de-emails-robusto)
+  - [23.2. Interfaz IEmailService](#232-interfaz-iemailservice)
+  - [23.3. Implementación con MailKit](#233-implementacin-con-mailkit)
+  - [23.4. Servicio de Desarrollo (MemoryEmailService)](#234-servicio-de-desarrollo-memoryemailservice)
+  - [23.5. Sistema de Plantillas](#235-sistema-de-plantillas)
+  - [23.6. Cola de Emails con BackgroundService](#236-cola-de-emails-con-backgroundservice)
+  - [23.7. Envío de Emails desde Servicios de Negocio](#237-envo-de-emails-desde-servicios-de-negocio)
+  - [23.8. Configuración](#238-configuracin)
+  - [23.9. docker-compose para Testing de Emails](#239-docker-compose-para-testing-de-emails)
+  - [23.10. Resumen y Buenas Prácticas](#2310-resumen-y-buenas-prcticas)
 
 ---
 
-## 17.1. ¿Por Qué un Sistema de Emails Robusto?
+## 23.1. Â¿Por Qué un Sistema de Emails Robusto?
 
 El envío de emails es fundamental para la comunicación con usuarios: confirmaciones de pedidos, restablecimiento de contraseñas, notificaciones y marketing. Un sistema bien diseñado debe ser confiable, eficiente y fácil de probar.
 
@@ -92,7 +92,7 @@ flowchart LR
 
 ---
 
-## 17.2. Interfaz IEmailService
+## 23.2. Interfaz IEmailService
 
 ```csharp
 namespace TiendaApi.Core.Interfaces;
@@ -136,7 +136,7 @@ public class EmailTemplate
 
 ---
 
-## 17.3. Implementación con MailKit
+## 23.3. Implementación con MailKit
 
 ### MailKitEmailService
 
@@ -344,7 +344,7 @@ public class MailKitEmailService : IEmailService
 
 ---
 
-## 17.4. Servicio de Desarrollo (MemoryEmailService)
+## 23.4. Servicio de Desarrollo (MemoryEmailService)
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -353,7 +353,7 @@ namespace TiendaApi.Core.Services;
 
 /// <summary>
 /// Servicio de email que almacena los emails en memoria.
-/// Útil para desarrollo y testing sin configurar SMTP.
+/// áštil para desarrollo y testing sin configurar SMTP.
 /// </summary>
 public class MemoryEmailService : IEmailService
 {
@@ -431,7 +431,7 @@ public record FailedEmail
 
 ---
 
-## 17.5. Sistema de Plantillas
+## 23.5. Sistema de Plantillas
 
 ### ITemplateService e Implementación
 
@@ -528,19 +528,19 @@ public class TemplateService : ITemplateService
 
 ```
 Templates/Emails/
-├── pedido-confirmado/
-│   ├── subject.txt
-│   ├── body.html
-│   └── body.txt
-├── pedido-enviado/
-│   ├── subject.txt
-│   └── body.html
-├── password-reset/
-│   ├── subject.txt
-│   └── body.html
-└── bienvenido/
-    ├── subject.txt
-    └── body.html
+â”œâ”€â”€ pedido-confirmado/
+â”‚   â”œâ”€â”€ subject.txt
+â”‚   â”œâ”€â”€ body.html
+â”‚   â””â”€â”€ body.txt
+â”œâ”€â”€ pedido-enviado/
+â”‚   â”œâ”€â”€ subject.txt
+â”‚   â””â”€â”€ body.html
+â”œâ”€â”€ password-reset/
+â”‚   â”œâ”€â”€ subject.txt
+â”‚   â””â”€â”€ body.html
+â””â”€â”€ bienvenido/
+    â”œâ”€â”€ subject.txt
+    â””â”€â”€ body.html
 ```
 
 #### ejemplo: pedido-confirmado/body.html
@@ -563,20 +563,20 @@ Templates/Emails/
 <body>
     <div class="container">
         <div class="header">
-            <h1>✅ Pedido Confirmado</h1>
+            <h1>âœ… Pedido Confirmado</h1>
         </div>
         <div class="content">
             <p>Hola {{Nombre}},</p>
             <p>Tu pedido ha sido confirmado correctamente. Aquí están los detalles:</p>
             
             <div class="pedido-info">
-                <h3>📦 Pedido #{{PedidoId}}</h3>
+                <h3>ðŸ“¦ Pedido #{{PedidoId}}</h3>
                 <p><strong>Fecha:</strong> {{FechaPedido}}</p>
                 <p><strong>Total:</strong> {{Total}}</p>
                 <p><strong>Estado:</strong> {{Estado}}</p>
             </div>
             
-            <h4>📋 Productos:</h4>
+            <h4>ðŸ“‹ Productos:</h4>
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #007bff; color: white;">
@@ -615,7 +615,7 @@ Tu pedido #{{PedidoId}} ha sido confirmado - {{NombreTienda}}
 
 ---
 
-## 17.6. Cola de Emails con BackgroundService
+## 23.6. Cola de Emails con BackgroundService
 
 ### Cola Persistente con Redis
 
@@ -795,7 +795,7 @@ public class EmailBackgroundService : BackgroundService
 
 ---
 
-## 17.7. Envío de Emails desde Servicios de Negocio
+## 23.7. Envío de Emails desde Servicios de Negocio
 
 ### PedidoService con Notificaciones por Email
 
@@ -886,7 +886,7 @@ public class PedidoService
 
 ---
 
-## 17.8. Configuración
+## 23.8. Configuración
 
 ### appsettings.json
 
@@ -930,7 +930,7 @@ public class PedidoService
 
 ---
 
-## 17.9. docker-compose para Testing de Emails
+## 23.9. docker-compose para Testing de Emails
 
 ```yaml
 version: '3.8'
@@ -948,7 +948,7 @@ services:
 
 ---
 
-## 17.10. Resumen y Buenas Prácticas
+## 23.10. Resumen y Buenas Prácticas
 
 ### Arquitectura de Emails
 
@@ -1003,7 +1003,7 @@ Con emails dominados, el siguiente paso es aprender sobre REST best practices.
 - MimeKit: https://github.com/jstedfast/MimeKit
 - Email Background Service: https://learn.microsoft.com/dotnet/core/extensions/background-service-pattern
 
-## 17.11. EmailService como INotificationHandler
+## 23.11. EmailService como INotificationHandler
 
 Con CQRS + MediatR el `EmailService` ya no necesita ser llamado directamente desde cada caso de uso. Ahora los commands publican eventos de dominio y un `INotificationHandler` decide si debe encolar un correo.
 

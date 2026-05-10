@@ -1,28 +1,28 @@
-# 12. JWT Authentication con ASP.NET Core Identity y Metodo Personalizado
+﻿# 17. JWT Authentication
 
 ## Indice
 
-[12. JWT Authentication](#12-jwt-authentication)
-  - [12.1. Concepto de Autenticacion Stateless](#121-concepto-de-autenticacion-stateless)
-  - [12.2. JWT en Profundidad](#122-jwt-en-profundidad)
-  - [12.3. ASP.NET Core Identity](#123-aspnet-core-identity)
-  - [12.4. Configuracion de Identity en Program.cs](#124-configuracion-de-identity-en-programcs)
-  - [12.5. Custom UserClaimsPrincipalFactory](#125-custom-userclaimsprincipalfactory)
-  - [12.6. JwtService - Generacion de Tokens](#126-jwtservice---generacion-de-tokens)
-  - [12.7. Errores de Autenticacion](#127-errores-de-autenticacion)
-  - [12.8. AuthController - Endpoints de Autenticacion](#128-authcontroller---endpoints-de-autenticacion)
-  - [12.9. DTOs de Autenticacion](#129-dtos-de-autenticacion)
-  - [12.10. Configuracion de appsettings.json](#1210-configuracion-de-appsettingsjson)
-  - [12.11. Resumen y Buenas Practicas](#1211-resumen-y-buenas-practicas)
-  - [12.12. Enfoque Personalizado - Nuestra Implementacion](#1212-enfoque-personalizado---nuestra-implementacion)
-  - [12.13. Comparacion del Middleware](#1213-comparacion-del-middleware)
+[17. JWT Authentication](#17-jwt-authentication)
+  - [17.1. Concepto de Autenticacion Stateless](#171-concepto-de-autenticacion-stateless)
+  - [17.2. JWT en Profundidad](#172-jwt-en-profundidad)
+  - [17.3. ASP.NET Core Identity](#173-aspnet-core-identity)
+  - [17.4. Configuracion de Identity en Program.cs](#174-configuracion-de-identity-en-programcs)
+  - [17.5. Custom UserClaimsPrincipalFactory](#175-custom-userclaimsprincipalfactory)
+  - [17.6. JwtService - Generacion de Tokens](#176-jwtservice---generacion-de-tokens)
+  - [17.7. Errores de Autenticacion](#177-errores-de-autenticacion)
+  - [17.8. AuthController - Endpoints de Autenticacion](#178-authcontroller---endpoints-de-autenticacion)
+  - [17.9. DTOs de Autenticacion](#179-dtos-de-autenticacion)
+  - [17.10. Configuracion de appsettings.json](#1710-configuracion-de-appsettingsjson)
+  - [17.11. Resumen y Buenas Practicas](#1711-resumen-y-buenas-practicas)
+  - [17.12. Enfoque Personalizado - Nuestra Implementacion](#1712-enfoque-personalizado---nuestra-implementacion)
+  - [17.13. Comparacion del Middleware](#1713-comparacion-del-middleware)
 
 ---
 
 
-## 12.1. Concepto de Autenticación Stateless
+## 17.1. Concepto de Autenticación Stateless
 
-### ¿Qué significa Stateless (Sin Estado)?
+### Â¿Qué significa Stateless (Sin Estado)?
 
 En una arquitectura **stateful** (con estado), el servidor mantiene información de sesión del usuario. Esto requiere:
 - Almacenamiento de sesión en servidor (memoria, base de datos)
@@ -41,7 +41,7 @@ flowchart LR
         A1["Cliente"] -->|1. Login| A2["Servidor"]
         A2 -->|2. Session ID| A1
         A1 -->|3. Request + Session| A3["Servidor A"]
-        A3 -->|4. ¿Quién?| A2
+        A3 -->|4. Â¿Quién?| A2
         A2 --> A3
         A3 -->|5. Datos| A1
     end
@@ -57,7 +57,7 @@ flowchart LR
     end
 ```
 
-### ¿Por qué Stateless para APIs?
+### Â¿Por qué Stateless para APIs?
 
 | Aspecto | Stateful | Stateless |
 |---------|----------|-----------|
@@ -69,7 +69,7 @@ flowchart LR
 
 ---
 
-## 12.2. JWT (JSON Web Token) en Profundidad
+## 17.2. JWT (JSON Web Token) en Profundidad
 
 ### Estructura del JWT
 
@@ -175,9 +175,9 @@ var token = new JwtSecurityToken(
 
 ---
 
-## 12.3. ASP.NET Core Identity
+## 17.3. ASP.NET Core Identity
 
-### ¿Qué es ASP.NET Core Identity?
+### Â¿Qué es ASP.NET Core Identity?
 
 ASP.NET Core Identity es un sistema de membership que permite:
 - Registrar/iniciar sesión de usuarios
@@ -220,7 +220,7 @@ public class User : IdentityUser<long>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Último login
+    /// ášltimo login
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
 
@@ -337,7 +337,7 @@ public class TiendaDbContext : IdentityDbContext<User, Role, long>
 
 ---
 
-## 12.4. Configuración de Identity en Program.cs
+## 17.4. Configuración de Identity en Program.cs
 
 ```csharp
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -548,7 +548,7 @@ async Task InitializeRolesAndAdminAsync(
 
 ---
 
-## 12.5. Custom UserClaimsPrincipalFactory
+## 17.5. Custom UserClaimsPrincipalFactory
 
 ```csharp
 using Microsoft.AspNetCore.Identity;
@@ -603,7 +603,7 @@ public class CustomUserClaimsPrincipalFactory :
 
 ---
 
-## 12.6. JwtService - Generación de Tokens
+## 17.6. JwtService - Generación de Tokens
 
 ```csharp
 using System.IdentityModel.Tokens.Jwt;
@@ -856,7 +856,7 @@ public class TokenResponse
 
 ---
 
-## 12.7. Errores de Autenticación
+## 17.7. Errores de Autenticación
 
 ```csharp
 namespace TiendaApi.Core.Models.Errors;
@@ -917,7 +917,7 @@ public static partial class Errors
 
 ---
 
-## 12.8. AuthController - Endpoints de Autenticación
+## 17.8. AuthController - Endpoints de Autenticación
 
 ```csharp
 using Microsoft.AspNetCore.Identity;
@@ -1215,7 +1215,7 @@ public class AuthController : ControllerBase
 
 ---
 
-## 12.9. DTOs de Autenticación
+## 17.9. DTOs de Autenticación
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -1345,7 +1345,7 @@ public class ApiResponse
 
 ---
 
-## 12.10. Configuración de appsettings.json
+## 17.10. Configuración de appsettings.json
 
 ```json
 {
@@ -1367,7 +1367,7 @@ public class ApiResponse
 
 ---
 
-## 12.11. Resumen y Buenas Prácticas
+## 17.11. Resumen y Buenas Prácticas
 
 ### Puntos Clave del Módulo
 
@@ -1463,7 +1463,7 @@ Con JWT dominado, el siguiente paso es aprender sobre autorización y roles.
 
 ---
 
-## 12.12. Enfoque Personalizado: Nuestra Implementacion
+## 17.12. Enfoque Personalizado: Nuestra Implementacion
 
 ### Por Que No Usamos ASP.NET Core Identity en TiendaDawApi
 
@@ -1530,7 +1530,7 @@ flowchart LR
 
 | Caracteristica | Descripcion |
 |----------------|-------------|
-| **Work Factor** | Configurable (12 por defecto). Mas alto = mas lento |
+| **Work Factor** | Configurable (#17 por defecto). Mas alto = mas lento |
 | **Salt Automatico** | Cada hash tiene un salt unico |
 | **Resistente a Rainbow Tables** | El salt unico hace inutiles las tablas precalculadas |
 | **Adaptive** | Puede incrementarse la complejidad con el tiempo |
@@ -1539,11 +1539,11 @@ flowchart LR
 
 | Algoritmo | Velocidad | Resistencia | Recomendado |
 |-----------|-----------|-------------|-------------|
-| **MD5** | Muy rapido | Baja | ❌ No usar |
-| **SHA-256** | Rapido | Media | ❌ No para passwords |
-| **PBKDF2** | Lento | Buena | ✅ Aceptable |
-| **BCrypt** | Muy lento | Excelente | ✅ Recomendado |
-| **Argon2** | Muy lento | Excelente | ✅ El mejor |
+| **MD5** | Muy rapido | Baja | âŒ No usar |
+| **SHA-256** | Rapido | Media | âŒ No para passwords |
+| **PBKDF2** | Lento | Buena | âœ… Aceptable |
+| **BCrypt** | Muy lento | Excelente | âœ… Recomendado |
+| **Argon2** | Muy lento | Excelente | âœ… El mejor |
 
 ### Flujo de Registro (Signup)
 
@@ -1584,8 +1584,8 @@ sequenceDiagram
 **Pasos del registro:**
 1. Usuario envia email, password y username
 2. Buscar si el email ya existe en la BD
-3. Si existe → error 409
-4. Si no existe → hashear password con BCrypt
+3. Si existe â†’ error 409
+4. Si no existe â†’ hashear password con BCrypt
 5. Guardar usuario en la BD
 6. Retornar 201 con usuario creado
 
@@ -1635,10 +1635,10 @@ sequenceDiagram
 **Pasos del login:**
 1. Usuario envia email y password
 2. Buscar usuario por email en la BD
-3. Si no existe o esta eliminado → error 401
+3. Si no existe o esta eliminado â†’ error 401
 4. Verificar password con BCrypt.Verify()
-5. Si es incorrecto → error 401
-6. Si es correcto → generar JWT
+5. Si es incorrecto â†’ error 401
+6. Si es correcto â†’ generar JWT
 7. Retornar 200 con token y usuario
 
 ### Flujo de Peticion Autorizada
@@ -1673,8 +1673,8 @@ sequenceDiagram
 **Pasos de peticion autorizada:**
 1. Cliente envia peticion con header Authorization: Bearer token
 2. Middleware de JWT extrae y valida el token
-3. Si el token es invalido o expirado → 401
-4. Si el token es valido → continuar al controller
+3. Si el token es invalido o expirado â†’ 401
+4. Si el token es valido â†’ continuar al controller
 5. Controller ejecuta la logica y consulta BD
 6. Retornar respuesta al cliente
 
@@ -1953,21 +1953,21 @@ Aunque la implementación es diferente, **conseguimos los mismos objetivos de se
 
 | Objetivo | Con Identity | Con Nuestro Método |
 |----------|-------------|-------------------|
-| **Contraseñas seguras** | ✅ PBKDF2 con salt | ✅ BCrypt con salt |
-| **JWT válido** | ✅ Generado por Identity | ✅ Generado manualmente |
-| **Roles controlados** | ✅ IdentityRole<T> | ✅ String simple |
-| **Protección SQL Injection** | ✅ EF Core parametrizes | ✅ EF Core parametrizes |
-| **Soft-delete** | ✅ Configurable | ✅ Implementado manualmente |
+| **Contraseñas seguras** | âœ… PBKDF2 con salt | âœ… BCrypt con salt |
+| **JWT válido** | âœ… Generado por Identity | âœ… Generado manualmente |
+| **Roles controlados** | âœ… IdentityRole<T> | âœ… String simple |
+| **Protección SQL Injection** | âœ… EF Core parametrizes | âœ… EF Core parametrizes |
+| **Soft-delete** | âœ… Configurable | âœ… Implementado manualmente |
 
 ### Cuándo Usar Cada Enfoque
 
 ```mermaid
 flowchart TD
-    A[¿Qué tipo de aplicación?] --> B{¿Tiene UI de login?}
-    B -->|Sí - Web Forms/Razor| C[Identity ✅]
-    B -->|No - Solo API| D[¿External Logins?]
-    D -->|Sí - Google, Facebook| E[Identity ✅]
-    D -->|No - Solo email/pass| F[Personalizado ✅]
+    A[Â¿Qué tipo de aplicación?] --> B{Â¿Tiene UI de login?}
+    B -->|Sí - Web Forms/Razor| C[Identity âœ…]
+    B -->|No - Solo API| D[Â¿External Logins?]
+    D -->|Sí - Google, Facebook| E[Identity âœ…]
+    D -->|No - Solo email/pass| F[Personalizado âœ…]
     
     C --> G["UI completa + Cookies"]
     F --> H["JWT Bearer + BCrypt"]
@@ -1980,12 +1980,12 @@ flowchart TD
 
 | Escenario | Recomendación | Razón |
 |-----------|---------------|-------|
-| **API REST simple** | Personalizado ✅ | Ligero, control total |
-| **Razor Pages** | Identity ✅ | Cookies + UI login |
-| **Blazor Server** | Identity ✅ | Integración completa |
-| **SPA + API Backend** | Personalizado en API ✅ | JWT es natural para SPAs |
-| **Google/Facebook Login** | Identity ✅ | External logins incluidos |
-| **2FA obligatorio** | Identity ✅ | Integrado |
+| **API REST simple** | Personalizado âœ… | Ligero, control total |
+| **Razor Pages** | Identity âœ… | Cookies + UI login |
+| **Blazor Server** | Identity âœ… | Integración completa |
+| **SPA + API Backend** | Personalizado en API âœ… | JWT es natural para SPAs |
+| **Google/Facebook Login** | Identity âœ… | External logins incluidos |
+| **2FA obligatorio** | Identity âœ… | Integrado |
 
 ### Conclusión
 
@@ -2027,10 +2027,10 @@ flowchart TB
 |---------|-------------|---------------|
 | **Authentication Middleware** | `AddIdentityCookies()` | `AddJwtBearer()` |
 | **Authorization Middleware** | `AddAuthorization()` | `AddAuthorization()` (igual) |
-| **[Authorize] attribute** | ✅ | ✅ |
-| **[Authorize(Roles="Admin")]** | ✅ | ✅ |
-| **User.Identity.Name** | ✅ | ✅ |
-| **User.IsInRole("ADMIN")** | ✅ | ✅ |
+| **[Authorize] attribute** | âœ… | âœ… |
+| **[Authorize(Roles="Admin")]** | âœ… | âœ… |
+| **User.Identity.Name** | âœ… | âœ… |
+| **User.IsInRole("ADMIN")** | âœ… | âœ… |
 
 #### Codigo del Middleware (Igual en Ambos Casos)
 
@@ -2054,10 +2054,10 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 services.AddAuthorization();  // EXACTAMENTE IGUAL
 
-[Authorize]  // ✅ Funciona igual
+[Authorize]  // âœ… Funciona igual
 public IActionResult GetAll() { }
 
-[Authorize(Roles = "ADMIN")]  // ✅ Funciona igual
+[Authorize(Roles = "ADMIN")]  // âœ… Funciona igual
 public IActionResult Create(ProductoRequest request) { }
 ```
 
@@ -2065,11 +2065,11 @@ public IActionResult Create(ProductoRequest request) { }
 
 | Funcionabilidad | Identity | Personalizado |
 |----------------|----------|---------------|
-| `[Authorize]` | ✅ | ✅ |
-| `[Authorize(Roles="ADMIN")]` | ✅ | ✅ |
-| `User.Identity.IsAuthenticated` | ✅ | ✅ |
-| `User.Identity.Name` | ✅ | ✅ |
-| `User.IsInRole("ADMIN")` | ✅ | ✅ |
+| `[Authorize]` | âœ… | âœ… |
+| `[Authorize(Roles="ADMIN")]` | âœ… | âœ… |
+| `User.Identity.IsAuthenticated` | âœ… | âœ… |
+| `User.Identity.Name` | âœ… | âœ… |
+| `User.IsInRole("ADMIN")` | âœ… | âœ… |
 
 #### Conclusion: El Middleware No Sabe Como Generamos el Token
 

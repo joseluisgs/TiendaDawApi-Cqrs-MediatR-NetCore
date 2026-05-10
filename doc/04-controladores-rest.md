@@ -1,17 +1,17 @@
-# 4. Controladores REST
+﻿# 4. Controladores REST
 
 ## Índice
 
 [4. Controladores REST](#4-controladores-rest)
-  - [4.1. Anatomía de un Controlador](#41-anatomía-de-un-controlador)
+  - [4.1. Anatomía de un Controlador](#41-anatoma-de-un-controlador)
   - [4.2. Routing por Atributos vs Convenciones](#42-routing-por-atributos-vs-convenciones)
-  - [4.3. Verbos HTTP y Métodos de Acción](#43-verbos-http-y-métodos-de-acción)
-  - [4.4. Model Binding: De la Petición al Objeto](#44-model-binding-de-la-petición-al-objeto)
+  - [4.3. Verbos HTTP y Métodos de Acción](#43-verbos-http-y-mtodos-de-accin)
+  - [4.4. Model Binding: De la Petición al Objeto](#44-model-binding-de-la-peticin-al-objeto)
   - [4.5. IActionResult vs ActionResult<T> vs Typed Results](#45-iactionresult-vs-actionresultt-vs-typed-results)
   - [4.6. Helpers de Respuesta](#46-helpers-de-respuesta)
   - [4.7. Headers, Status Codes y Content Negotiation](#47-headers-status-codes-y-content-negotiation)
   - [4.8. Filters en Controladores](#48-filters-en-controladores)
-  - [4.9. Resumen y Buenas Prácticas](#49-resumen-y-buenas-prácticas)
+  - [4.9. Resumen y Buenas Prácticas](#49-resumen-y-buenas-prcticas)
 
 ---
 
@@ -81,7 +81,7 @@ La tercera parte son los métodos de acción marcados con atributos de verbo HTT
 ControllerBase es la clase base para APIs y proporciona todas las funcionalidades necesarias para responder a peticiones HTTP. Controller hereda de ControllerBase y añade soporte para Views (MVC), lo cual no necesitas para una API REST.
 
 ```csharp
-// ✅ CORRECTO para API REST
+// âœ… CORRECTO para API REST
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosController : ControllerBase
@@ -89,7 +89,7 @@ public class ProductosController : ControllerBase
     // Solo métodos relacionados con API
 }
 
-// ❌ NO NECESARIO para API REST (pero funciona)
+// âŒ NO NECESARIO para API REST (pero funciona)
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosController : Controller
@@ -201,7 +201,7 @@ public class ProductosController : ControllerBase
 }
 ```
 
-### Áreas (opcional)
+### áreas (opcional)
 
 Las áreas organizan controladores en grupos lógicos, útil para APIs grandes:
 
@@ -737,7 +737,7 @@ public class ProductosController : ControllerBase
     public async Task<ActionResult> DeleteWithPermission(long id)
     {
         if (!User.HasPermission("Producto.Delete"))
-            return StatusCode(403, new { error = "No tienes permiso para eliminar" });
+            return StatusCode(#4, new { error = "No tienes permiso para eliminar" });
             
         await _service.DeleteAsync(id);
         return NoContent();
@@ -1122,9 +1122,9 @@ En los capítulos anteriores exploramos CQRS y cómo separa las operaciones de l
 
 Antes el controller inyectaba un service de negocio. Ahora inyecta `IMediator` y envía `Commands` o `Queries`. Esta simplicidad es revolucionaria para la arquitectura.
 
-### ¿Por qué usar IMediator en el controlador?
+### Â¿Por qué usar IMediator en el controlador?
 
-El controlador tradicional tenía múltiples responsabilidades: recibir la petición, validar inputs, llamar a servicios de negocio, mapear respuestas y manejar errores. Esto generaba controladores difíciles de mantener y测试.
+El controlador tradicional tenía múltiples responsabilidades: recibir la petición, validar inputs, llamar a servicios de negocio, mapear respuestas y manejar errores. Esto generaba controladores difíciles de mantener yæµ‹è¯•.
 
 ```mermaid
 flowchart TB
@@ -1153,7 +1153,7 @@ flowchart TB
     end
 ```
 
-### La метаfora del chef y el Camarero
+### La Ð¼ÐµÑ‚Ð°fora del chef y el Camarero
 
 Imagina un restaurante donde el chef (controlador) tiene que hablar directamente con el proveedor de ingredientes, el limpiador de mesas, el chef pastelero y el manager. Esto sería caótico y el chef no podría concentrar en cocinar (la lógica de negocio).
 
@@ -1242,7 +1242,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
 }
 ```
 
-### ¿Qué hace el controlador ahora?
+### Â¿Qué hace el controlador ahora?
 
 El controlador moderno tiene UNA sola responsabilidad: recibir la petición HTTP y retornar la respuesta HTTP apropiada.
 
@@ -1264,10 +1264,10 @@ flowchart TB
 ```
 
 El controlador ya no:
-- ❌ Valida reglas de negocio (el handler lo hace)
-- ❌ Accede a repositorios (el handler lo hace)
-- ❌ Envía emails (los notification handlers lo hacen)
-- ❌ Mapea entidades a DTOs (el handler lo hace)
+- âŒ Valida reglas de negocio (el handler lo hace)
+- âŒ Accede a repositorios (el handler lo hace)
+- âŒ Envía emails (los notification handlers lo hacen)
+- âŒ Mapea entidades a DTOs (el handler lo hace)
 
 El controlador solo traduce entre HTTP y MediatR.
 
@@ -1320,7 +1320,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             NotFoundError => NotFound(new { message = error.Message }),
             ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
             BusinessRuleError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
+            ForbiddenError => StatusCode(#4, new { message = error.Message }),
             ConflictError => Conflict(new { message = error.Message }),
             _ => StatusCode(500, new { message = error.Message })
         };

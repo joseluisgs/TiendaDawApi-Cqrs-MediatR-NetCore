@@ -1,22 +1,22 @@
-# 16. File Storage: Almacenamiento de Archivos
+﻿# 22. File Storage
 
 ## Índice
 
-[16. File Storage: Almacenamiento de Archivos](#16-file-storage-almacenamiento-de-archivos)
-  - [16.1. Conceptos Fundamentales de Archivos Estáticos](#161-conceptos-fundamentales-de-archivos-estáticos)
-  - [16.2. Configuración de wwwroot en Program.cs](#162-configuración-de-wwwroot-en-programcs)
-  - [16.3. UseStaticFiles: Configuración Avanzada](#163-usestaticfiles-configuración-avanzada)
-  - [16.4. IStorageService: Interfaz del Proyecto](#164-istorageservice-interfaz-del-proyecto)
-  - [16.5. FileSystemStorageService: Implementación](#165-filesystemstorageservice-implementación)
-  - [16.6. Controlador de Archivos](#166-controlador-de-archivos)
-  - [16.7. Controlador de Productos con Imágenes](#167-controlador-de-productos-con-imágenes)
-  - [16.8. Seguridad: Path Traversal](#168-seguridad-path-traversal)
-  - [16.9. Configuración de Producción](#169-configuración-de-producción)
-  - [16.10. Resumen](#1610-resumen)
+[22. File Storage: Almacenamiento de Archivos](#22-file-storage-almacenamiento-de-archivos)
+  - [22.1. Conceptos Fundamentales de Archivos Estáticos](#221-conceptos-fundamentales-de-archivos-estticos)
+  - [22.2. Configuración de wwwroot en Program.cs](#222-configuracin-de-wwwroot-en-programcs)
+  - [22.3. UseStaticFiles: Configuración Avanzada](#223-usestaticfiles-configuracin-avanzada)
+  - [22.4. IStorageService: Interfaz del Proyecto](#224-istorageservice-interfaz-del-proyecto)
+  - [22.5. FileSystemStorageService: Implementación](#225-filesystemstorageservice-implementacin)
+  - [22.6. Controlador de Archivos](#226-controlador-de-archivos)
+  - [22.7. Controlador de Productos con Imágenes](#227-controlador-de-productos-con-imgenes)
+  - [22.8. Seguridad: Path Traversal](#228-seguridad-path-traversal)
+  - [22.9. Configuración de Producción](#229-configuracin-de-produccin)
+  - [22.10. Resumen](#2210-resumen)
 
 ---
 
-## 16.1. Conceptos Fundamentales de Archivos Estáticos
+## 22.1. Conceptos Fundamentales de Archivos Estáticos
 
 En ASP.NET Core, los **archivos estáticos** son aquellos que se sirven directamente al cliente sin procesamiento adicional: imágenes, CSS, JavaScript, archivos subidos por usuarios, etc. El middleware `UseStaticFiles` permite servir estos archivos desde el directorio `wwwroot`.
 
@@ -24,13 +24,13 @@ En ASP.NET Core, los **archivos estáticos** son aquellos que se sirven directam
 flowchart LR
     subgraph "Estructura del Proyecto"
         A1["TiendaApi.Apis/"]
-        A2["├── wwwroot/"]
-        A3["│   ├── images/"]
-        A4["│   │   └── productos/"]
-        A5["│   └── uploads/"]
-        A6["├── Services/"]
-        A7["│   └── Storage/"]
-        A8["└── Program.cs"]
+        A2["â”œâ”€â”€ wwwroot/"]
+        A3["â”‚   â”œâ”€â”€ images/"]
+        A4["â”‚   â”‚   â””â”€â”€ productos/"]
+        A5["â”‚   â””â”€â”€ uploads/"]
+        A6["â”œâ”€â”€ Services/"]
+        A7["â”‚   â””â”€â”€ Storage/"]
+        A8["â””â”€â”€ Program.cs"]
     end
     
     subgraph "Solicitud HTTP"
@@ -65,7 +65,7 @@ sequenceDiagram
 
 ---
 
-## 16.2. Configuración de wwwroot en Program.cs
+## 22.2. Configuración de wwwroot en Program.cs
 
 El directorio `wwwroot` es el directorio predeterminado para archivos estáticos en ASP.NET Core. Se configura automáticamente cuando creas un proyecto web.
 
@@ -73,12 +73,12 @@ El directorio `wwwroot` es el directorio predeterminado para archivos estáticos
 
 ```
 TiendaApi.Apis/wwwroot/
-├── images/
-│   └── productos/          # Imágenes de productos
-└── uploads/                # Archivos subidos por usuarios
-    ├── productos/
-    ├── usuarios/
-    └── categorias/
+â”œâ”€â”€ images/
+â”‚   â””â”€â”€ productos/          # Imágenes de productos
+â””â”€â”€ uploads/                # Archivos subidos por usuarios
+    â”œâ”€â”€ productos/
+    â”œâ”€â”€ usuarios/
+    â””â”€â”€ categorias/
 ```
 
 ### Configuración en Program.cs
@@ -86,7 +86,7 @@ TiendaApi.Apis/wwwroot/
 
 ```csharp
 // Archivos estáticos (wwwroot)
-Log.Information("🖼️ Habilitando archivos estáticos desde wwwroot...");
+Log.Information("ðŸ–¼ï¸ Habilitando archivos estáticos desde wwwroot...");
 app.UseStaticFiles();
 ```
 
@@ -136,7 +136,7 @@ else
 
 ---
 
-## 16.3. UseStaticFiles: Configuración Avanzada
+## 22.3. UseStaticFiles: Configuración Avanzada
 
 ### Configuración Básica
 
@@ -205,7 +205,7 @@ Console.WriteLine($"ContentRootPath: {app.Environment.ContentRootPath}");
 
 ---
 
-## 16.4. IStorageService: Interfaz del Proyecto
+## 22.4. IStorageService: Interfaz del Proyecto
 
 Del archivo `IStorageService.cs`:
 
@@ -236,15 +236,15 @@ public interface IStorageService
 
 ```
 wwwroot/uploads/
-├── productos/          # Imágenes de productos
-├── usuarios/           # Avatares y documentos
-├── categorias/         # Imágenes de categorías
-└── documentos/         # Documentos varios
+â”œâ”€â”€ productos/          # Imágenes de productos
+â”œâ”€â”€ usuarios/           # Avatares y documentos
+â”œâ”€â”€ categorias/         # Imágenes de categorías
+â””â”€â”€ documentos/         # Documentos varios
 ```
 
 ---
 
-## 16.5. FileSystemStorageService: Implementación
+## 22.5. FileSystemStorageService: Implementación
 
 Del archivo `FileSystemStorageService.cs`:
 
@@ -289,7 +289,7 @@ public class FileSystemStorageService : IStorageService
 }
 ```
 
-### Generación de Nombre Único
+### Generación de Nombre ášnico
 
 ```csharp
 private static string GenerateUniqueFilename(string originalFilename)
@@ -418,7 +418,7 @@ private UnitResult<DomainError> ValidateFile(IFormFile file)
 
 ---
 
-## 16.6. Controlador de Archivos
+## 22.6. Controlador de Archivos
 
 ```csharp
 using Microsoft.AspNetCore.Mvc;
@@ -473,7 +473,7 @@ public class FilesController : ControllerBase
 
 ---
 
-## 16.7. Controlador de Productos con Imágenes
+## 22.7. Controlador de Productos con Imágenes
 
 ```csharp
 [ApiController]
@@ -542,14 +542,14 @@ public class ProductosController : ControllerBase
 
 ---
 
-## 16.8. Seguridad: Path Traversal
+## 22.8. Seguridad: Path Traversal
 
 El **path traversal** es un ataque donde un usuario malintencionado intenta acceder a archivos fuera del directorio permitido.
 
 ```mermaid
 flowchart TD
     A["Malicioso: /api/files?path=../../../etc/passwd"] --> B["Validación"]
-    B --> C{"¿Contiene '..'?"}
+    B --> C{"Â¿Contiene '..'?"}
     C -->|Sí| D["Bloquear - 400 Bad Request"]
     C -->|No| E["Procesar normalmente"]
 ```
@@ -588,7 +588,7 @@ public string GetFullPath(string filename)
 
 ---
 
-## 16.9. Configuración de Producción
+## 22.9. Configuración de Producción
 
 ### docker-compose.local.yml (Relevante)
 
@@ -614,7 +614,7 @@ services:
 
 ---
 
-## 16.10. Resumen
+## 22.10. Resumen
 
 ### Arquitectura de Archivos en el Proyecto
 
@@ -657,11 +657,11 @@ builder.Services.AddScoped<IStorageService, FileSystemStorageService>();
 
 | Componente       | Configuración      | Estado          |
 | ---------------- | ------------------ | --------------- |
-| wwwroot/         | Directorio base    | ✅ Creado        |
-| uploads/         | Subida de archivos | ✅ Configurado   |
-| UseStaticFiles() | Middleware         | ✅ En Program.cs |
-| IStorageService  | Abstacción         | ✅ Implementado  |
-| Validación       | Seguridad          | ✅ Implementada  |
+| wwwroot/         | Directorio base    | âœ… Creado        |
+| uploads/         | Subida de archivos | âœ… Configurado   |
+| UseStaticFiles() | Middleware         | âœ… En Program.cs |
+| IStorageService  | Abstacción         | âœ… Implementado  |
+| Validación       | Seguridad          | âœ… Implementada  |
 
 ### Siguientes Pasos
 

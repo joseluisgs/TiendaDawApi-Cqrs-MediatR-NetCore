@@ -1,37 +1,37 @@
-# 31. MediatR + CQRS + Eventos de Dominio
+﻿# 14. MediatR Eventos
 
 ## Índice
 
-[31. MediatR + CQRS + Eventos de Dominio](#31-mediatr--cqrs--eventos-de-dominio)
-  - [31.1. El Problema: Acoplamiento entre Efectos Secundarios](#311-el-problema-acoplamiento-entre-efectos-secundarios)
-  - [31.2. ¿Qué son los Eventos de Dominio?](#312-qué-son-los-eventos-de-dominio)
-  - [31.3. Notifications en MediatR: La Implementación del Patrón](#313-notifications-en-mediatr-la-implementación-del-patrón)
-  - [31.4. Anatomía de una Notification y sus Handlers](#314-anatomía-de-una-notification-y-sus-handlers)
-  - [31.5. La metáfora del periódico](#315-la-metáfora-del-periódico)
-  - [31.6. Eventos en Nuestro Proyecto: Casos Reales](#316-eventos-en-nuestro-proyecto-casos-reales)
-  - [31.7. Pipeline Behaviors:cross-cutting concerns](#317-pipeline-behaviors-cross-cutting-concerns)
-  - [31.8. Open/Closed Principle en Acción](#318-openclosed-principle-en-acción)
-  - [31.9. Comparativa: Llamada Directa vs Notifications](#319-comparativa-llamada-directa-vs-notifications)
-  - [31.10. Consideraciones y Mejores Prácticas](#3110-consideraciones-y-mejores-prácticas)
-  - [31.11. Resumen y Siguientes Pasos](#3111-resumen-y-siguientes-pasos)
+[14. MediatR + CQRS + Eventos de Dominio](#14-mediatr--cqrs--eventos-de-dominio)
+  - [14.1. El Problema: Acoplamiento entre Efectos Secundarios](#141-el-problema-acoplamiento-entre-efectos-secundarios)
+  - [14.2. Â¿Qué son los Eventos de Dominio?](#142-qu-son-los-eventos-de-dominio)
+  - [14.3. Notifications en MediatR: La Implementación del Patrón](#143-notifications-en-mediatr-la-implementacin-del-patrn)
+  - [14.4. Anatomía de una Notification y sus Handlers](#144-anatoma-de-una-notification-y-sus-handlers)
+  - [14.5. La metáfora del periódico](#145-la-metfora-del-peridico)
+  - [14.6. Eventos en Nuestro Proyecto: Casos Reales](#146-eventos-en-nuestro-proyecto-casos-reales)
+  - [14.7. Pipeline Behaviors:cross-cutting concerns](#147-pipeline-behaviorscross-cutting-concerns)
+  - [14.8. Open/Closed Principle en Acción](#148-openclosed-principle-en-accin)
+  - [14.9. Comparativa: Llamada Directa vs Notifications](#149-comparativa-llamada-directa-vs-notifications)
+  - [14.10. Consideraciones y Mejores Prácticas](#1410-consideraciones-y-mejores-prcticas)
+  - [14.11. Resumen y Siguientes Pasos](#1411-resumen-y-siguientes-pasos)
 
 ---
 
-## 31.1. El Problema: Acoplamiento entre Efectos Secundarios
+## 14.1. El Problema: Acoplamiento entre Efectos Secundarios
 
 Imaginemos que eres un chef en una cocina profesional. Acabas de terminar de preparar un plato principal y ahora necesitas:
 
-1. 📧 Enviar un email al cliente confirmando su orden
-2. 📱 Enviar una notificación por SignalR al cliente
-3. 📊 Actualizar las métricas de ventas en tiempo real
-4. 🔄 Invalidar la cache de productos
-5. 📝 Escribir en el log de auditoría
-6. 📦 Notificar al departamento de inventario
+1. ðŸ“§ Enviar un email al cliente confirmando su orden
+2. ðŸ“± Enviar una notificación por SignalR al cliente
+3. ðŸ“Š Actualizar las métricas de ventas en tiempo real
+4. ðŸ”„ Invalidar la cache de productos
+5. ðŸ“ Escribir en el log de auditoría
+6. ðŸ“¦ Notificar al departamento de inventario
 
 Si todo esto está en tu `CreateProductoCommandHandler`, tienes un problema de acoplamiento masivo:
 
 ```csharp
-// ❌ PROBLEMA: Handler con acoplamiento directo
+// âŒ PROBLEMA: Handler con acoplamiento directo
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand command)
@@ -50,7 +50,7 @@ public class CreateProductoCommandHandler
 }
 ```
 
-### ¿Por qué esto es un problema?
+### Â¿Por qué esto es un problema?
 
 ```mermaid
 flowchart TB
@@ -74,11 +74,11 @@ flowchart TB
 1. **Responsabilidad única violada**: El handler hace mucho más que crear un producto
 2. **Difícil de testear**: Necesitas mockear 6 servicios diferentes
 3. **Imposible de modificar**: Agregar/eliminar un efecto requiere cambiar el handler
-4. **No reutilizable**: ¿Cómo usas esta lógica en un batch job?
+4. **No reutilizable**: Â¿Cómo usas esta lógica en un batch job?
 
 ---
 
-## 31.2. ¿Qué son los Eventos de Dominio?
+## 14.2. Â¿Qué son los Eventos de Dominio?
 
 Un **Evento de Dominio** es un objeto que representa "algo que ocurrió" en el dominio y que puede ser interesante para otras partes del sistema.
 
@@ -123,7 +123,7 @@ flowchart LR
 
 ---
 
-## 31.3. Notifications en MediatR: La Implementación del Patrón
+## 14.3. Notifications en MediatR: La Implementación del Patrón
 
 En MediatR, los eventos de dominio se implementan mediante **INotification** y **INotificationHandler**.
 
@@ -252,7 +252,7 @@ public class CreateProductoCommandHandler
 
 ---
 
-## 31.4. Anatomía de una Notification y sus Handlers
+## 14.4. Anatomía de una Notification y sus Handlers
 
 Veamos una implementación completa de nuestro proyecto.
 
@@ -295,13 +295,13 @@ public class UsuarioRegistradoBienvenidaEmailHandler
         
         await _emailService.SendAsync(
             to: notification.Usuario.Email,
-            subject: "¡Bienvenido a TiendaApi!",
+            subject: "Â¡Bienvenido a TiendaApi!",
             body: $"""
                 Hola {notification.Usuario.Username},
                 
                 Bienvenido a nuestra tienda. Tu cuenta ha sido creada exitosamente.
                 
-                ¡Gracias por registrarte!
+                Â¡Gracias por registrarte!
                 """
         );
     }
@@ -362,7 +362,7 @@ public class CreateUserCommandHandler(
 
 ---
 
-## 31.5. La Metáfora del periódico
+## 14.5. La Metáfora del periódico
 
 Para entender mejor cómo funcionan las notifications, usemos una metáfora que uso en clase.
 
@@ -370,7 +370,7 @@ Para entender mejor cómo funcionan las notifications, usemos una metáfora que 
 
 ```mermaid
 flowchart TB
-    subgraph "EL PERIÓDICO"
+    subgraph "EL PERIá“DICO"
         P[Editor\n(Command Handler)]
         N[Periódico\n(INotification)]
         S1[Lector de Deportes]
@@ -395,7 +395,7 @@ flowchart TB
 2. **El Periódico (Notification)** se distribuye a todos los suscriptores
 3. **Los Lectores (Notification Handlers)** reciben el periódico y cada uno reacciona a lo que le interesa
 
-### ¿Por qué es mejor así?
+### Â¿Por qué es mejor así?
 
 | Aspecto | Sin Notification | Con Notification |
 |---------|------------------|-------------------|
@@ -406,7 +406,7 @@ flowchart TB
 
 ---
 
-## 31.6. Eventos en Nuestro Proyecto: Casos Reales
+## 14.6. Eventos en Nuestro Proyecto: Casos Reales
 
 Veamos los eventos reales que tenemos en el proyecto.
 
@@ -493,18 +493,18 @@ sequenceDiagram
 
 ---
 
-## 31.7. Pipeline Behaviors: cross-cutting concerns
+## 14.7. Pipeline Behaviors: cross-cutting concerns
 
 Los **Pipeline Behaviors** son como "middleware" para MediatR. Permiten ejecutar código antes y después de cada handler, de forma transparente.
 
-### ¿Para qué sirven?
+### Â¿Para qué sirven?
 
 Imagina que quieres:
-- 📝 Loggear todas las peticiones que entran
-- ⏱️ Medir cuánto tiempo tarda cada handler
-- 🔒 Verificar autorización en un solo lugar
-- 💱 Manejar transacciones automáticamente
-- 📊 Registrar métricas
+- ðŸ“ Loggear todas las peticiones que entran
+- â±ï¸ Medir cuánto tiempo tarda cada handler
+- ðŸ”’ Verificar autorización en un solo lugar
+- ðŸ’± Manejar transacciones automáticamente
+- ðŸ“Š Registrar métricas
 
 Con behaviors, esto se hace una sola vez y aplica a TODOS los handlers.
 
@@ -530,7 +530,7 @@ public class LoggingBehavior<TRequest, TResponse>
         var requestName = typeof(TRequest).Name;
         
         // ANTES del handler
-        _logger.LogInformation("📥 Request {RequestName} iniciada", requestName);
+        _logger.LogInformation("ðŸ“¥ Request {RequestName} iniciada", requestName);
         var startTime = DateTime.UtcNow;
         
         try
@@ -538,10 +538,10 @@ public class LoggingBehavior<TRequest, TResponse>
             // Ejecutar el handler
             var response = await next();
             
-            // DESPUÉS del handler (success)
+            // DESPUá‰S del handler (success)
             var duration = DateTime.UtcNow - startTime;
             _logger.LogInformation(
-                "✅ Request {RequestName} completada en {Duration}ms",
+                "âœ… Request {RequestName} completada en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -549,11 +549,11 @@ public class LoggingBehavior<TRequest, TResponse>
         }
         catch (Exception ex)
         {
-            // DESPUÉS del handler (error)
+            // DESPUá‰S del handler (error)
             var duration = DateTime.UtcNow - startTime;
             _logger.LogError(
                 ex,
-                "❌ Request {RequestName} falló en {Duration}ms",
+                "âŒ Request {RequestName} falló en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -649,7 +649,7 @@ sequenceDiagram
 
 ---
 
-## 31.8. Open/Closed Principle en Acción
+## 14.8. Open/Closed Principle en Acción
 
 El **Open/Closed Principle** dice: "Las entidades de software deben estar abiertas para extensión pero cerradas para modificación."
 
@@ -725,11 +725,11 @@ public class ProductoCreadoWhatsAppHandler
 }
 ```
 
-**¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
+**Â¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
 
 ---
 
-## 31.9. Comparativa: Llamada Directa vs Notifications
+## 14.9. Comparativa: Llamada Directa vs Notifications
 
 Vamos a comparar ambas aproximaciones con un ejemplo real.
 
@@ -754,7 +754,7 @@ public class CreatePedidoCommandHandler
         // 3. NOTIFICAR SIGNALR (acoplado)
         await _hubContext.Clients.All.SendAsync("PedidoCreado", pedido.ToDto());
         
-        // 4. ACTUALIZAR MÉTRICAS (acoplado)
+        // 4. ACTUALIZAR Má‰TRICAS (acoplado)
         await _metricsService.IncrementAsync("pedidos_creados");
         
         // 5. INVALIDAR CACHE (acoplado)
@@ -766,7 +766,7 @@ public class CreatePedidoCommandHandler
 ```
 
 **Problemas**:
-- Si去掉 uno de estos servicios, hay que modificar el handler
+- SiåŽ»æŽ‰ uno de estos servicios, hay que modificar el handler
 - Testing requiere mockear 5 servicios
 - No hay forma de deshabilitar temporalmente un efecto secundario
 
@@ -828,37 +828,37 @@ public class PedidoCreadoCacheHandler : INotificationHandler<PedidoCreadoNotific
 
 ---
 
-## 31.10. Consideraciones y Mejores Prácticas
+## 14.10. Consideraciones y Mejores Prácticas
 
-Ahora que conoces el poder de las Notifications, aquí有一些 consideraciones importantes.
+Ahora que conoces el poder de las Notifications, aquíæœ‰ä¸€äº› consideraciones importantes.
 
 ### Cuándo usar Notifications
 
-✅ **Efectos secundarios que no afectan el resultado principal**
+âœ… **Efectos secundarios que no afectan el resultado principal**
 Enviar emails, notificar por SignalR, logs, métricas
 
-✅ **Operaciones que pueden fallar sin afectar el flujo principal**
+âœ… **Operaciones que pueden fallar sin afectar el flujo principal**
 Si el email falla, el pedido igual debe crearse
 
-✅ **Cuando múltiples sistemas deben reaccionar al mismo evento**
+âœ… **Cuando múltiples sistemas deben reaccionar al mismo evento**
 Email + SignalR + Auditoría
 
 ### Cuándo NO usar Notifications
 
-❌ **Cuando el resultado depende del efecto secundario**
+âŒ **Cuando el resultado depende del efecto secundario**
 Si necesitas esperar a que termine el email para retornar, no uses notifications
 
-❌ **Operaciones transaccionales**
+âŒ **Operaciones transaccionales**
 Invalidar cache dentro de una transacción debe hacerse en el handler principal
 
-❌ **Efectos secundarios que pueden bloquear**
+âŒ **Efectos secundarios que pueden bloquear**
 No pongas operaciones largas en notification handlers
 
 ### Mejores prácticas
 
 ```mermaid
 flowchart TB
-    subgraph "BUENAS PRÁCTICAS"
+    subgraph "BUENAS PRáCTICAS"
         B1["Nombres en pasado\nProductoCreadoNotification"]
         B2["Una notification por evento\n(No mezclar concerns)"]
         B3["Handlers pequeños y focalizados\n(Solo una responsabilidad)"]
@@ -876,7 +876,7 @@ flowchart TB
 ### Error común: dependency circular
 
 ```csharp
-// ❌ NO HAGAS ESTO: Dependency circular
+// âŒ NO HAGAS ESTO: Dependency circular
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand cmd)
@@ -920,13 +920,13 @@ public class PedidoCreadoEmailHandler
 
 ---
 
-## 31.11. Resumen y Siguientes Pasos
+## 14.11. Resumen y Siguientes Pasos
 
 ### Puntos clave del capítulo
 
 1. **Los Eventos de Dominio representan "algo que ocurrió"**
    - Nombres en pasado: `ProductoCreado`, `PedidoEnviado`
-   - Notifican a múltiples interesados sin耦合
+   - Notifican a múltiples interesados sinè€¦åˆ
 
 2. **INotification de MediatR implementa el patrón Pub/Sub**
    - El handler principal publica una notificación

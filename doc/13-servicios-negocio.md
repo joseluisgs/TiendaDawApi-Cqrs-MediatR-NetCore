@@ -1,20 +1,20 @@
-# 8. Servicios de Negocio
+﻿# 13. Servicios Negocio
 
 ## Índice
 
-[8. Servicios de Negocio](#8-servicios-de-negocio)
-  - [8.1. Anatomía de un Servicio de Negocio](#81-anatomía-de-un-servicio-de-negocio)
-  - [8.2. Constructores Primarios en Servicios](#82-constructores-primarios-en-servicios)
-  - [8.3. Lógica de Negocio vs Acceso a Datos](#83-lógica-de-negocio-vs-acceso-a-datos)
-  - [8.4. Integración con Repositories](#84-integración-con-repositories)
-  - [8.5. Integración con Cache](#85-integración-con-cache)
-  - [8.6. Patrón Result en Servicios](#86-patrón-result-en-servicios)
-  - [8.7. Notificaciones WebSocket desde Servicios](#87-notificaciones-websocket-desde-servicios)
-  - [8.8. Resumen y Buenas Prácticas](#88-resumen-y-buenas-prácticas)
+[13. Servicios de Negocio](#13-servicios-de-negocio)
+  - [13.1. Anatomía de un Servicio de Negocio](#131-anatoma-de-un-servicio-de-negocio)
+  - [13.2. Constructores Primarios en Servicios](#132-constructores-primarios-en-servicios)
+  - [13.3. Lógica de Negocio vs Acceso a Datos](#133-lgica-de-negocio-vs-acceso-a-datos)
+  - [13.4. Integración con Repositories](#134-integracin-con-repositories)
+  - [13.5. Integración con Cache](#135-integracin-con-cache)
+  - [13.6. Patrón Result en Servicios](#136-patrn-result-en-servicios)
+  - [13.7. Notificaciones WebSocket desde Servicios](#137-notificaciones-websocket-desde-servicios)
+  - [13.8. Resumen y Buenas Prácticas](#138-resumen-y-buenas-prcticas)
 
 ---
 
-## 8.1. Anatomía de un Servicio de Negocio
+## 13.1. Anatomía de un Servicio de Negocio
 
 Un servicio de negocio es una clase que encapsula un conjunto de operaciones relacionadas con una entidad o dominio específico. En lugar de poner toda la lógica en los controladores o modelos, los servicios proporcionan un lugar centralizado para la lógica de negocio que puede ser reutilizada por múltiples controladores o incluso por otros servicios.
 
@@ -195,14 +195,14 @@ sequenceDiagram
 
 ---
 
-## 8.2. Constructores Primarios en Servicios
+## 13.2. Constructores Primarios en Servicios
 
 Los constructores primarios de C# 14 simplifican enormemente la declaración de dependencias en servicios. Las dependencias se declaran directamente en la firma de la clase, eliminando la necesidad de campos privados y asignaciones en el constructor.
 
 ### Constructor primario básico
 
 ```csharp
-// ✅ CONSTRUCTOR PRIMARIO (C# 14)
+// âœ… CONSTRUCTOR PRIMARIO (C# 14)
 public class ProductoService(
     IProductoRepository repository,
     ICategoriaRepository categoriaRepository,
@@ -277,22 +277,22 @@ public class ProductoService(
 
 ---
 
-## 8.3. Lógica de Negocio vs Acceso a Datos
+## 13.3. Lógica de Negocio vs Acceso a Datos
 
 Es crucial entender qué código pertenece al servicio y qué código pertenece al repositorio. El servicio contiene reglas de negocio, coordinación de múltiples operaciones, validaciones que requieren datos, y decisiones sobre qué hacer. El repositorio contiene queries, operaciones CRUD básicas, y acceso a la base de datos.
 
-### ¿Qué va en el servicio?
+### Â¿Qué va en el servicio?
 
 La lógica de negocio incluye validación de reglas que dependen de múltiples entidades, coordinación de operaciones que involucran varios repositorios, decisiones sobre qué hacer cuando algo falla, caché y optimización de performance, y notificaciones a otros sistemas.
 
-### ¿Qué va en el repositorio?
+### Â¿Qué va en el repositorio?
 
 El acceso a datos incluye operaciones CRUD básicas (Find, Save, Update, Delete), queries específicos de la entidad, acceso a la base de datos, y nada de lógica de negocio.
 
 ### Ejemplo de separación
 
 ```csharp
-// ❌ INCORRECTO: Lógica de negocio en el repositorio
+// âŒ INCORRECTO: Lógica de negocio en el repositorio
 public class ProductoRepository
 {
     public async Task<Producto> CreateAsync(Producto producto)
@@ -310,7 +310,7 @@ public class ProductoRepository
     }
 }
 
-// ✅ CORRECTO: Lógica de negocio en el servicio
+// âœ… CORRECTO: Lógica de negocio en el servicio
 public class ProductoService
 {
     public async Task<Result<ProductoDto, DomainError>> CreateAsync(ProductoCreateDto dto)
@@ -336,7 +336,7 @@ public class ProductoService
 
 ---
 
-## 8.4. Integración con Repositories
+## 13.4. Integración con Repositories
 
 Los servicios usan repositorios para acceder a datos, pero lo hacen de forma que mantiene el Result Pattern. El servicio decide qué operaciones realizar y cuándo, delegando la ejecución al repositorio.
 
@@ -442,7 +442,7 @@ public class PedidosService(
 
 ---
 
-## 8.5. Integración con Cache
+## 13.5. Integración con Cache
 
 Los servicios pueden usar caché para mejorar performance, almacenando resultados de operaciones costosas. La integración típica usa Cache-Aside Pattern: primero verificar caché, si no está, acceder a datos y almacenar en caché.
 
@@ -545,7 +545,7 @@ flowchart TB
 
 ---
 
-## 8.6. Patrón Result en Servicios
+## 13.6. Patrón Result en Servicios
 
 Los servicios usan Result Pattern para comunicar éxito o fracaso de forma explícita. Esto hace el código más legible y facilita el manejo de errores en los controladores.
 
@@ -637,7 +637,7 @@ public class ProductoService(
 
 ---
 
-## 8.7. Notificaciones WebSocket desde Servicios
+## 13.7. Notificaciones WebSocket desde Servicios
 
 Los servicios pueden notificar a clientes conectados cuando ocurren eventos importantes, como la creación de un nuevo producto. Esto requiere inyectar un handler de WebSocket y llamarlo de forma asíncrona.
 
@@ -707,7 +707,7 @@ sequenceDiagram
 
 ---
 
-## 8.8. Resumen y Buenas Prácticas
+## 13.8. Resumen y Buenas Prácticas
 
 A lo largo de este documento hemos explorado cómo crear servicios de negocio efectivos en TiendaApi.
 

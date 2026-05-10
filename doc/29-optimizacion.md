@@ -1,19 +1,19 @@
-# 25. Optimización de Rendimiento
+﻿# 29. Optimización
 
 ## Índice
 
-[25. Optimización de Rendimiento](#25-optimización-de-rendimiento)
-  - [25.1. ¿Por qué Optimizar?](#251-por-qué-optimizar)
-  - [25.2. Optimización de Endpoints](#252-optimización-de-endpoints)
-  - [25.3. Optimización de Base de Datos](#253-optimización-de-base-de-datos)
-  - [25.4. Caching Avanzado](#254-caching-avanzado)
-  - [25.5. Optimización de Entity Framework Core](#255-optimización-de-entity-framework-core)
-  - [25.6. Benchmarking](#256-benchmarking)
-  - [25.7. Resumen y Buenas Prácticas](#257-resumen-y-buenas-prácticas)
+[29. Optimización de Rendimiento](#29-optimizacin-de-rendimiento)
+  - [29.1. Â¿Por qué Optimizar?](#291-por-qu-optimizar)
+  - [29.2. Optimización de Endpoints](#292-optimizacin-de-endpoints)
+  - [29.3. Optimización de Base de Datos](#293-optimizacin-de-base-de-datos)
+  - [29.4. Caching Avanzado](#294-caching-avanzado)
+  - [29.5. Optimización de Entity Framework Core](#295-optimizacin-de-entity-framework-core)
+  - [29.6. Benchmarking](#296-benchmarking)
+  - [29.7. Resumen y Buenas Prácticas](#297-resumen-y-buenas-prcticas)
 
 ---
 
-## 25.1. ¿Por qué Optimizar?
+## 29.1. Â¿Por qué Optimizar?
 
 El rendimiento de una API afecta directamente la experiencia del usuario y los costos de infraestructura.
 
@@ -49,7 +49,7 @@ flowchart LR
 
 ---
 
-## 25.2. Optimización de Endpoints
+## 29.2. Optimización de Endpoints
 
 ### Response Compression
 
@@ -140,12 +140,12 @@ app.UseIpRateLimiting();
 
 ---
 
-## 25.3. Optimización de Base de Datos
+## 29.3. Optimización de Base de Datos
 
 ### Select N+1 Prevention
 
 ```csharp
-// ❌ MAL: N+1 queries
+// âŒ MAL: N+1 queries
 public async Task<List<ProductoDto>> GetProductosConCategorias()
 {
     var productos = await _context.Productos.ToListAsync();
@@ -168,7 +168,7 @@ public async Task<List<ProductoDto>> GetProductosConCategorias()
     return dtos;
 }
 
-// ✅ BIEN: Eager loading
+// âœ… BIEN: Eager loading
 public async Task<List<ProductoDto>> GetProductosConCategorias()
 {
     return await _context.Productos
@@ -186,10 +186,10 @@ public async Task<List<ProductoDto>> GetProductosConCategorias()
 ### Proyección de Columnas
 
 ```csharp
-// ❌ Obtiene todas las columnas
+// âŒ Obtiene todas las columnas
 var productos = await _context.Productos.ToListAsync();
 
-// ✅ Solo las columnas necesarias
+// âœ… Solo las columnas necesarias
 var productos = await _context.Productos
     .Where(p => p.Stock > 0)
     .Select(p => new
@@ -200,7 +200,7 @@ var productos = await _context.Productos
     })
     .ToListAsync();
 
-// ✅ Usar AsNoTracking para solo lectura
+// âœ… Usar AsNoTracking para solo lectura
 var productos = await _context.Productos
     .AsNoTracking()
     .Where(p => p.IsActive)
@@ -242,7 +242,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 ---
 
-## 25.4. Caching Avanzado
+## 29.4. Caching Avanzado
 
 ### Cache-Aside con Redis
 
@@ -403,7 +403,7 @@ public class MultiLevelCacheService
 
 ---
 
-## 25.5. Optimización de Entity Framework Core
+## 29.5. Optimización de Entity Framework Core
 
 ### Compiled Queries
 
@@ -465,7 +465,7 @@ public class ProductoRepository
 
 ---
 
-## 25.6. Benchmarking
+## 29.6. Benchmarking
 
 ### Instalación
 
@@ -554,7 +554,7 @@ public class RepositoryBenchmark
 
 ---
 
-## 25.7. Resumen y Buenas Prácticas
+## 29.7. Resumen y Buenas Prácticas
 
 ### Checklist de Optimización
 

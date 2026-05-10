@@ -1,15 +1,15 @@
-# 3. Inyección de Dependencias y Constructores Primarios
+﻿# 3. Inyección Dependencias
 
 ## Índice
 
-[3. Inyección de Dependencias y Constructores Primarios](#3-inyección-de-dependencias-y-constructores-primarios)
-  - [3.1. Qué es la Inyección de Dependencias](#31-qué-es-la-inyección-de-dependencias)
+[3. Inyección de Dependencias y Constructores Primarios](#3-inyeccin-de-dependencias-y-constructores-primarios)
+  - [3.1. Qué es la Inyección de Dependencias](#31-qu-es-la-inyeccin-de-dependencias)
   - [3.2. Tiempos de Vida de Servicios](#32-tiempos-de-vida-de-servicios)
   - [3.3. Constructores Primarios de C# 14](#33-constructores-primarios-de-c-14)
   - [3.4. Registro de Servicios en Program.cs](#34-registro-de-servicios-en-programcs)
   - [3.5. Estructura del Proyecto: Controllers, Services, Repositories](#35-estructura-del-proyecto-controllers-services-repositories)
   - [3.6. Interfaces y Abstracciones](#36-interfaces-y-abstracciones)
-  - [3.7. Resumen y Buenas Prácticas](#37-resumen-y-buenas-prácticas)
+  - [3.7. Resumen y Buenas Prácticas](#37-resumen-y-buenas-prcticas)
 
 ---
 
@@ -53,7 +53,7 @@ public class ProductoService
 Con DI, el servicio declara sus dependencias en el constructor, y el framework se encarga de proporcionar las instancias. El servicio no sabe ni le importa cómo se crean las dependencias, solo sabe que las recibirá. Esto permite fácilmente substituir implementaciones, pasar mocks en tests, y mantener el código desacoplado.
 
 ```csharp
-// SOLUCIÓN: Dependencias inyectadas
+// SOLUCIá“N: Dependencias inyectadas
 public class ProductoService
 {
     private readonly IProductoRepository _repository;
@@ -129,7 +129,7 @@ En ASP.NET Core, cada servicio registrado en el contenedor DI tiene un tiempo de
 
 ### Los tres tiempos de vida
 
-**Transient** crea una nueva instancia cada vez que el servicio es solicitado. Es ideal para servicios ligeros, sin estado, que deben ser independientes entre peticiones. Si solicitas el servicio dos veces en la misma petición, получишь dos instancias diferentes.
+**Transient** crea una nueva instancia cada vez que el servicio es solicitado. Es ideal para servicios ligeros, sin estado, que deben ser independientes entre peticiones. Si solicitas el servicio dos veces en la misma petición, Ð¿Ð¾Ð»ÑƒÑ‡Ð¸ÑˆÑŒ dos instancias diferentes.
 
 **Scoped** crea una nueva instancia una vez por petición HTTP. Todos los servicios Scoped dentro de la misma petición comparten la misma instancia. Es el tiempo de vida más común para servicios de negocio, DbContext, y cualquier cosa que deba ser específica de la petición actual.
 
@@ -181,7 +181,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // === TRANSIENT ===
 // Creado cada vez que se solicita
-// Útil para servicios ligeros, sin estado
+// áštil para servicios ligeros, sin estado
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IDtoValidator<ProductoDto>, ProductoValidator>();
 
@@ -248,10 +248,10 @@ public class ProductoService
 Si registras DbContext como Singleton, múltiples peticiones compartirán la misma instancia, causando condiciones de carrera y errores de concurrencia:
 
 ```csharp
-// ❌ INCORRECTO - DbContext no es thread-safe
+// âŒ INCORRECTO - DbContext no es thread-safe
 builder.Services.AddSingleton<TiendaDbContext>();
 
-// ✅ CORRECTO - DbContext debe ser Scoped
+// âœ… CORRECTO - DbContext debe ser Scoped
 builder.Services.AddScoped<TiendaDbContext>();
 ```
 
@@ -260,7 +260,7 @@ builder.Services.AddScoped<TiendaDbContext>();
 Un servicio Singleton no debe inyectar servicios Scoped porque vivirían más tiempo que el scope que los creó:
 
 ```csharp
-// ❌ INCORRECTO - Scoped dentro de Singleton
+// âŒ INCORRECTO - Scoped dentro de Singleton
 public class SingletonService
 {
     private readonly TiendaDbContext _context;
@@ -274,7 +274,7 @@ public class SingletonService
 builder.Services.AddSingleton<SingletonService>();
 builder.Services.AddScoped<TiendaDbContext>();
 
-// ✅ CORRECTO - Usar IServiceScopeFactory
+// âœ… CORRECTO - Usar IServiceScopeFactory
 public class SingletonService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -671,42 +671,42 @@ Una arquitectura bien organizada separa las responsabilidades en capas clarament
 
 ```
 TiendaApi.Core/
-├── Interfaces/
-│   ├── IServices/
-│   │   ├── IAuthService.cs
-│   │   ├── IProductoService.cs
-│   │   └── IPedidosService.cs
-│   ├── IRepositories/
-│   │   ├── IProductoRepository.cs
-│   │   └── IUserRepository.cs
-│   └── IInfrastructure/
-│       ├── IEmailService.cs
-│       └── IStorageService.cs
-│
-├── Services/
-│   ├── Auth/
-│   │   ├── AuthService.cs
-│   │   ├── JwtService.cs
-│   │   └── JwtTokenExtractor.cs
-│   ├── Productos/
-│   │   ├── ProductoService.cs
-│   │   └── IProductoService.cs
-│   └── Pedidos/
-│       ├── PedidosService.cs
-│       └── IPedidosService.cs
-│
-├── Repositories/
-│   ├── ProductoRepository.cs
-│   └── UserRepository.cs
-│
-├── Models/
-│   ├── User.cs
-│   ├── Producto.cs
-│   └── Pedido.cs
-│
-└── Dtos/
-    ├── ProductoDto.cs
-    └── PedidoDto.cs
+â”œâ”€â”€ Interfaces/
+â”‚   â”œâ”€â”€ IServices/
+â”‚   â”‚   â”œâ”€â”€ IAuthService.cs
+â”‚   â”‚   â”œâ”€â”€ IProductoService.cs
+â”‚   â”‚   â””â”€â”€ IPedidosService.cs
+â”‚   â”œâ”€â”€ IRepositories/
+â”‚   â”‚   â”œâ”€â”€ IProductoRepository.cs
+â”‚   â”‚   â””â”€â”€ IUserRepository.cs
+â”‚   â””â”€â”€ IInfrastructure/
+â”‚       â”œâ”€â”€ IEmailService.cs
+â”‚       â””â”€â”€ IStorageService.cs
+â”‚
+â”œâ”€â”€ Services/
+â”‚   â”œâ”€â”€ Auth/
+â”‚   â”‚   â”œâ”€â”€ AuthService.cs
+â”‚   â”‚   â”œâ”€â”€ JwtService.cs
+â”‚   â”‚   â””â”€â”€ JwtTokenExtractor.cs
+â”‚   â”œâ”€â”€ Productos/
+â”‚   â”‚   â”œâ”€â”€ ProductoService.cs
+â”‚   â”‚   â””â”€â”€ IProductoService.cs
+â”‚   â””â”€â”€ Pedidos/
+â”‚       â”œâ”€â”€ PedidosService.cs
+â”‚       â””â”€â”€ IPedidosService.cs
+â”‚
+â”œâ”€â”€ Repositories/
+â”‚   â”œâ”€â”€ ProductoRepository.cs
+â”‚   â””â”€â”€ UserRepository.cs
+â”‚
+â”œâ”€â”€ Models/
+â”‚   â”œâ”€â”€ User.cs
+â”‚   â”œâ”€â”€ Producto.cs
+â”‚   â””â”€â”€ Pedido.cs
+â”‚
+â””â”€â”€ Dtos/
+    â”œâ”€â”€ ProductoDto.cs
+    â””â”€â”€ PedidoDto.cs
 ```
 
 ### Flujo de dependencias entre capas
@@ -891,10 +891,10 @@ La inyección de dependencias desacopla el código y facilita el testing. Los tr
 ```mermaid
 flowchart TB
     subgraph "Tiempos de vida"
-        A1["DbContext → Scoped"]
-        A2["Servicios de negocio → Scoped"]
-        A3["Logger → Transient"]
-        A4["Cache/Config → Singleton"]
+        A1["DbContext â†’ Scoped"]
+        A2["Servicios de negocio â†’ Scoped"]
+        A3["Logger â†’ Transient"]
+        A4["Cache/Config â†’ Singleton"]
     end
     
     subgraph "Constructores"
