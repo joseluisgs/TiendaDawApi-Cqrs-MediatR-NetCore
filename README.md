@@ -12,6 +12,8 @@
 
 Una API de comercio electrónico con arquitectura profesional, múltiples bases de datos, patrón CQRS con MediatR, cacheo con Redis, GraphQL, WebSockets para notificaciones en tiempo real y versionado de API.
 
+Este proyecto es una versión avanzada del proyecto origen: [TiendaDawApi](https://github.com/joseluisgs/TiendaDawApi-NetCore), donde se ha refactorizado completamente la arquitectura para implementar el patrón CQRS utilizando MediatR como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries) y utilizando Notifications para eventos asíncronos.
+
 ## 🎯 Descripción
 
 TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET Core y C# 14 que implementa una API RESTful completa para una tienda en línea. El proyecto implementa el **patrón CQRS (Command Query Responsibility Segregation)** utilizando **MediatR** como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries). Además usa GraphQL, WebSockets y SignalR. El proyecto está diseñado con una arquitectura en capas utilizando múltiples bases de datos (PostgreSQL, MongoDB y Redis) para diferentes propósitos educativos para la formación de Desarrollo Web en Entornos Servidor (DAW).
@@ -42,8 +44,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
       - [Comandos específicos por tipo de test](#comandos-específicos-por-tipo-de-test)
       - [Con coverage](#con-coverage)
       - [Configuración de tests](#configuración-de-tests)
-    - [Tests E2E con Newman (Postman) y Bruno](#tests-e2e-con-newman-postman-y-bruno)
-      - [Postman (Newman)](#postman-newman)
+    - [Tests E2E con Bruno](#tests-e2e-con-bruno)
       - [Bruno (CLI)](#bruno-cli)
   - [📚 Documentación](#-documentación)
     - [Fundamentos y Configuración](#fundamentos-y-configuración)
@@ -55,7 +56,6 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
     - [Servicios Externos](#servicios-externos)
     - [Tareas en Segundo Plano](#tareas-en-segundo-plano)
     - [Documentación](#documentación)
-    - [Servicios Externos](#servicios-externos-1)
     - [Testing y Calidad](#testing-y-calidad)
     - [DevOps y Producción](#devops-y-producción)
     - [Arquitectura](#arquitectura)
@@ -76,6 +76,13 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
       - [Beneficios de ROP](#beneficios-de-rop)
       - [Ejemplos de Uso](#ejemplos-de-uso)
       - [Comparación: ROP vs Try-Catch](#comparación-rop-vs-try-catch)
+  - [🎯 Arquitectura CQRS con MediatR](#-arquitectura-cqrs-con-mediatr)
+    - [¿Por qué CQRS?](#por-qué-cqrs)
+    - [Flujo CQRS con MediatR](#flujo-cqrs-con-mediatr)
+    - [Estructura de Features](#estructura-de-features)
+    - [Componentes CQRS](#componentes-cqrs)
+    - [Notificaciones (Domain Events)](#notificaciones-domain-events)
+    - [Beneficios de MediatR](#beneficios-de-mediatr)
   - [🗄️ Estrategia Multi-Base de Datos](#️-estrategia-multi-base-de-datos)
   - [🔐 Seguridad](#-seguridad)
   - [📡 Endpoints](#-endpoints)
