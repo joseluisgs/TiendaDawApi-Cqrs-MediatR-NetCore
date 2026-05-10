@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
@@ -40,7 +41,13 @@ public class CreateProductoCommandHandler(
 
         var saved = await repository.SaveAsync(request.Dto.ToEntity());
         var dto = saved.ToDto();
+        
+        Log.Information("📣 Publicando ProductoCreadoNotification para producto ID: {ProductoId}", dto.Id);
+        
         await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
+        
+        Log.Information("✅ Notificación publicada para producto ID: {ProductoId}", dto.Id);
+        
         return Result.Success<ProductoDto, DomainError>(dto);
     }
 }

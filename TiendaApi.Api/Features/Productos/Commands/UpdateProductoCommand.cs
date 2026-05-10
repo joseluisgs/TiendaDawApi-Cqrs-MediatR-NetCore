@@ -1,9 +1,11 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
 
@@ -20,9 +22,12 @@ public record UpdateProductoCommand(long Id, ProductoRequestDto Dto)
 /// </summary>
 public class UpdateProductoCommandHandler(
     IProductoRepository repository,
-    IValidator<ProductoRequestDto> validator)
+    IValidator<ProductoRequestDto> validator,
+    IMediator mediator)
     : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>>
 {
+    private const int StockBajoUmbral = 10;
+
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoCommand request, CancellationToken cancellationToken)
@@ -46,7 +51,19 @@ public class UpdateProductoCommandHandler(
         producto.Stock = request.Dto.Stock;
         producto.Imagen = request.Dto.Imagen;
         producto.CategoriaId = request.Dto.CategoriaId;
+
         var updated = await repository.UpdateAsync(producto);
-        return Result.Success<ProductoDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
+
+        if (dto.Stock <= StockBajoUmbral)
+        {
+            await mediator.Publish(new ProductoStockBajoNotification(dto, StockBajoUmbral), cancellationToken);
+        }
+
+        Log.Information("Notificación publicada para producto actualizado ID: {ProductoId}", dto.Id);
+
+        return Result.Success<ProductoDto, DomainError>(dto);
     }
 }

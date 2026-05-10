@@ -1,7 +1,9 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
+using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -15,7 +17,9 @@ public record DeletePedidoAdminCommand(string Id)
 /// <summary>
 /// Handler del comando DeletePedidoAdminCommand.
 /// </summary>
-public class DeletePedidoAdminCommandHandler(IPedidosRepository repository)
+public class DeletePedidoAdminCommandHandler(
+    IPedidosRepository repository,
+    IMediator mediator)
     : IRequestHandler<DeletePedidoAdminCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -28,6 +32,16 @@ public class DeletePedidoAdminCommandHandler(IPedidosRepository repository)
 
         pedido.IsDeleted = true;
         await repository.UpdateAsync(pedido);
+
+        await mediator.Publish(new PedidoEliminadoNotification(
+            pedido.Id.ToString(),
+            pedido.UserId,
+            pedido.Estado ?? "",
+            pedido.Total
+        ), cancellationToken);
+
+        Log.Information("Notificación publicada para pedido eliminado por admin ID: {PedidoId}", request.Id);
+
         return UnitResult.Success<DomainError>();
     }
 }

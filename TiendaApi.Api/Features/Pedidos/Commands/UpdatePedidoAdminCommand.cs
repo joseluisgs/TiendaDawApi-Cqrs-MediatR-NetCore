@@ -1,8 +1,10 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
+using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Pedidos;
 
@@ -17,7 +19,9 @@ public record UpdatePedidoAdminCommand(string Id, UpdatePedidoDto Dto)
 /// <summary>
 /// Handler del comando UpdatePedidoAdminCommand.
 /// </summary>
-public class UpdatePedidoAdminCommandHandler(IPedidosRepository repository)
+public class UpdatePedidoAdminCommandHandler(
+    IPedidosRepository repository,
+    IMediator mediator)
     : IRequestHandler<UpdatePedidoAdminCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -32,6 +36,12 @@ public class UpdatePedidoAdminCommandHandler(IPedidosRepository repository)
         if (!string.IsNullOrWhiteSpace(request.Dto.DireccionEnvio)) pedido.DireccionEnvio = request.Dto.DireccionEnvio;
 
         var updated = await repository.UpdateAsync(pedido);
-        return Result.Success<PedidoDto, DomainError>(updated.ToDto());
+        var dto = updated.ToDto();
+
+        await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);
+
+        Log.Information("Notificación publicada para pedido actualizado por admin ID: {PedidoId}", dto.Id);
+
+        return Result.Success<PedidoDto, DomainError>(dto);
     }
 }

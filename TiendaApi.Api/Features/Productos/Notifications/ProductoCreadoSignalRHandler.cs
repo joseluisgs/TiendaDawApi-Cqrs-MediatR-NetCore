@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
+using Serilog;
 using TiendaApi.Api.Realtime.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Notifications;
@@ -14,8 +15,11 @@ public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
     : INotificationHandler<ProductoCreadoNotification>
 {
     /// <inheritdoc/>
-    public Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("ProductoCreado", new
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
+    {
+        Log.Information("📡 SignalR: Recibida notificación ProductoCreado para ID: {ProductoId}", notification.Producto.Id);
+        
+        await hubContext.Clients.All.SendAsync("ProductoCreado", new
         {
             productoId = notification.Producto.Id,
             nombre = notification.Producto.Nombre,
@@ -27,4 +31,7 @@ public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
             tipo = "PRODUCTO_CREADO",
             timestamp = DateTime.UtcNow
         }, cancellationToken);
+        
+        Log.Information("📡 SignalR: Evento enviado a todos los clientes");
+    }
 }
