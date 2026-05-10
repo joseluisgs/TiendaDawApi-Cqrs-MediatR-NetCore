@@ -12,7 +12,7 @@
 
 Una API de comercio electrónico con arquitectura profesional, múltiples bases de datos, patrón CQRS con MediatR, cacheo con Redis, GraphQL, WebSockets para notificaciones en tiempo real y versionado de API.
 
-Este proyecto es una versión avanzada del proyecto origen: [TiendaDawApi](https://github.com/joseluisgs/TiendaDawApi-NetCore), donde se ha refactorizado completamente la arquitectura para implementar el patrón CQRS utilizando MediatR como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries) y utilizando Notifications para eventos asíncronos.
+Este proyecto es una versión avanzada del proyecto origen: [TiendaDawApi-NetCore](https://github.com/joseluisgs/TiendaDawApi-NetCore), donde se ha refactorizado completamente la arquitectura para implementar el patrón CQRS utilizando MediatR como mediator, separando claramente las operaciones de escritura (Commands) de las de lectura (Queries) y utilizando Notifications para eventos asíncronos.
 
 ## 🎯 Descripción
 
