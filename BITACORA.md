@@ -26,6 +26,17 @@
 
 ---
 
+## Réplica en `TiendaDawApi-Cqrs-MediatR-NetCore`
+
+> Estado de la replicación **en este repo**. Las secciones que siguen documentan el proyecto **origen** (`TiendaDawApi-NetCore`) y se usan como referencia.
+
+| Fase | Commit (CQRS) | Resumen | Estado |
+|------|---------------|---------|--------|
+| 0 · Baseline | `5735b48` | Dependencias al estado del origen + MediatR 12.5.0, adaptaciones de código, baseline build 0/0 · 854 unit · 94 integración · 0 vulnerables | ✅ |
+| 1-12 · 13 | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+
+---
+
 ## Fase 0 — Baseline + actualización de dependencias (`88f7e4f`) ✅
 
 > **Fecha:** 24/09/2026 · **Objetivo:** dejar `restore/build/test` limpios (0 errores, 0 vulnerabilidades) como baseline de las fases de mejora.
@@ -65,7 +76,8 @@ dotnet list TiendaApi.slnx package --vulnerable --include-transitive
 | Swashbuckle.AspNetCore | 7.3.0 | **10.2.3** | Microsoft.OpenApi 2.x |
 | Serilog.AspNetCore | 8.0.3 | **10.0.0** | alineado con .NET 10 |
 | Serilog.Extensions.Logging | 8.0.0 | **10.0.0** | ídem |
-| Serilog.Sinks.Console | 6.0.0 | StackExchange.Redis | 2.8.16 | **3.3.1** | major (compatible con caching 10.0.12: `>= 2.7.27`) |
+| Serilog.Sinks.Console | 6.0.0 | **6.1.1** | minor |
+| StackExchange.Redis | 2.8.16 | **3.3.1** | major (compatible con caching 10.0.12: `>= 2.7.27`) |
 | Microsoft.AspNetCore.Authentication.JwtBearer | 10.0.0 | **10.0.12** | patch |
 | Microsoft.Extensions.Caching.StackExchangeRedis | 10.0.4 | **10.0.12** | patch |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.1 | **10.0.3** | patch |
@@ -186,6 +198,8 @@ Diferencias conocidas respecto al proyecto origen:
 4. Mismos cambios que §3 (tablas) en `TiendaApi.Api` y `TiendaApi.Tests`, **más** el `Microsoft.EntityFrameworkCore.Relational 10.0.12` en Tests si aparece `MSB3277`.
 5. Mismas adaptaciones de código que §4 (`SwaggerConfig`, `ApiVersioningConfig`, `AuthController` using, `ControllersConfig` using muerto, Testcontainers, Moq, `HotChocolateCompositeImplicitUsings`).
 6. Verificar igual que §6 (ajustar el número de tests al del repo CQRS).
+
+**Estado (25/09/2026):** ✅ 1 (`NU1902` fuera de ambos csproj; `NU1903` se mantiene como en el origen y se compensa con `--vulnerable` explícito → **0**) · ✅ 2 (MediatR → **12.5.0**, última libre) · ✅ 3 **N/A** (la solución CQRS solo tiene `TiendaApi.Api` y `TiendaApi.Tests`, no hay `ClientBlazor`) · ✅ 4 (tablas §3 portadas + `Microsoft.EntityFrameworkCore.Relational 10.0.12` en Tests por el `MSB3277`) · ✅ 5 (adaptaciones §4 portadas: `SwaggerConfig`, `ApiVersioningConfig`, usings de `AuthController`/`ControllersConfig`, `TestContainerImages.cs`, Moq `v!`, `HotChocolateCompositeImplicitUsings=disable`) · ✅ 6 (verificación real: build **0/0** · unit **854/854** · integración **94/94** · `--vulnerable` **0** · `--outdated` = 3 excepciones: AutoMapper.Extensions 12.0.0, FluentAssertions 7.x, MediatR 12.5.0).
 
 ---
 

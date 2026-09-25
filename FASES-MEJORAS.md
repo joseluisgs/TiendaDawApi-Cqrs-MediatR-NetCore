@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** ⬜ **plan PENDIENTE** — ninguna fase ejecutada aún en CQRS (las tablas de verificación citan aún valores del origen: sustituir al ejecutar). **Fase 13** es nueva, propia de este proyecto (CQRS real en Productos).  
+> **Estado:** 🟡 **en curso — Fase 0 COMPLETADA (25/09/2026)** — fases 1-12 pendientes de replicar (las tablas de verificación citan valores del origen: sustituir al ejecutar) y **Fase 13** pendiente. **Fase 13** es nueva, propia de este proyecto (CQRS real en Productos).  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos).
 
 ---
@@ -23,13 +23,13 @@
 
 ---
 
-## Fase 0 — Baseline ⬜ PENDIENTE (replicar)
+## Fase 0 — Baseline ✅ COMPLETADA (25/09/2026)
 
 | # | Tarea | Verificación |
 |---|-------|--------------|
-| 0.1 | `dotnet build` + unit tests como referencia | Build 0 errores 0 warnings (`TreatWarningsAsErrors`), **1034 tests unitarios verdes** |
-| 0.2 | Fix `NU1902` SharpCompress 0.30.1 (CVE zip-slip, transitivo de MongoDB.Driver 3.6.0) | Paquetes MongoDB actualizados → SharpCompress 0.48.1 |
-| 0.3 | Actualización general de dependencias a últimas versiones estables | `dotnet list package --outdated` y `--vulnerable` limpios (ver tabla) |
+| 0.1 | `dotnet build` + unit tests como referencia | ✅ Build **0 errores 0 warnings** (`TreatWarningsAsErrors`); baseline propio **854 unit + 94 integración** verdes (antes y después de los saltos; el origen: 1034/161) |
+| 0.2 | Fix `NU1902` SharpCompress 0.30.1 (CVE zip-slip, transitivo de MongoDB.Driver 3.6.0) | ✅ Paquetes MongoDB actualizados → SharpCompress 0.48.1 |
+| 0.3 | Actualización general de dependencias a últimas versiones estables | ✅ `--vulnerable` → **0**; `--outdated` → solo las 3 excepciones de abajo (ver tabla) |
 
 ### Actualización de paquetes (0.3)
 
@@ -40,11 +40,15 @@
 **Adaptaciones de código por saltos major:**
 - `SwaggerConfig.cs`: Microsoft.OpenApi 2.x (tipos en raíz, `OpenApiSecuritySchemeReference`, `AddSecurityRequirement(Func<OpenApiDocument,…>)`)
 - `ApiVersioningConfig.cs`: cadena `.AddApiVersioning(…).AddApiExplorer().AddMvc()` (analizadores AV0013/AV0021)
-- Tests: constructores de Testcontainers con imagen (`new MongoDbBuilder("mongo:7.0")`), `v!` en matchers Moq 4.21, `HotChocolateCompositeImplicitUsings=disable` (colisión `Is` con NUnit)
+- Tests: constructores de Testcontainers con imagen vía helper compartido `TestContainerImages.cs` (`new MongoDbBuilder(TestContainerImages.Mongo)` = `mongo:7.0` / `postgres:17-alpine`, alineado con los composes), `v!` en matchers Moq 4.21, `HotChocolateCompositeImplicitUsings=disable` (colisión `Is` con NUnit)
+- `AuthController.cs` / `ControllersConfig.cs`: usings por el cambio de paquete de versionado (`using Asp.Versioning;` / retirar el deprecatado)
 
 **Excepciones intencionadas (no actualizar):**
 - `AutoMapper.Extensions.MS.DI 12.0.0` → 12.0.1 exige `AutoMapper = 12.0.1` exacto (rompería el 16.2.0)
 - `FluentAssertions 7.2.2` → v8 cambió a licencia Xceed (solo gratis no-comercial); rama 7 = Apache 2.0
+- `MediatR 12.5.0` → 13+/14.x es licencia comercial (Lucky Penny, RPL1.5); 12.5.0 = última libre Apache 2.0 (propio de este repo, el origen no usa MediatR)
+
+**Resultado ejecutado (25/09/2026):** `restore` OK · `build` **0/0** · unit **854/854** (6 s) · integración **94/94** (38 s, Testcontainers) · `--vulnerable` **0** · `--outdated` **3 excepciones** (las de arriba).
 
 ---
 
