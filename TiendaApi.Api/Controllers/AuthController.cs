@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
