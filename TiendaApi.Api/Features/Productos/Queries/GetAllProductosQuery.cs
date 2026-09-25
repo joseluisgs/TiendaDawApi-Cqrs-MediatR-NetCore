@@ -32,7 +32,7 @@ public class GetAllProductosQueryHandler(
     public async Task<Result<PagedResult<ProductoDto>, DomainError>> Handle(
         GetAllProductosQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = $"productos:paged:{request.Filter.Page}:{request.Filter.Size}";
+        var cacheKey = $"productos:paged:{request.Filter}";
         var cached = await cacheService.GetAsync<PagedResult<ProductoDto>>(cacheKey);
         if (cached is not null)
             return Result.Success<PagedResult<ProductoDto>, DomainError>(cached);

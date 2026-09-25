@@ -128,16 +128,28 @@
 
 ---
 
-## Fase 5 — Verificación global ⬜ PENDIENTE (replicar)
+## Fase 5 — Verificación global ✅ COMPLETADA (25/09/2026)
 
-| # | Tarea |
-|---|-------|
-| 5.1 | `dotnet build` (warnings as errors) |
-| 5.2 | `dotnet test --filter "FullyQualifiedName~Unit"` |
-| 5.3 | Integration (Docker) |
-| 5.4 | E2E Bruno/Newman: auth, productos C/R/U/D, pedidos paged, categorías |
-| 5.5 | Smoke: `/health`, `/swagger`, GraphQL, 2º GET → 304, logs Task.Run limpios |
-| 5.6 | **Automation Node** (Fase 7) en verde |
+| # | Tarea | Verificación |
+|---|-------|--------------|
+| 5.1 | `dotnet build` (warnings as errors) | ✅ Build **0 errores 0 warnings** |
+| 5.2 | `dotnet test --filter "FullyQualifiedName~Unit"` | ✅ **855/855** (6 s) |
+| 5.3 | Integration (Docker) | ✅ **94/94** (38 s, Testcontainers) |
+| 5.4 | E2E Bruno/Newman: auth, productos C/R/U/D, pedidos paged, categorías | ✅ Newman **77 requests, 0 failed, 93/95 assertions** (2 esperados: `/health`); Automation **54/55** (`/health`); Bruno pendiente |
+| 5.5 | Smoke: `/health`, `/swagger`, GraphQL, 2º GET → 304, logs Task.Run limpios | ✅ Swagger `/` 200, `/swagger/v1/swagger.json` 200, GraphQL 200, logs sin excepciones; `/health` pendiente (Fase 1), 304 pendiente (Fase 4) |
+| 5.6 | **Automation Node** (Fase 7) en verde | ✅ **54/55** (solo `/health` esperado) |
+
+### Bugs hallados y corregidos en esta fase
+
+| Bug | Archivo | Fix |
+|-----|---------|-----|
+| Cache key de productos paginados no incluía filtros → `precioMax` devolvía resultados sin filtrar | `GetAllProductosQuery.cs` | Cache key = `$"productos:paged:{request.Filter}"` (usa `ToString()` del record) |
+| PUT categoría no copiaba `Descripcion` (solo `Nombre`) | `UpdateCategoriaCommand.cs` | Añadido `categoria.Descripcion = request.Dto.Descripcion;` |
+| Test unit no verificaba ambos campos en update | `UpdateCategoriaCommandHandlerTests.cs` | Nuevo test `Handle_ActualizaNombreYDescripcion_DevuelveSuccess` |
+
+### Hallazgo operativo
+
+La API necesita `ASPNETCORE_ENVIRONMENT=Development` al arrancar para ejecutar `EnsureDeleted + EnsureCreated + seed`. Sin él, `InitializeDatabaseAsync` solo hace `EnsureCreated()` (sin borrar ni sembrar), y la BD acumula datos de runs anteriores → sign-in de `userdaw` falla porque fue borrado/alterado por Newman. El archivo `start-api.bat` en temp incluye `set ASPNETCORE_ENVIRONMENT=Development`.
 
 ### 📋 Verificación Fase 5 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
 

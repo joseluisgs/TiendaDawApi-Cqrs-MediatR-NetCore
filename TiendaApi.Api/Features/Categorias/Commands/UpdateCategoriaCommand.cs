@@ -46,6 +46,7 @@ public class UpdateCategoriaCommandHandler(
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NombreDuplicado(request.Dto.Nombre));
 
         categoria.Nombre = request.Dto.Nombre;
+        categoria.Descripcion = request.Dto.Descripcion;
         var updated = await repository.UpdateAsync(categoria);
         var dto = updated.ToDto();
 
