@@ -1,4 +1,5 @@
 using CSharpFunctionalExtensions;
+using HotChocolate;
 using HotChocolate.Authorization;
 using MediatR;
 using TiendaApi.Api.Dtos.Productos;
@@ -12,15 +13,13 @@ namespace TiendaApi.Api.GraphQL.Mutations;
 /// Mutations de GraphQL para productos (requiere rol ADMIN).
 /// Refactorizado para usar CQRS + MediatR en lugar de Services.
 /// </summary>
-public class ProductoMutation(IMediator mediator)
+public class ProductoMutation
 {
     /// <summary>Crea un nuevo producto.</summary>
-    /// <param name="input">Datos del producto.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Producto creado o null en caso de error.</returns>
     [Authorize(policy: "AdminOnly")]
     public async Task<ProductoDto?> CreateProducto(
         CreateProductoInput input,
+        [Service] IMediator mediator,
         CancellationToken ct = default)
     {
         var dto = new ProductoRequestDto
@@ -38,14 +37,11 @@ public class ProductoMutation(IMediator mediator)
     }
 
     /// <summary>Actualiza un producto existente.</summary>
-    /// <param name="id">ID del producto.</param>
-    /// <param name="input">Campos a modificar.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Producto actualizado o null si no existe.</returns>
     [Authorize(policy: "AdminOnly")]
     public async Task<ProductoDto?> UpdateProducto(
         long id,
         UpdateProductoInput input,
+        [Service] IMediator mediator,
         CancellationToken ct = default)
     {
         var existingResult = await mediator.Send(new GetProductoByIdQuery(id), ct);
@@ -69,12 +65,10 @@ public class ProductoMutation(IMediator mediator)
     }
 
     /// <summary>Elimina un producto (soft delete).</summary>
-    /// <param name="id">ID del producto.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>True si se eliminó correctamente.</returns>
     [Authorize(policy: "AdminOnly")]
     public async Task<bool> DeleteProducto(
         long id,
+        [Service] IMediator mediator,
         CancellationToken ct = default)
     {
         var result = await mediator.Send(new DeleteProductoCommand(id), ct);
