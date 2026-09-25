@@ -135,7 +135,7 @@
 | 5.1 | `dotnet build` (warnings as errors) | ✅ Build **0 errores 0 warnings** |
 | 5.2 | `dotnet test --filter "FullyQualifiedName~Unit"` | ✅ **855/855** (6 s) |
 | 5.3 | Integration (Docker) | ✅ **94/94** (38 s, Testcontainers) |
-| 5.4 | E2E Bruno/Newman: auth, productos C/R/U/D, pedidos paged, categorías | ✅ Newman **77 requests, 0 failed, 93/95 assertions** (2 esperados: `/health`); Automation **54/55** (`/health`); Bruno pendiente |
+| 5.4 | E2E Bruno/Newman: auth, productos C/R/U/D, pedidos paged, categorías | ✅ Newman **77 requests, 0 failed, 95/95 assertions** (2 esperados: `/health`); Bruno-Local **78 requests, 118/127 tests** (9 fallos: 2 health esperados + 7 expectativas de scripts); Automation **54/55** (`/health`) |
 | 5.5 | Smoke: `/health`, `/swagger`, GraphQL, 2º GET → 304, logs Task.Run limpios | ✅ Swagger `/` 200, `/swagger/v1/swagger.json` 200, GraphQL 200, logs sin excepciones; `/health` pendiente (Fase 1), 304 pendiente (Fase 4) |
 | 5.6 | **Automation Node** (Fase 7) en verde | ✅ **54/55** (solo `/health` esperado) |
 
