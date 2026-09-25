@@ -64,3 +64,6 @@ Thumbs.db
 
 # Windows null device issue
 nul
+
+# Informes E2E generados (Bruno/Newman compose)
+TiendaApi.Tests.E2E/**/reports/
