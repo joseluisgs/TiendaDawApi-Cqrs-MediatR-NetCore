@@ -24,11 +24,11 @@ public class GetAllPedidosQueryHandler(IPedidosRepository repository)
     public async Task<Result<PagedResult<PedidoDto>, DomainError>> Handle(
         GetAllPedidosQuery request, CancellationToken cancellationToken)
     {
-        var pedidos = (await repository.FindAllAsync()).ToList();
+        var (pedidos, totalCount) = await repository.FindAllPagedAsync(request.Page, request.Size);
         return Result.Success<PagedResult<PedidoDto>, DomainError>(new PagedResult<PedidoDto>
         {
-            Items = pedidos.Skip(request.Page * request.Size).Take(request.Size).ToDtoList(),
-            TotalCount = pedidos.Count,
+            Items = pedidos.ToDtoList(),
+            TotalCount = totalCount,
             Page = request.Page + 1,
             PageSize = request.Size
         });

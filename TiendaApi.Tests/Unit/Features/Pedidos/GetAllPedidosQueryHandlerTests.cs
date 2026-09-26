@@ -24,7 +24,7 @@ public class GetAllPedidosQueryHandlerTests
             new() { Id = ObjectId.GenerateNewId(), Estado = "Enviado" }
         };
         
-        repository.Setup(r => r.FindAllAsync()).ReturnsAsync(pedidos);
+        repository.Setup(r => r.FindAllPagedAsync(0, 10)).ReturnsAsync((pedidos, pedidos.Count));
         
         var handler = new GetAllPedidosQueryHandler(repository.Object);
         
@@ -38,7 +38,7 @@ public class GetAllPedidosQueryHandlerTests
     public async Task Handle_SinPedidos_DevuelveListaVacia()
     {
         var repository = new Mock<IPedidosRepository>();
-        repository.Setup(r => r.FindAllAsync()).ReturnsAsync(new List<Pedido>());
+        repository.Setup(r => r.FindAllPagedAsync(0, 10)).ReturnsAsync((new List<Pedido>(), 0));
         
         var handler = new GetAllPedidosQueryHandler(repository.Object);
         
