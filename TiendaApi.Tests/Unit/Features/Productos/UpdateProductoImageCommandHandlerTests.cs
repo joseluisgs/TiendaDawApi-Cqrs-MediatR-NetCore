@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -30,7 +31,8 @@ public class UpdateProductoImageCommandHandlerTests
         repository.Setup(r => r.UpdateAsync(It.IsAny<Producto>())).ReturnsAsync((Producto p) => p);
         
         var mockFile = new Mock<IFormFile>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoImageCommand(1, mockFile.Object), CancellationToken.None);
 
@@ -48,7 +50,8 @@ public class UpdateProductoImageCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
         
         var mockFile = new Mock<IFormFile>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoImageCommand(999, mockFile.Object), CancellationToken.None);
 

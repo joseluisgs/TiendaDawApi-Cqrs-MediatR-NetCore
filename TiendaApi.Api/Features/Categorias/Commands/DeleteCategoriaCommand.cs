@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
@@ -19,7 +20,8 @@ public record DeleteCategoriaCommand(long Id)
 /// </summary>
 public class DeleteCategoriaCommandHandler(
     ICategoriaRepository repository,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -38,6 +40,7 @@ public class DeleteCategoriaCommandHandler(
             {
                 await cacheService.RemoveAsync("categorias:all");
                 await cacheService.RemoveAsync($"categorias:{request.Id}");
+                await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
             }
             catch (Exception ex)
             {

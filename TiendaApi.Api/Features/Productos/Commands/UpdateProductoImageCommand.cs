@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -26,7 +27,8 @@ public class UpdateProductoImageCommandHandler(
     IProductoRepository repository,
     IStorageService storageService,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -54,6 +56,7 @@ public class UpdateProductoImageCommandHandler(
             {
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:{request.Id}");
+                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
             }
             catch (Exception ex)
             {

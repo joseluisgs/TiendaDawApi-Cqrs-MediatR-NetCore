@@ -93,6 +93,7 @@ public class ProductoHandlerIntegrationTests
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning));
         services.AddMemoryCache();
+        services.AddOutputCacheConfig();
         services.AddMvcControllers();
         services.AddFluentValidationServices();
         services.AddDatabases(configuration);

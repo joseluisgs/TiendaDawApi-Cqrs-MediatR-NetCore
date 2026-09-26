@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -23,7 +24,8 @@ public record UpdateProductoPartialCommand(long Id, ProductoPatchDto Dto)
 public class UpdateProductoPartialCommandHandler(
     IProductoRepository repository,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateProductoPartialCommand, Result<ProductoDto, DomainError>>
 {
     private const int StockBajoUmbral = 10;
@@ -54,6 +56,7 @@ public class UpdateProductoPartialCommandHandler(
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:{request.Id}");
                 await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
             }
             catch (Exception ex)
             {

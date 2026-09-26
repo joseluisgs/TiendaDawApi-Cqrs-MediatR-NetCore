@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using TiendaApi.Api.Controllers;
@@ -19,6 +20,7 @@ public class ProductosControllerTests
     public ProductosControllerTests()
     {
         _controller = new ProductosController(_mediator.Object);
+        _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
     }
 
     [Test]

@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
@@ -26,7 +27,8 @@ public class CreateCategoriaCommandHandlerTests
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(false);
         repository.Setup(r => r.SaveAsync(It.IsAny<Categoria>())).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
@@ -42,7 +44,8 @@ public class CreateCategoriaCommandHandlerTests
         var dto = new CategoriaRequestDto { Nombre = "", Descripcion = "Test" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult([new ValidationFailure("Nombre", "obligatorio")]));
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
@@ -59,7 +62,8 @@ public class CreateCategoriaCommandHandlerTests
         var dto = new CategoriaRequestDto { Nombre = "Electrónica" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(true);
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 

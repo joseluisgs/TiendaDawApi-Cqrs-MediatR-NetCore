@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -27,7 +28,8 @@ public class UpdateProductoCommandHandler(
     ICategoriaRepository categoriaRepository,
     IValidator<ProductoRequestDto> validator,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>>
 {
     private const int StockBajoUmbral = 10;
@@ -80,6 +82,7 @@ public class UpdateProductoCommandHandler(
                 await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
                 if (oldCategoriaId != request.Dto.CategoriaId)
                     await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
             }
             catch (Exception ex)
             {

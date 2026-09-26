@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
@@ -30,6 +31,7 @@ namespace TiendaApi.Api.Controllers;
 public class CategoriasController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(PagedResult<CategoriaDto>), StatusCodes.Status200OK)]
     [AllowAnonymous]
     public async Task<IActionResult> GetAll(
@@ -54,6 +56,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: categorias =>
             {
+                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(categorias);
@@ -62,6 +65,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
@@ -69,7 +73,11 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     {
         var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
-            onSuccess: categoria => Ok(categoria),
+            onSuccess: categoria =>
+            {
+                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                return Ok(categoria);
+            },
             onFailure: error => error.ToHttpResult());
     }
 

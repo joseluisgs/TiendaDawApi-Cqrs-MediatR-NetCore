@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
@@ -27,7 +28,8 @@ public class UpdateCategoriaCommandHandlerTests
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(false);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
@@ -47,7 +49,8 @@ public class UpdateCategoriaCommandHandlerTests
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(false);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
@@ -66,7 +69,8 @@ public class UpdateCategoriaCommandHandlerTests
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
         var mediator = new Mock<IMediator>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(999, dto), CancellationToken.None);
 
@@ -84,7 +88,8 @@ public class UpdateCategoriaCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Old" });
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(true);
         var mediator = new Mock<IMediator>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 

@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
@@ -23,7 +24,8 @@ public class DeleteProductoCommandHandler(
     IProductoRepository repository,
     IStorageService storageService,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<DeleteProductoCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -48,6 +50,7 @@ public class DeleteProductoCommandHandler(
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:{request.Id}");
                 await cacheService.RemoveAsync($"productos:categoria:{categoriaId}");
+                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
             }
             catch (Exception ex)
             {

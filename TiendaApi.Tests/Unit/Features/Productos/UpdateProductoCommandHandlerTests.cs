@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -29,7 +30,8 @@ public class UpdateProductoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Nombre = "Old" });
         categoriaRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1 });
         repository.Setup(r => r.UpdateAsync(It.IsAny<Producto>())).ReturnsAsync((Producto p) => p);
-        var handler = new UpdateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoCommand(1, dto), CancellationToken.None);
 
@@ -47,7 +49,8 @@ public class UpdateProductoCommandHandlerTests
         var dto = new ProductoRequestDto { Nombre = "Laptop", Precio = 1000m, Stock = 10, CategoriaId = 1 };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
-        var handler = new UpdateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoCommand(999, dto), CancellationToken.None);
 

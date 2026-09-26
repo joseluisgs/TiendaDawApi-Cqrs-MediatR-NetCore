@@ -53,6 +53,10 @@ services.AddServices();
 services.AddCache(environment);
 services.AddEmail(environment);
 services.AddStorage();
+
+// Caché HTTP (OutputCache + ETag + 304) - solo endpoints con [OutputCache]
+services.AddOutputCacheConfig();
+
 services.AddWebSockets();
 services.AddBackgroundJobs();
 
@@ -107,6 +111,10 @@ app.UseWebSockets();
 app.MapWebSocketEndpoints();
 app.MapSignalRHubs();
 app.UseStaticFiles();
+
+// Caché HTTP: antes de MapControllers; solo afecta a los endpoints con [OutputCache]
+app.UseOutputCacheConfig();
+
 app.MapControllers();
 app.MapGraphQLEndpoints();
 

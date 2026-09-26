@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
@@ -27,7 +28,8 @@ public class CreateProductoCommandHandlerTests
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         categoriaRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
         repository.Setup(r => r.SaveAsync(It.IsAny<Producto>())).ReturnsAsync(new Producto { Id = 1, Nombre = "Laptop", Precio = 10m, Stock = 2, CategoriaId = 1 });
-        var handler = new CreateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateProductoCommand(dto), CancellationToken.None);
 
@@ -46,7 +48,8 @@ public class CreateProductoCommandHandlerTests
         var dto = new ProductoRequestDto { Nombre = "", Precio = 10m, Stock = 2, CategoriaId = 1 };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult([new ValidationFailure("Nombre", "obligatorio")]));
-        var handler = new CreateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateProductoCommandHandler(repository.Object, categoriaRepository.Object, validator.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateProductoCommand(dto), CancellationToken.None);
 
