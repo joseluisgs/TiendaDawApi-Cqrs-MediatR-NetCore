@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 5, 13 y 14 COMPLETADAS** — fases 4-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 13 y 14 COMPLETADAS** — fases 6-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -149,7 +149,7 @@
 
 ---
 
-## Fase 4 — Caché HTTP · **Opción A** (OutputCache + ETag) ⬜ PENDIENTE (replicar)
+## Fase 4 — Caché HTTP · **Opción A** (OutputCache + ETag) ✅ COMPLETADA (26/09/2026)
 
 | # | Tarea | Archivos |
 |---|-------|----------|
@@ -160,7 +160,18 @@
 | 6.5 | **Excluir** pedidos, users, auth, GraphQL autenticado | — |
 | 6.6 | Verificar | 2º GET → **304**; tras POST/PUT → tag invalidado → 200 con cuerpo nuevo |
 
-### 📋 Verificación Fase 4 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 4 - 26/09/2026 (semillas frescas por grupo)
+
+| Comprobación | Resultado |
+|--------------|-----------|
+| Build | **0 errores / 0 advertencias** |
+| Tests | **1032/1032 ✅ 0 fallos ✅ 32 omitidos (EF-272)** - sin regresión |
+| Smoke en vivo (6.6) | Los 5 GET anónimos devuelven `ETag`; 2º GET con `If-None-Match` → **304**; `/api/users` y `/api/pedidos` **sin ETag** (If-None-Match falso → 200); `POST /categorias` → 201 y GET con ETag antiguo → **200** (tag invalidado); `PUT /productos/{id}` → 200 y GET con ETag antiguo → **200** |
+| Newman (grupo 1) | **95/95 assertions, 0 fallos** |
+| Automation (grupo 2) | **55/55, 0 KO** |
+| Bruno (grupo 3) | **127/127 assertions, 0 fallos**; 2 requests WS `[080]/[081]` `ENOTFOUND {{basews}}` - pre-existente |
+
+> Invalidación por tag en los 8 handlers MediatR (5 productos + 3 categorías) con `IOutputCacheStore.EvictByTagAsync`; pedidos/users/auth/GraphQL sin `[OutputCache]` (regla 6.5).
 
 ---
 
@@ -543,7 +554,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 | Diferencia | Fase que la resuelve |
 |-----------|---------------------|
 | Sin `/health` endpoint | ✅ Fase 1 (26/09/2026): `GET /health` 200/503 |
-| Sin HTTP Output Cache (ETag/304) | Fase 4 |
+| Sin HTTP Output Cache (ETag/304) | ✅ Fase 4 (26/09/2026): OutputCache 60s + ETag + 304 + invalidación por tag |
 | Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) — mitigado en 14.2 (`ToHttpResult` ya en los 5 controllers), confirmar el resto en Fase 9 |
 | Sin índices EF en modelo | ✅ Fase 1 (26/09/2026): 5 índices añadidos al modelo |
 | Sin `AsNoTracking` selectivo | ✅ Fase 2 (26/09/2026): 9 sitios en 3 repos |

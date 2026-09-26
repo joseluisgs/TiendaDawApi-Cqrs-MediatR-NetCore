@@ -40,7 +40,8 @@
 | 1 · Health + índices + Task.Run | `229152e` | `HealthChecksConfig.cs` (PG/Mongo, JSON; Redis fuera de dev) + `MapHealthEndpoint` + 5 índices EF + 25 `Task.Run` con `Log.Warning`: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
 | 2 · AsNoTracking selectivo | `8de2097` | `.AsNoTracking()` en 9 listados de solo lectura (2 categorías, 4 productos, 3 users) = diff origen `a82e7a5`; `FindById`/`Delete`/`Update` intactos: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
 | 3 · Paginación real de pedidos | `cc5eedc` | `FindAllPagedAsync(page,size)` en `IPedidosRepository` + Mongo (`CountDocuments`+`Skip/Limit`) y EF (`CountAsync`+`Skip/Take`); handler delega (sin paginar en memoria); controller intacto, +2 mocks: build 0/0 · tests **1032/1032** · smoke `?page=1&size=2` → 2 items + header `Link` · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
-| 4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 4 · Caché HTTP (OutputCache + ETag) | `6cc1c90` | `Infrastructures/OutputCacheConfig.cs` + registro en `Program.cs` + `[OutputCache(60s, tags)]` y ETag en los 5 GETs anónimos (Productos/Categorías) + `EvictByTagAsync` en 8 handlers (5 productos, 3 categorías); pedidos/users/auth/GraphQL sin caché: build 0/0 · tests **1032/1032** · smoke 304 + invalidación en vivo · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
+| 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 
