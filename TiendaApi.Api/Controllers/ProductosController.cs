@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -66,11 +67,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new GetProductoByIdQuery(id));
         return resultado.Match(
             onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 
@@ -84,11 +81,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new GetProductosByCategoriaQuery(categoriaId));
         return resultado.Match(
             onSuccess: productos => Ok(productos),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 
@@ -105,13 +98,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new CreateProductoCommand(dto));
         return resultado.Match(
             onSuccess: producto => CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto),
-            onFailure: error => error switch
-            {
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                NotFoundError => NotFound(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 
@@ -128,12 +115,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new UpdateProductoCommand(id, dto));
         return resultado.Match(
             onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 
@@ -148,11 +130,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     {
         var resultado = await mediator.Send(new DeleteProductoCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        return resultado.Error switch
-        {
-            NotFoundError => NotFound(new { message = resultado.Error.Message }),
-            _ => StatusCode(500, new { message = resultado.Error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 
     /// <summary>Actualiza la imagen de un producto.</summary>
@@ -176,12 +154,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new UpdateProductoImageCommand(id, image));
         return resultado.Match(
             onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 
@@ -198,12 +171,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new UpdateProductoPartialCommand(id, dto));
         return resultado.Match(
             onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult()
         );
     }
 }

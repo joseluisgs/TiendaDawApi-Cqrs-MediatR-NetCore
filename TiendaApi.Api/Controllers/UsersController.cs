@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Users.Commands;
 using TiendaApi.Api.Features.Users.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -61,11 +62,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new GetUserByIdQuery(id));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPost]
@@ -81,12 +78,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new CreateUserCommand(dto));
         return resultado.Match(
             onSuccess: usuario => CreatedAtAction(nameof(GetById), new { id = usuario.Id }, usuario),
-            onFailure: error => error switch
-            {
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPut("{id}")]
@@ -103,13 +95,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new UpdateUserCommand(id, dto));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPatch("{id}/avatar")]
@@ -132,12 +118,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new UpdateUserAvatarCommand(id, dto.AvatarUrl));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpDelete("{id}")]
@@ -151,12 +132,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         logger.LogInformation("Eliminando usuario con ID: {Id}", id);
         var resultado = await mediator.Send(new DeleteUserCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 
     [HttpGet("me/profile")]
@@ -172,11 +148,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new GetUserByIdQuery(userId));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPut("me/profile")]
@@ -195,13 +167,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new UpdateUserCommand(userId, dto));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpDelete("me/profile")]
@@ -217,12 +183,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
 
         var resultado = await mediator.Send(new DeleteUserCommand(userId));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 
     [HttpPatch("me/profile/avatar")]
@@ -242,11 +203,6 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new UpdateUserAvatarCommand(userId, dto.AvatarUrl));
         return resultado.Match(
             onSuccess: usuario => Ok(usuario),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 }

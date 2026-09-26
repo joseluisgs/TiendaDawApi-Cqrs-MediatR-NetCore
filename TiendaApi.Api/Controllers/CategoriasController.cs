@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Features.Categorias.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -57,13 +58,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(categorias);
             },
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpGet("{id}")]
@@ -75,11 +70,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
             onSuccess: categoria => Ok(categoria),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPost]
@@ -94,12 +85,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new CreateCategoriaCommand(dto));
         return resultado.Match(
             onSuccess: categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
-            onFailure: error => error switch
-            {
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPut("{id}")]
@@ -115,13 +101,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
         return resultado.Match(
             onSuccess: categoria => Ok(categoria),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpDelete("{id}")]
@@ -134,12 +114,6 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     {
         var resultado = await mediator.Send(new DeleteCategoriaCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError => BadRequest(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 }

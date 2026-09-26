@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Auth.Commands;
 
 namespace TiendaApi.Api.Controllers;
@@ -36,12 +37,7 @@ public class AuthController(
 
         return resultado.Match(
             response => CreatedAtAction(nameof(SignUp), response),
-            error => error switch
-            {
-                ValidationError validationError => BadRequest(new { message = validationError.Message }),
-                ConflictError conflictError => Conflict(new { message = conflictError.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            error => error.ToHttpResult()
         );
     }
 
@@ -59,12 +55,7 @@ public class AuthController(
 
         return resultado.Match(
             response => Ok(response),
-            error => error switch
-            {
-                UnauthorizedError unauthorizedError => Unauthorized(new { message = unauthorizedError.Message }),
-                ValidationError validationError => BadRequest(new { message = validationError.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            error => error.ToHttpResult()
         );
     }
 }

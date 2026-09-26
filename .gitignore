@@ -67,3 +67,4 @@ nul
 
 # Informes E2E generados (Bruno/Newman compose)
 TiendaApi.Tests.E2E/**/reports/
+**/results.json

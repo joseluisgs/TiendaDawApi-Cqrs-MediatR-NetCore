@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -68,11 +69,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new GetPedidoByIdQuery(id));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPut("{id}")]
@@ -87,13 +84,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpDelete("{id}")]
@@ -106,13 +97,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     {
         var resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 
     [HttpPut("{id}/estado")]
@@ -127,14 +112,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                BusinessRuleError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpGet("me")]
@@ -207,15 +185,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         }
 
         var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-            BusinessRuleError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            ConflictError => Conflict(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return error.ToHttpResult();
     }
 
     [HttpGet("me/{id}")]
@@ -235,12 +205,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpPut("me/{id}")]
@@ -261,14 +226,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                BusinessRuleError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
     [HttpDelete("me/{id}")]
@@ -288,13 +246,6 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
         var resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 }
