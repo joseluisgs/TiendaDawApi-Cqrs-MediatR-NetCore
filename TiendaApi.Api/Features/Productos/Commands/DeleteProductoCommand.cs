@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
@@ -48,7 +49,10 @@ public class DeleteProductoCommandHandler(
                 await cacheService.RemoveAsync($"productos:{request.Id}");
                 await cacheService.RemoveAsync($"productos:categoria:{categoriaId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new ProductoEliminadoNotification(request.Id), cancellationToken);

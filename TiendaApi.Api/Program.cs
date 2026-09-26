@@ -65,6 +65,9 @@ services.AddGraphQL(environment);
 // AutoMapper
 services.AddAutoMapper();
 
+// Health Checks (sondeo de dependencias en /health)
+services.AddHealthChecks(environment);
+
 // ============================================================================
 // 🚀 CONSTRUCCIÓN DE LA APLICACIÓN
 // ============================================================================
@@ -106,6 +109,9 @@ app.MapSignalRHubs();
 app.UseStaticFiles();
 app.MapControllers();
 app.MapGraphQLEndpoints();
+
+// Health Check (GET /health - JSON: 200 OK, 503 si alguna dependencia cae)
+app.MapHealthEndpoint();
 
 // ============================================================================
 // 🗄️ INICIALIZACIÓN DE DATOS

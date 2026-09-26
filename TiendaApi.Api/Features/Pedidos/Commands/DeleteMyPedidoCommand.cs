@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
@@ -46,7 +47,10 @@ public class DeleteMyPedidoCommandHandler(
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
                 await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId), cancellationToken);

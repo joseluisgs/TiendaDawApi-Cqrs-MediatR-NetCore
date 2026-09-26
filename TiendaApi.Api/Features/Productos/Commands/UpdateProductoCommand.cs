@@ -81,7 +81,10 @@ public class UpdateProductoCommandHandler(
                 if (oldCategoriaId != request.Dto.CategoriaId)
                     await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);

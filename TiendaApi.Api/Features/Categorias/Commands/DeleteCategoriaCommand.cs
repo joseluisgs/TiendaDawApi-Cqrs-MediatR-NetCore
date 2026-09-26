@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Repositories.Categorias;
@@ -38,7 +39,10 @@ public class DeleteCategoriaCommandHandler(
                 await cacheService.RemoveAsync("categorias:all");
                 await cacheService.RemoveAsync($"categorias:{request.Id}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return UnitResult.Success<DomainError>();

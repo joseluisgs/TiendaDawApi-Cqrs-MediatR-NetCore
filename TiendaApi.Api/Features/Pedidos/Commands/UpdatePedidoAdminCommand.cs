@@ -47,7 +47,10 @@ public class UpdatePedidoAdminCommandHandler(
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
                 await cacheService.RemoveAsync($"pedidos:user:{pedido.UserId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);

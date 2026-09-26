@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
@@ -59,7 +60,10 @@ public class UpdateCategoriaCommandHandler(
                 await cacheService.RemoveAsync("categorias:all");
                 await cacheService.RemoveAsync($"categorias:{request.Id}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         // Fase 13: propagar el renombre al read model de productos (nombres embebidos en Mongo).

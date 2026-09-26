@@ -55,7 +55,10 @@ public class UpdateProductoPartialCommandHandler(
                 await cacheService.RemoveAsync($"productos:{request.Id}");
                 await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);

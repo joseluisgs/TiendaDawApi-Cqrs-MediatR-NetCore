@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Usuarios;
@@ -58,7 +59,10 @@ public class CreateUserCommandHandler(
         _ = Task.Run(async () =>
         {
             try { await cacheService.RemoveAsync("usuarios:all"); }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new UsuarioRegistradoNotification(dto), cancellationToken);

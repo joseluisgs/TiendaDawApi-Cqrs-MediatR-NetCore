@@ -1,3 +1,4 @@
+using Serilog;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Mappers;
@@ -43,7 +44,10 @@ public class ProductoService(
         _ = Task.Run(async () =>
         {
             try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return pagedResult;
@@ -66,7 +70,10 @@ public class ProductoService(
         _ = Task.Run(async () =>
         {
             try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return dto;
@@ -86,7 +93,10 @@ public class ProductoService(
         _ = Task.Run(async () =>
         {
             try { await cacheService.SetAsync(cacheKey, dtos, _cacheTTL); }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return dtos;

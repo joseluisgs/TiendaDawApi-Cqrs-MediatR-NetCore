@@ -55,7 +55,10 @@ public class UpdateProductoImageCommandHandler(
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:{request.Id}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);

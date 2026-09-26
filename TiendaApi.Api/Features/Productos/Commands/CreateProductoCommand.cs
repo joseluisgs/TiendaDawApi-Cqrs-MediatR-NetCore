@@ -64,7 +64,10 @@ public class CreateProductoCommandHandler(
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         Log.Information("📣 Publicando ProductoCreadoNotification para producto ID: {ProductoId}", dto.Id);
