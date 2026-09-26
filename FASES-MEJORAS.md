@@ -407,7 +407,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 | 13.8 | Reporte background | `ProductoReportTask` → `IProductoService.GetRecentlyCreatedAsync` (read model): toda lectura de productos, sea de donde sea, sale de Mongo | ✅ |
 | 13.9 | Tests | Unit de los 3 query handlers + `TiendaQueryTests` + `ProductoReportTaskTests` reescritos sobre `IProductoService`; `RepositoriesConfigTests` (+ aserción `IProductoReadRepository` incondicional); `UpdateCategoriaCommandHandlerTests` (+ `Mock<IMediator>`); **nuevos**: `ProductoReadSyncHandlerTests` (7 tests: 4 syncs + 3 fallos de Mongo que no propagan) + integración Testcontainers `ProductoReadSyncIntegrationTests` (8 tests: command-notificación → Mongo → query, paridad case-sensitive, orden, soft-delete). **No se tocaron** las colecciones E2E (shapes intactos) | ✅ |
 | 13.10 | Verificación global | Build **0/0** · tests **965/965** (unit+integración) · Automation **54/55** (solo `/health`, Fase 1) · Newman **95 assertions, 2 fallos** (los 2 esperados de `/health`) en 4 tandas 61 s · Bruno-Local **125/127** (los 2 de `/health`) · GraphQL `[064]`/`[065]` y REST `/api/productos` sirviendo desde Mongo | ✅ |
-| 13.11 | Documentación | Esta sección completada con cifras reales; fila en `BITACORA.md` pendiente de hashes (se rellena con el commit, que requiere permiso explícito) | ✅ |
+| 13.11 | Documentación | Esta sección completada con cifras reales; fila en `BITACORA.md` con el hash `0b45653` | ✅ |
 
 ### Hallazgos y decisiones (análisis de viabilidad — 25/09/2026)
 

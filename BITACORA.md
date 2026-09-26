@@ -33,7 +33,9 @@
 | Fase | Commit (CQRS) | Resumen | Estado |
 |------|---------------|---------|--------|
 | 0 · Baseline | `5735b48` | Dependencias al estado del origen + MediatR 12.5.0, adaptaciones de código, baseline build 0/0 · 854 unit · 94 integración · 0 vulnerables | ✅ |
-| 1-12 · 13 | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 5 · Verificación global | `f2ade48`, `27f4222`, `bedb1ff` | cache key paginación, fix `Descripcion` en PUT categoría, GraphQL mutations, colecciones E2E: Newman 95/95 · Bruno 125/127 · Automation 54/55 | ✅ |
+| 13 · Queries Productos MongoDB (CQRS) | `0b45653` | read model `productos_read` (driver nativo) + sync por eventos MediatR + fachada `IProductoService` + GraphQL → Mongo; tests **965/965** (+16) · E2E: Newman 95 assertions (2 `/health` esperados) · Bruno 125/127 · Automation 54/55 | ✅ |
+| 1-4, 6-12 · Replicación · 14 · Paridad | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 
