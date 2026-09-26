@@ -1,21 +1,23 @@
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Models;
-using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Usuarios;
 using TiendaApi.Api.Services.Email;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Services.Background.Jobs;
 
 /// <summary>
-    /// Servicio de reportes de productos.
-    /// Obtiene productos nuevos y envía notificaciones por email.
-    /// </summary>
-    public class ProductoReportTask(
-    IProductoRepository productoRepository,
+/// Servicio de reportes de productos.
+/// Obtiene productos nuevos y envía notificaciones por email.
+///
+/// Fase 13 (CQRS): la lectura de productos pasa por IProductoService
+/// (fachada → MongoDB); PostgreSQL solo interviene en las escrituras.
+/// </summary>
+public class ProductoReportTask(
+    IProductoService productoService,
     IUserRepository userRepository,
     IEmailService emailService,
     ILogger<ProductoReportTask> logger,
@@ -45,22 +47,22 @@ namespace TiendaApi.Api.Services.Background.Jobs;
     }
 
     /// <summary>
-    /// Obtiene productos creados en los últimos X días.
+    /// Obtiene productos creados en los ǧltimos X d��as.
     /// </summary>
-    private async Task<Result<IEnumerable<Producto>, DomainError>> GetRecentlyCreatedProductsAsync()
+    private async Task<Result<IEnumerable<ProductoRead>, DomainError>> GetRecentlyCreatedProductsAsync()
     {
         logger.LogDebug("Obteniendo productos de los ultimos {Dias} dias", _days);
 
-        var productos = await productoRepository.GetRecentlyCreatedAsync(_days);
+        var productos = await productoService.GetRecentlyCreatedAsync(_days);
         
-        logger.LogInformation("Encontrados {Cantidad} productos nuevos", productos.Count());
-        return Result.Success<IEnumerable<Producto>, DomainError>(productos);
+        logger.LogInformation("Encontrados {Cantidad} productos nuevos", productos.Count);
+        return Result.Success<IEnumerable<ProductoRead>, DomainError>(productos);
     }
 
     /// <summary>
-    /// Envía emails a todos los usuarios activos con los productos nuevos.
+    /// Env��a emails a todos los usuarios activos con los productos nuevos.
     /// </summary>
-    private async Task<UnitResult<DomainError>> SendEmailsToActiveUsersAsync(IEnumerable<Producto> productos)
+    private async Task<UnitResult<DomainError>> SendEmailsToActiveUsersAsync(IEnumerable<ProductoRead> productos)
     {
         if (!productos.Any())
         {
@@ -99,7 +101,7 @@ namespace TiendaApi.Api.Services.Background.Jobs;
     /// <summary>
     /// Genera el cuerpo del email en formato HTML.
     /// </summary>
-    private static string GenerateHtmlEmail(IEnumerable<Producto> productos, string userName)
+    private static string GenerateHtmlEmail(IEnumerable<ProductoRead> productos, string userName)
     {
         var productosHtml = string.Concat(productos.Select(p => string.Format(@"
             <div style=""border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;"">

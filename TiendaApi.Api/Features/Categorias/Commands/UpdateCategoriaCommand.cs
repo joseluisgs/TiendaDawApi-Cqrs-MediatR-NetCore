@@ -4,6 +4,7 @@ using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Services.Cache;
@@ -22,7 +23,8 @@ public record UpdateCategoriaCommand(long Id, CategoriaRequestDto Dto)
 public class UpdateCategoriaCommandHandler(
     ICategoriaRepository repository,
     IValidator<CategoriaRequestDto> validator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IMediator mediator)
     : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -59,6 +61,10 @@ public class UpdateCategoriaCommandHandler(
             }
             catch { }
         });
+
+        // Fase 13: propagar el renombre al read model de productos (nombres embebidos en Mongo).
+        await mediator.Publish(
+            new CategoriaActualizadaNotification(request.Id, dto.Nombre), cancellationToken);
 
         return Result.Success<CategoriaDto, DomainError>(dto);
     }

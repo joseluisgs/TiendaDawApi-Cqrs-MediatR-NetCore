@@ -1,12 +1,9 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Mappers;
-using TiendaApi.Api.Repositories.Productos;
-using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Queries;
 
@@ -18,40 +15,18 @@ public record GetAllProductosQuery(ProductoFilterDto Filter)
 
 /// <summary>
 /// Handler de la query GetAllProductosQuery.
+///
+/// Fase 13 (CQRS): la lectura delega en la fachada IProductoService
+/// (caché + MongoDB). El handler solo orquesta.
 /// </summary>
-public class GetAllProductosQueryHandler(
-    IProductoRepository repository,
-    ICacheService cacheService,
-    IConfiguration configuration)
+public class GetAllProductosQueryHandler(IProductoService service)
     : IRequestHandler<GetAllProductosQuery, Result<PagedResult<ProductoDto>, DomainError>>
 {
-    private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
-        int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
-
     /// <inheritdoc/>
     public async Task<Result<PagedResult<ProductoDto>, DomainError>> Handle(
         GetAllProductosQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = $"productos:paged:{request.Filter}";
-        var cached = await cacheService.GetAsync<PagedResult<ProductoDto>>(cacheKey);
-        if (cached is not null)
-            return Result.Success<PagedResult<ProductoDto>, DomainError>(cached);
-
-        var (productos, totalCount) = await repository.FindAllPagedAsync(request.Filter);
-        var pagedResult = new PagedResult<ProductoDto>
-        {
-            Items = productos.ToDtoList(),
-            TotalCount = totalCount,
-            Page = request.Filter.Page + 1,
-            PageSize = request.Filter.Size
-        };
-
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch { }
-        });
-
+        var pagedResult = await service.GetPagedAsync(request.Filter);
         return Result.Success<PagedResult<ProductoDto>, DomainError>(pagedResult);
     }
 }

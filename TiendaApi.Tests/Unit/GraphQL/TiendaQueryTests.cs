@@ -6,8 +6,9 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.GraphQL.Queries;
 using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Productos;
 using TiendaApi.Api.Models;
+using TiendaApi.Api.Models.Read;
 
 namespace TiendaApi.Tests.Unit.GraphQL;
 
@@ -16,14 +17,14 @@ namespace TiendaApi.Tests.Unit.GraphQL;
 [Category("GraphQL")]
 public class TiendaQueryTests
 {
-    private Mock<IProductoRepository> _productoRepoMock = null!;
+    private Mock<IProductoService> _productoServiceMock = null!;
     private Mock<ICategoriaRepository> _categoriaRepoMock = null!;
     private TiendaQuery _query = null!;
 
     [SetUp]
     public void Setup()
     {
-        _productoRepoMock = new Mock<IProductoRepository>();
+        _productoServiceMock = new Mock<IProductoService>();
         _categoriaRepoMock = new Mock<ICategoriaRepository>();
         _query = new TiendaQuery();
     }
@@ -31,12 +32,12 @@ public class TiendaQueryTests
     #region GetProductos Tests
 
     [Test]
-    public void GetProductos_RepositoryExists_ReturnsQueryable()
+    public async Task GetProductos_ServiceExists_ReturnsList()
     {
-        _productoRepoMock.Setup(r => r.FindAllAsNoTracking())
-            .Returns(new List<Producto>().AsQueryable());
+        _productoServiceMock.Setup(s => s.GetAllAsync())
+            .ReturnsAsync(new List<ProductoRead>());
 
-        var result = _query.GetProductos(_productoRepoMock.Object);
+        var result = await _query.GetProductos(_productoServiceMock.Object);
 
         result.Should().NotBeNull();
     }
@@ -49,12 +50,12 @@ public class TiendaQueryTests
     public async Task GetProducto_WithId_ReturnsProducto()
     {
         var productoId = 1L;
-        var producto = new Producto { Id = productoId, Nombre = "Test" };
+        var producto = new ProductoRead { Id = productoId, Nombre = "Test" };
 
-        _productoRepoMock.Setup(r => r.FindByIdAsync(productoId))
+        _productoServiceMock.Setup(s => s.GetReadByIdAsync(productoId))
             .ReturnsAsync(producto);
 
-        var result = await _query.GetProducto(productoId, _productoRepoMock.Object);
+        var result = await _query.GetProducto(productoId, _productoServiceMock.Object);
 
         result.Should().NotBeNull();
         result!.Id.Should().Be(productoId);
@@ -63,10 +64,10 @@ public class TiendaQueryTests
     [Test]
     public async Task GetProducto_WithInvalidId_ReturnsNull()
     {
-        _productoRepoMock.Setup(r => r.FindByIdAsync(It.IsAny<long>()))
-            .ReturnsAsync((Producto?)null);
+        _productoServiceMock.Setup(s => s.GetReadByIdAsync(It.IsAny<long>()))
+            .ReturnsAsync((ProductoRead?)null);
 
-        var result = await _query.GetProducto(999, _productoRepoMock.Object);
+        var result = await _query.GetProducto(999, _productoServiceMock.Object);
 
         result.Should().BeNull();
     }
@@ -124,15 +125,21 @@ public class TiendaQueryTests
     public async Task GetProductosPaged_WithPaging_ReturnsPagedResult()
     {
         var filter = new ProductoFilterDto(null, null, null, null, null, 1, 10);
-        var items = new List<Producto>();
-        var pagedResult = (items, 2);
 
-        _productoRepoMock.Setup(r => r.FindAllPagedAsync(It.IsAny<ProductoFilterDto>()))
-            .ReturnsAsync(pagedResult);
+        _productoServiceMock.Setup(s => s.GetPagedAsync(It.IsAny<ProductoFilterDto>()))
+            .ReturnsAsync(new PagedResult<ProductoDto>
+            {
+                Items = Enumerable.Empty<ProductoDto>(),
+                TotalCount = 2,
+                Page = 2,
+                PageSize = 10
+            });
 
-        var result = await _query.GetProductosPaged(_productoRepoMock.Object, 1, 10);
+        var result = await _query.GetProductosPaged(_productoServiceMock.Object, 1, 10);
 
         result.Should().NotBeNull();
+        // Paridad con el origen: GraphQL devuelve Page = parámetro recibido (1), no el +1 del REST.
+        result.Page.Should().Be(1);
     }
 
     #endregion

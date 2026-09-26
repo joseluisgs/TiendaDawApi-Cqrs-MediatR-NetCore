@@ -43,7 +43,22 @@ public static class DatabaseInitializationExtensions
         else
         {
             context.Database.EnsureCreated();
-            logger.LogInformation("✅ Base de datos verificada (tablas creadas si no existían)");
+            logger.LogInformation(". Base de datos verificada (tablas creadas si no existían)");
+        }
+
+        // Fase 13: sincronizar el read model de productos PostgreSQL → MongoDB (dev y prod).
+        // Sin esto, las queries de productos (REST/GraphQL/reporte) no encontrarían datos:
+        // la creación por seeder/migraciones no dispara los Domain Events de sincronización.
+        try
+        {
+            var productoReadSeeder = scope.ServiceProvider.GetRequiredService<ProductoReadSeeder>();
+            await productoReadSeeder.SeedAsync(isDevelopment);
+        }
+        catch (Exception ex)
+        {
+            // Tolera el fallo al arrancar (igual que el seeder de pedidos): MongoDB puede
+            // estar temporalmente caído. El error queda registrado para diagnóstico.
+            Log.Error(ex, "Fallo al sembrar el read model de productos en MongoDB");
         }
 
         // Seed MongoDB solo en desarrollo

@@ -21,12 +21,13 @@ public class UpdateCategoriaCommandHandlerTests
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
-        var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Updated" };
+        var dto = new CategoriaRequestDto { Nombre = "ElectrÃ³nica", Descripcion = "Updated" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Old" });
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(false);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var mediator = new Mock<IMediator>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
@@ -39,18 +40,19 @@ public class UpdateCategoriaCommandHandlerTests
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
-        var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Updated" };
+        var dto = new CategoriaRequestDto { Nombre = "ElectrÃ³nica", Descripcion = "Updated" };
         var categoria = new Categoria { Id = 1, Nombre = "Old", Descripcion = "Old" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(categoria);
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(false);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var mediator = new Mock<IMediator>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        categoria.Nombre.Should().Be("Electrónica");
+        categoria.Nombre.Should().Be("ElectrÃ³nica");
         categoria.Descripcion.Should().Be("Updated");
     }
 
@@ -60,10 +62,11 @@ public class UpdateCategoriaCommandHandlerTests
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
-        var dto = new CategoriaRequestDto { Nombre = "Electrónica" };
+        var dto = new CategoriaRequestDto { Nombre = "ElectrÃ³nica" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var mediator = new Mock<IMediator>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(999, dto), CancellationToken.None);
 
@@ -76,11 +79,12 @@ public class UpdateCategoriaCommandHandlerTests
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
-        var dto = new CategoriaRequestDto { Nombre = "Electrónica" };
+        var dto = new CategoriaRequestDto { Nombre = "ElectrÃ³nica" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Old" });
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(true);
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object);
+        var mediator = new Mock<IMediator>();
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object);
 
         var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 

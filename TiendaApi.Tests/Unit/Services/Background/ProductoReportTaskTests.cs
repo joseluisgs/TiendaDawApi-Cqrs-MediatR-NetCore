@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using TiendaApi.Api.Models;
-using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Models.Read;
+using TiendaApi.Api.Services.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
 using TiendaApi.Api.Services.Background.Jobs;
 using TiendaApi.Api.Services.Email;
@@ -21,7 +22,7 @@ namespace TiendaApi.Tests.Unit.Services.Background;
 [Category("BackgroundJob")]
 public class ProductoReportTaskTests
 {
-    private Mock<IProductoRepository> _mockProductoRepository = null!;
+    private Mock<IProductoService> _mockProductoService = null!;
     private Mock<IUserRepository> _mockUserRepository = null!;
     private Mock<IEmailService> _mockEmailService = null!;
     private Mock<ILogger<ProductoReportTask>> _mockLogger = null!;
@@ -39,7 +40,7 @@ public class ProductoReportTaskTests
             .Build();
 
         return new ProductoReportTask(
-            _mockProductoRepository.Object,
+            _mockProductoService.Object,
             _mockUserRepository.Object,
             _mockEmailService.Object,
             _mockLogger.Object,
@@ -50,7 +51,7 @@ public class ProductoReportTaskTests
     [SetUp]
     public void SetUp()
     {
-        _mockProductoRepository = new Mock<IProductoRepository>();
+        _mockProductoService = new Mock<IProductoService>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockEmailService = new Mock<IEmailService>();
         _mockLogger = new Mock<ILogger<ProductoReportTask>>();
@@ -77,8 +78,8 @@ public class ProductoReportTaskTests
         // Arrange
         var task = CreateTask(isDevelopment: false);
 
-        _mockProductoRepository.Setup(r => r.GetRecentlyCreatedAsync(It.IsAny<int>()))
-            .ReturnsAsync(new List<Producto>());
+        _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(It.IsAny<int>()))
+            .ReturnsAsync(new List<ProductoRead>());
 
         // Act
         var result = await task.ExecuteAsync();
@@ -93,7 +94,7 @@ public class ProductoReportTaskTests
         // Arrange
         var task = CreateTask(isDevelopment: false);
 
-        var productos = new List<Producto>
+        var productos = new List<ProductoRead>
         {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 },
             new() { Id = 2, Nombre = "Producto 2", Descripcion = "Desc 2", Precio = 20.99m, Stock = 10 }
@@ -105,7 +106,7 @@ public class ProductoReportTaskTests
             new() { Id = 2, Username = "user2", Email = "user2@example.com" }
         };
 
-        _mockProductoRepository.Setup(r => r.GetRecentlyCreatedAsync(7))
+        _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(7))
             .ReturnsAsync(productos);
 
         _mockUserRepository.Setup(r => r.GetActiveUsersAsync())
@@ -128,12 +129,12 @@ public class ProductoReportTaskTests
         // Arrange
         var task = CreateTask(isDevelopment: false);
 
-        var productos = new List<Producto>
+        var productos = new List<ProductoRead>
         {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 }
         };
 
-        _mockProductoRepository.Setup(r => r.GetRecentlyCreatedAsync(7))
+        _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(7))
             .ReturnsAsync(productos);
 
         _mockUserRepository.Setup(r => r.GetActiveUsersAsync())
@@ -153,9 +154,9 @@ public class ProductoReportTaskTests
         // Arrange
         var task = CreateTask(isDevelopment: false, days: 14);
 
-        var productos = new List<Producto>();
+        var productos = new List<ProductoRead>();
 
-        _mockProductoRepository.Setup(r => r.GetRecentlyCreatedAsync(14))
+        _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(14))
             .ReturnsAsync(productos);
 
         // Act
@@ -163,7 +164,7 @@ public class ProductoReportTaskTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        _mockProductoRepository.Verify(r => r.GetRecentlyCreatedAsync(14), Times.Once);
+        _mockProductoService.Verify(r => r.GetRecentlyCreatedAsync(14), Times.Once);
     }
 
     [Test]
@@ -172,7 +173,7 @@ public class ProductoReportTaskTests
         // Arrange
         var task = CreateTask(isDevelopment: false);
 
-        var productos = new List<Producto>
+        var productos = new List<ProductoRead>
         {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 }
         };
@@ -182,7 +183,7 @@ public class ProductoReportTaskTests
             new() { Id = 1, Username = "user1", Email = "user1@example.com" }
         };
 
-        _mockProductoRepository.Setup(r => r.GetRecentlyCreatedAsync(7))
+        _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(7))
             .ReturnsAsync(productos);
 
         _mockUserRepository.Setup(r => r.GetActiveUsersAsync())

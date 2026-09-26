@@ -1,12 +1,9 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
-using TiendaApi.Api.Mappers;
-using TiendaApi.Api.Repositories.Productos;
-using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Queries;
 
@@ -18,35 +15,20 @@ public record GetProductoByIdQuery(long Id)
 
 /// <summary>
 /// Handler de la query GetProductoByIdQuery.
+///
+/// Fase 13 (CQRS): la lectura delega en la fachada IProductoService
+/// (caché + MongoDB). El handler conserva el mapeo de errores.
 /// </summary>
-public class GetProductoByIdQueryHandler(
-    IProductoRepository repository,
-    ICacheService cacheService,
-    IConfiguration configuration)
+public class GetProductoByIdQueryHandler(IProductoService service)
     : IRequestHandler<GetProductoByIdQuery, Result<ProductoDto, DomainError>>
 {
-    private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
-        int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
-
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
         GetProductoByIdQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = $"productos:{request.Id}";
-        var cached = await cacheService.GetAsync<ProductoDto>(cacheKey);
-        if (cached is not null)
-            return Result.Success<ProductoDto, DomainError>(cached);
-
-        var producto = await repository.FindByIdAsync(request.Id);
-        if (producto is null)
+        var dto = await service.GetByIdAsync(request.Id);
+        if (dto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
-
-        var dto = producto.ToDto();
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch { }
-        });
 
         return Result.Success<ProductoDto, DomainError>(dto);
     }

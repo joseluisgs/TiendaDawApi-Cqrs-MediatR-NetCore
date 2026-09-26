@@ -34,6 +34,7 @@ public static class GraphQLConfig
             .AddInMemorySubscriptions()
             .AddType<ProductoType>()
             .AddType<CategoriaType>()
+            .AddType<CategoriaReadType>()
             .ModifyRequestOptions(opt => 
             {
                 opt.IncludeExceptionDetails = environment.IsDevelopment();

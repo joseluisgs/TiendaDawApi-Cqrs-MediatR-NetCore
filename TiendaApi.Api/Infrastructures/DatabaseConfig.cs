@@ -25,22 +25,26 @@ public static class DatabaseConfig
 
         services.AddDbContext<TiendaDbContext>(options => options.UseNpgsql(connectionString));
 
+        // MongoDB: el cliente y la base de datos se registran SIEMPRE (Fase 13).
+        // El read model de productos (productos_read) no puede depender del switch
+        // de Pedidos:RepositoryType — toda lectura de productos sale de MongoDB.
+        Log.Information("Configurando MongoDB (cliente + base de datos)...");
+        var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"]
+            ?? "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
+        var mongoDatabaseName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
+
+        services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
+        services.AddSingleton(sp =>
+        {
+            var client = sp.GetRequiredService<IMongoClient>();
+            return client.GetDatabase(mongoDatabaseName);
+        });
+
         var mongoImpl = configuration["Pedidos:RepositoryType"] ?? "MongoDbNative";
 
         if (mongoImpl == "MongoDbNative")
         {
             Log.Information("Configurando MongoDB (Native)...");
-            var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"]
-                ?? "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
-            var mongoDatabaseName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
-
-            services.AddSingleton<IMongoClient>(sp => new MongoClient(mongoConnectionString));
-            services.AddSingleton(sp =>
-            {
-                var client = sp.GetRequiredService<IMongoClient>();
-                return client.GetDatabase(mongoDatabaseName);
-            });
-            
             services.AddSingleton(sp =>
             {
                 var database = sp.GetRequiredService<IMongoDatabase>();
@@ -50,10 +54,6 @@ public static class DatabaseConfig
         else
         {
             Log.Information("Configurando MongoDB (EfCore) [bug EF-272]");
-            var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"]
-                ?? "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
-            var mongoDatabaseName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
-
             services.AddDbContext<TiendaMongoContext>(options =>
                 options.UseMongoDB(mongoConnectionString, mongoDatabaseName));
         }
@@ -68,6 +68,7 @@ public static class DatabaseConfig
             services.AddScoped<Data.Seed.Mongo.MongoDbEfCoreSeeder>();
         }
         services.AddScoped<Data.Seed.Sql.SqlSeeder>();
+        services.AddScoped<Data.Seed.Mongo.ProductoReadSeeder>();
 
         return services;
     }

@@ -1,7 +1,5 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
-using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -9,8 +7,7 @@ using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Repositories.Productos;
-using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
@@ -19,46 +16,39 @@ public class GetProductosByCategoriaQueryHandlerTests
     [Test]
     public async Task Handle_CategoriaExistente_DevuelveProductos()
     {
-        var productoRepo = new Mock<IProductoRepository>();
+        var service = new Mock<IProductoService>();
         var categoriaRepo = new Mock<ICategoriaRepository>();
-        var cacheService = new Mock<ICacheService>();
-        var configuration = new Mock<IConfiguration>();
-        
-        cacheService.Setup(c => c.GetAsync<IEnumerable<ProductoDto>>(It.IsAny<string>()))
-            .ReturnsAsync((IEnumerable<ProductoDto>?)null);
-        
+
         categoriaRepo.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1 });
-        
-        productoRepo.Setup(r => r.FindByCategoriaIdAsync(1)).ReturnsAsync(new List<Producto>
+
+        service.Setup(s => s.GetByCategoriaIdAsync(1)).ReturnsAsync(new List<ProductoDto>
         {
-            new() { Id = 1, Nombre = "Laptop", CategoriaId = 1 }
+            new(1, "Laptop", "", 1000m, 10, null, 1, "Electrónica", DateTime.UtcNow, DateTime.UtcNow)
         });
-        
-        var handler = new GetProductosByCategoriaQueryHandler(productoRepo.Object, categoriaRepo.Object, cacheService.Object, configuration.Object);
-        
+
+        var handler = new GetProductosByCategoriaQueryHandler(service.Object, categoriaRepo.Object);
+
         var result = await handler.Handle(new GetProductosByCategoriaQuery(1), CancellationToken.None);
-        
+
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
+        // La validación de existencia sigue en PostgreSQL (write model).
+        categoriaRepo.Verify(r => r.FindByIdAsync(1), Times.Once);
     }
 
     [Test]
     public async Task Handle_CategoriaNoExiste_DevuelveError()
     {
-        var productoRepo = new Mock<IProductoRepository>();
+        var service = new Mock<IProductoService>();
         var categoriaRepo = new Mock<ICategoriaRepository>();
-        var cacheService = new Mock<ICacheService>();
-        var configuration = new Mock<IConfiguration>();
-        
-        cacheService.Setup(c => c.GetAsync<IEnumerable<ProductoDto>>(It.IsAny<string>()))
-            .ReturnsAsync((IEnumerable<ProductoDto>?)null);
-            
+
         categoriaRepo.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
-        
-        var handler = new GetProductosByCategoriaQueryHandler(productoRepo.Object, categoriaRepo.Object, cacheService.Object, configuration.Object);
-        
+
+        var handler = new GetProductosByCategoriaQueryHandler(service.Object, categoriaRepo.Object);
+
         var result = await handler.Handle(new GetProductosByCategoriaQuery(999), CancellationToken.None);
-        
+
         result.IsFailure.Should().BeTrue();
+        service.Verify(s => s.GetByCategoriaIdAsync(It.IsAny<long>()), Times.Never);
     }
 }

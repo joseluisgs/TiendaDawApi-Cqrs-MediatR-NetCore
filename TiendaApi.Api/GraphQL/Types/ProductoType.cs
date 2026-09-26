@@ -1,14 +1,18 @@
 using HotChocolate.Types;
-using TiendaApi.Api.Models;
+using TiendaApi.Api.Models.Read;
 
 namespace TiendaApi.Api.GraphQL.Types;
 
 /// <summary>
-/// Tipo de GraphQL para la entidad Producto.
+/// Tipo de GraphQL para el producto (read model — Fase 13).
+///
+/// El CLR detrás del tipo pasó de <c>Producto</c> (PostgreSQL) a
+/// <c>ProductoRead</c> (MongoDB), pero el nombre GraphQL «Producto» y todos los
+/// campos se mantienen: el contrato de las queries del cliente no cambia.
 /// </summary>
-public class ProductoType : ObjectType<Producto>
+public class ProductoType : ObjectType<ProductoRead>
 {
-    protected override void Configure(IObjectTypeDescriptor<Producto> descriptor)
+    protected override void Configure(IObjectTypeDescriptor<ProductoRead> descriptor)
     {
         descriptor.Name("Producto");
         descriptor.Description("Entidad Producto");
@@ -25,7 +29,7 @@ public class ProductoType : ObjectType<Producto>
         descriptor.Field(p => p.IsDeleted).Type<NonNullType<BooleanType>>().Description("Si el producto está eliminado");
 
         descriptor.Field(p => p.Categoria)
-            .Type<CategoriaType>()
+            .Type<CategoriaReadType>()
             .Description("La categoría del producto");
     }
 }
