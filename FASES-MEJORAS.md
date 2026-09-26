@@ -3,8 +3,9 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fase 0 COMPLETADA (25/09/2026)** — fases 1-12 pendientes de replicar (las tablas de verificación citan valores del origen: sustituir al ejecutar) y **Fase 13** pendiente. **Fase 13** es nueva, propia de este proyecto (CQRS real en Productos).  
-> **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos).
+> **Estado:** 🟡 **en curso — Fase 0 y 5 COMPLETADAS** — Fase 13 y 14 pendientes, fases 1-12 pendientes de replicar.  
+> **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
+> **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
 ---
 
@@ -463,6 +464,66 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 > Las “6” son distintas: **Fase 4 = OutputCache (#6 del análisis)**; **Fase 6 = Polly**.  
 > **Fase 12** (README) es la última: recoge el estado real de todas las anteriores.  
 > **Fase 13** (nueva, propia de CQRS) va **justo tras 5.x**: el gate verde (Bruno/Newman/Automation) debe existir antes de cambiar la fuente de lectura de productos.
+> **Fase 14** (paridad) va **justo tras 13**: ambas APIs deben comportarse idénticamente antes de replicar las fases 1-12.
+
+---
+
+## Fase 14 — Contrato de Paridad ⬜ PENDIENTE (nueva)
+
+> **Alcance:** asegurar que ambas APIs (`TiendaDawApi-NetCore` y `TiendaDawApi-Cqrs-MediatR-NetCore`)
+> se comportan de forma idéntica para el cliente. **Prerequisito** para replicar fases 1-12.
+> **Regla de oro:** el cliente no debe saber si usa un proyecto u otro.
+
+### Tareas
+
+| # | Tarea | Verificación |
+|---|-------|--------------|
+| 14.1 | **Copiar `DomainErrorExtensions.cs`** del origen → CQRS (`TiendaApi.Api/Extensions/`) | Fichero idéntico al origen; `grep -r "ToHttpResult" Controllers/` |
+| 14.2 | **Reemplazar switches inline** en Auth/Categorias/Pedidos/Users controllers por `error.ToHttpResult()` | Todos los controllers usan la extensión centralizada |
+| 14.3 | **Restaurar `Postman-Cli/TiendaApi.NetCore.postman_environment.json`** desde el origen (limpio, sin datos de test, con `secret`/`enabled`) | `fc /B` entre ambos ficheros = idénticos |
+| 14.4 | **Añadir `**/results.json`** al `.gitignore` | `git status` no muestra results.json |
+| 14.5 | **Crear `CONTRATO-PARIDAD.md`** con reglas de paridad obligatoria | Documento existe y se referencia en FASES-MEJORAS |
+| 14.6 | **Crear tests de integración de handlers MediatR** (equivalentes a los `Services/` del origen) | Tests pasan contra PostgreSQL + MongoDB reales |
+
+### Diferencias conocidas que se resuelven en esta fase
+
+| Diferencia | Severidad | Fix |
+|-----------|-----------|-----|
+| ValidationError sin campo `errors` en Auth/Categorias/Pedidos/Users | **ALTA** | Copiar `DomainErrorExtensions.cs` + usar `ToHttpResult()` |
+| Postman environment.json sobrescrito por Newman (sin `secret`, con datos de test) | **BAJA** | Restaurar desde origen |
+| `results.json` no está en `.gitignore` | **BAJA** | Añadir patrón |
+| 5 ficheros `Services/` de integración faltantes en CQRS | **MEDIA** | Crear equivalentes CQRS (handlers MediatR) |
+
+### Diferencias NO resueltas (pendientes de replicar en fases 1-12)
+
+| Diferencia | Fase que la resuelve |
+|-----------|---------------------|
+| Sin `/health` endpoint | Fase 1 |
+| Sin HTTP Output Cache (ETag/304) | Fase 4 |
+| Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) |
+| Sin índices EF en modelo | Fase 1 (índices) |
+| Sin `AsNoTracking` selectivo | Fase 2 |
+
+### Contenido mínimo del `CONTRATO-PARIDAD.md`
+
+```
+# Contrato de Paridad — TiendaDawApi
+
+## Regla de oro
+El cliente no debe saber si usa el proyecto A o el B.
+
+## Paridad obligatoria
+- Datos: mismas semillas (SqlSeeder + MongoDbSeeder) — byte-identical
+- API: mismos endpoints, DTOs, errores { message, errors }, códigos HTTP
+- Infraestructura: mismas imágenes Docker (postgres:17-alpine, mongo:7.0, redis:7-alpine)
+- Testing: mismas colecciones E2E (Postman + Bruno), mismo automation
+- Versiones: mismas versiones Testcontainers (4.15.0), NuGet (excepto MediatR/Polly)
+
+## Excepciones permitidas
+- MediatR 12.5.0 (solo CQRS) — patrón CQRS
+- Polly 8.8.0 (solo origen) — resiliencia
+- Diferencias de fases no replicadas (se resuelven al replicar)
+```
 
 ---
 
@@ -486,6 +547,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 | 11 Docker/imágenes | 🟡 Ops | 🟡 Media | 🟡 |
 | 12 README | 🟡 Doc/DAQ | 🟢 Muy baja | 🟢 |
 | 13 Queries Productos→Mongo | 🔴 Funcionalidad nueva (CQRS real) | 🟡 Media | 🟡 |
+| 14 Contrato Paridad | 🔴 Crítico (ambas APIs idénticas) | 🟢 Baja | 🟢 |
 
 ---
 
