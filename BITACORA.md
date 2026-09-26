@@ -4,6 +4,7 @@
 > **Proyecto origen:** `TiendaDawApi-NetCore` (rama `feature/polly`, API sin CQRS)
 > **Destino de replicación:** `TiendaDawApi-Cqrs-MediatR-NetCore`
 > **Objetivo:** documentar cada fase ejecutada según los logs de commits, para replicar los cambios en la API CQRS con la mayor precisión posible. **Complementa** a `FASES-MEJORAS.md` (allí están las tareas y verificaciones en detalle; aquí el qué/cómo/dónde de cada commit).
+> **REGLA E2E INAMOVIBLE — semillas frescas:** la base de datos **debe estar nueva (semillas completas) antes de CADA grupo de tests**. Newman, Automation y Bruno se ejecutan **cada uno contra una BD recién creada**; entre grupos se resetea siempre (`docker compose -f docker-compose.local.yml down -v && up -d` + reiniciar la API en Development para `EnsureDeleted + EnsureCreated + seed`). **No es discutible:** ninguna corrida sobre BD sucia es válida y no cuenta como verificación. Bruno siempre al final.
 
 ## Índice de fases (commits)
 
@@ -35,7 +36,8 @@
 | 0 · Baseline | `5735b48` | Dependencias al estado del origen + MediatR 12.5.0, adaptaciones de código, baseline build 0/0 · 854 unit · 94 integración · 0 vulnerables | ✅ |
 | 5 · Verificación global | `f2ade48`, `27f4222`, `bedb1ff` | cache key paginación, fix `Descripcion` en PUT categoría, GraphQL mutations, colecciones E2E: Newman 95/95 · Bruno 125/127 · Automation 54/55 | ✅ |
 | 13 · Queries Productos MongoDB (CQRS) | `0b45653` | read model `productos_read` (driver nativo) + sync por eventos MediatR + fachada `IProductoService` + GraphQL → Mongo; tests **965/965** (+16) · E2E: Newman 95 assertions (2 `/health` esperados) · Bruno 125/127 · Automation 54/55 | ✅ |
-| 1-4, 6-12 · Replicación · 14 · Paridad | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 14 · Contrato de Paridad (CQRS) | `2f9fdcc` | `DomainErrorExtensions.cs` + `error.ToHttpResult()` en 5 controllers (31 sitios), `CONTRATO-PARIDAD.md`, `**/results.json` en `.gitignore`, Postman environment restaurado, +67 tests de integración de handlers MediatR (5 ficheros; 32 `[Ignore]` EF-272): build 0/0 · tests **1032/1032** · E2E **con semillas frescas por grupo**: Newman 95 (2 `/health`) · Automation 54/55 · Bruno 125/127 | ✅ |
+| 1-4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 

@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fase 0 y 5 COMPLETADAS** — Fase 13 y 14 pendientes, fases 1-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 5, 13 y 14 COMPLETADAS** — fases 1-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -419,7 +419,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 6. **Mongo debe registrar siempre**: hoy `DatabaseConfig` solo registra `IMongoClient` si `Pedidos:RepositoryType=MongoDbNative`; el read model no puede depender de ese switch.
 7. **GraphQL**: el contrato E2E `[065]` exige `categoria { nombre }` → el documento embebe `categoria { id, nombre }`; solo cambia el tipo CLR de `ProductoType` (introspección), no los campos de las queries.
 8. **Colisión de nombre «Producto» en el esquema (detectada al arrancar)**: HotChocolate 16 registra por convención `ObjectType<Models.Producto>` a partir de la navegación `Categoria.Productos` (`DefaultBindingBehavior = Implicit`), y ese nombre chocaba con el nuevo `ProductoType` (`ObjectType<ProductoRead>` = «Producto»). Solución: `descriptor.Field(c => c.Productos).Ignore()` en `CategoriaType` — es la navegación EF de PostgreSQL, y exponerla rompería CQRS (lecturas por queries, no por navegación) además de leer PG desde el read model. **Diferencia intencionada vs. origen** (el origen sí la expone): documentar en `CONTRATO-PARIDAD.md` (Fase 14). Verificación: API arranca, esquema GraphQL operativo, E2E en verde.
-9. **Orden de las suites E2E (recordatorio operativo)**: Bruno **update+delete sobre `userdaw` y `newuser`** deja la BD sucia → Newman/Automation fallan en cadena (401/500, duplicados `IX_users_Username`). Orden seguro: reiniciar la API en Development (`EnsureDeleted + EnsureCreated + seed`, ver §5.x) y ejecutar **Newman → Automation → Bruno** (Bruno siempre al final, ya que ensucia). La primera corrida de Newman de hoy (tras Bruno) dio 10 fallos; tras reiniciar: **2 fallos (los de `/health`)**.
+9. **Semillas frescas obligatorias entre cada grupo de tests (REGLA INAMOVIBLE — no discutible)**: la base de datos **debe estar nueva (semillas completas) antes de CADA grupo de tests**: Newman, Automation y Bruno se ejecutan cada uno contra una BD recién creada, y **entre grupos se resetea siempre** (`docker compose -f docker-compose.local.yml down -v && up -d` + reiniciar la API en Development para `EnsureDeleted + EnsureCreated + seed`, ver §5.x). Ninguna corrida sobre BD sucia es válida: Bruno hace update+delete sobre `userdaw`/`newuser` y deja cascada de 401/500 y duplicados `IX_users_Username` en los grupos siguientes. Bruno siempre al final. Con semillas frescas por grupo: Newman **95 assertions (2 `/health` esperados)**, Automation **54/55**, Bruno **125/127**.
 
 ### Fuera de alcance (Fase 13)
 
@@ -470,31 +470,38 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 
 ---
 
-## Fase 14 — Contrato de Paridad ⬜ PENDIENTE (nueva)
+## Fase 14 — Contrato de Paridad ✅ COMPLETADA (26/09/2026)
 
 > **Alcance:** asegurar que ambas APIs (`TiendaDawApi-NetCore` y `TiendaDawApi-Cqrs-MediatR-NetCore`)
 > se comportan de forma idéntica para el cliente. **Prerequisito** para replicar fases 1-12.
 > **Regla de oro:** el cliente no debe saber si usa un proyecto u otro.
+> **REGLA E2E INAMOVIBLE:** BD nueva (semillas completas) antes de **cada** grupo de tests (Newman, Automation, Bruno) — ver Hallazgo 9.
 
 ### Tareas
 
-| # | Tarea | Verificación |
-|---|-------|--------------|
-| 14.1 | **Copiar `DomainErrorExtensions.cs`** del origen → CQRS (`TiendaApi.Api/Extensions/`) | Fichero idéntico al origen; `grep -r "ToHttpResult" Controllers/` |
-| 14.2 | **Reemplazar switches inline** en Auth/Categorias/Pedidos/Users controllers por `error.ToHttpResult()` | Todos los controllers usan la extensión centralizada |
-| 14.3 | **Restaurar `Postman-Cli/TiendaApi.NetCore.postman_environment.json`** desde el origen (limpio, sin datos de test, con `secret`/`enabled`) | `fc /B` entre ambos ficheros = idénticos |
-| 14.4 | **Añadir `**/results.json`** al `.gitignore` | `git status` no muestra results.json |
-| 14.5 | **Crear `CONTRATO-PARIDAD.md`** con reglas de paridad obligatoria | Documento existe y se referencia en FASES-MEJORAS |
-| 14.6 | **Crear tests de integración de handlers MediatR** (equivalentes a los `Services/` del origen) | Tests pasan contra PostgreSQL + MongoDB reales |
+| # | Tarea | Verificación | Estado |
+|---|-------|--------------|--------|
+| 14.1 | **Copiar `DomainErrorExtensions.cs`** del origen → CQRS (`TiendaApi.Api/Extensions/`) | Fichero idéntico al origen; `grep -r "ToHttpResult" Controllers/` | ✅ `fc /B` idéntico |
+| 14.2 | **Reemplazar switches inline** en Auth/Categorias/Pedidos/Users controllers por `error.ToHttpResult()` | Todos los controllers usan la extensión centralizada | ✅ 31 sitios (Auth 2, Categorias 5, Pedidos 8, Productos 7, Users 9); 0 `error switch` |
+| 14.3 | **Restaurar `Postman-Cli/TiendaApi.NetCore.postman_environment.json`** desde el origen (limpio, sin datos de test, con `secret`/`enabled`) | `fc /B` entre ambos ficheros = idénticos | ✅ idéntico |
+| 14.4 | **Añadir `**/results.json`** al `.gitignore` | `git status` no muestra results.json | ✅ `.gitignore:70` |
+| 14.5 | **Crear `CONTRATO-PARIDAD.md`** con reglas de paridad obligatoria | Documento existe y se referencia en FASES-MEJORAS | ✅ en raíz del repo |
+| 14.6 | **Crear tests de integración de handlers MediatR** (equivalentes a los `Services/` del origen) | Tests pasan contra PostgreSQL + MongoDB reales | ✅ 5 ficheros (Cat 8, Prod 8, Usr 19, PedNat 32, PedEf 32 `[Ignore]` EF-272) |
+
+### Resultados de verificación (26/09/2026)
+
+- **Build:** 0 errores / 0 advertencias.
+- **Tests:** **1032/1032 correctos**, 0 fallos, 32 omitidos (EF-272), total **1064** (baseline 965 + 67 nuevos activos).
+- **E2E con semillas frescas por grupo (obligatorio — ver Hallazgo 9):** Newman **95 assertions, 2 fallos (`/health`)** · Automation **54/55** (solo `/health`) · Bruno **125/127**.
 
 ### Diferencias conocidas que se resuelven en esta fase
 
-| Diferencia | Severidad | Fix |
-|-----------|-----------|-----|
-| ValidationError sin campo `errors` en Auth/Categorias/Pedidos/Users | **ALTA** | Copiar `DomainErrorExtensions.cs` + usar `ToHttpResult()` |
-| Postman environment.json sobrescrito por Newman (sin `secret`, con datos de test) | **BAJA** | Restaurar desde origen |
-| `results.json` no está en `.gitignore` | **BAJA** | Añadir patrón |
-| 5 ficheros `Services/` de integración faltantes en CQRS | **MEDIA** | Crear equivalentes CQRS (handlers MediatR) |
+| Diferencia | Severidad | Fix | Estado |
+|-----------|-----------|-----|--------|
+| ValidationError sin campo `errors` en Auth/Categorias/Pedidos/Users | **ALTA** | Copiar `DomainErrorExtensions.cs` + usar `ToHttpResult()` | ✅ |
+| Postman environment.json sobrescrito por Newman (sin `secret`, con datos de test) | **BAJA** | Restaurar desde origen | ✅ |
+| `results.json` no está en `.gitignore` | **BAJA** | Añadir patrón | ✅ |
+| 5 ficheros `Services/` de integración faltantes en CQRS | **MEDIA** | Crear equivalentes CQRS (handlers MediatR) | ✅ |
 
 ### Diferencias NO resueltas (pendientes de replicar en fases 1-12)
 
@@ -502,7 +509,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 |-----------|---------------------|
 | Sin `/health` endpoint | Fase 1 |
 | Sin HTTP Output Cache (ETag/304) | Fase 4 |
-| Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) |
+| Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) — mitigado en 14.2 (`ToHttpResult` ya en los 5 controllers), confirmar el resto en Fase 9 |
 | Sin índices EF en modelo | Fase 1 (índices) |
 | Sin `AsNoTracking` selectivo | Fase 2 |
 
