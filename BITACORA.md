@@ -37,7 +37,8 @@
 | 5 · Verificación global | `f2ade48`, `27f4222`, `bedb1ff` | cache key paginación, fix `Descripcion` en PUT categoría, GraphQL mutations, colecciones E2E: Newman 95/95 · Bruno 125/127 · Automation 54/55 | ✅ |
 | 13 · Queries Productos MongoDB (CQRS) | `0b45653` | read model `productos_read` (driver nativo) + sync por eventos MediatR + fachada `IProductoService` + GraphQL → Mongo; tests **965/965** (+16) · E2E: Newman 95 assertions (2 `/health` esperados) · Bruno 125/127 · Automation 54/55 | ✅ |
 | 14 · Contrato de Paridad (CQRS) | `2f9fdcc` | `DomainErrorExtensions.cs` + `error.ToHttpResult()` en 5 controllers (31 sitios), `CONTRATO-PARIDAD.md`, `**/results.json` en `.gitignore`, Postman environment restaurado, +67 tests de integración de handlers MediatR (5 ficheros; 32 `[Ignore]` EF-272): build 0/0 · tests **1032/1032** · E2E **con semillas frescas por grupo**: Newman 95 (2 `/health`) · Automation 54/55 · Bruno 125/127 | ✅ |
-| 1-4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 1 · Health + índices + Task.Run | `229152e` | `HealthChecksConfig.cs` (PG/Mongo, JSON; Redis fuera de dev) + `MapHealthEndpoint` + 5 índices EF + 25 `Task.Run` con `Log.Warning`: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
+| 2-4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 

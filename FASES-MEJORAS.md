@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 5, 13 y 14 COMPLETADAS** — fases 1-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 5, 13 y 14 COMPLETADAS** — fases 2-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -53,37 +53,50 @@
 
 ---
 
-## Fase 1 — Rápido y de bajo riesgo ⬜ PENDIENTE (replicar)
+## Fase 1 — Rápido y de bajo riesgo ✅ COMPLETADA (26/09/2026)
 
 ### 1A · Health Checks (#10)
 
-| # | Tarea | Archivos |
-|---|-------|----------|
-| 10.1 | `Infrastructures/HealthChecksConfig.cs`: `AddHealthChecks()` con PG (`CanConnectAsync`), Mongo (ping); Redis si prod. **Sin paquetes NuGet** (checks propios) | nuevo |
-| 10.2 | `MapHealthChecks("/health", ...)` con JSON (`status`, `checks[]` con `name`, `status`, `duration`) | `HealthChecksConfig.cs` |
-| 10.3 | Registrar en `Program.cs` (servicios + endpoint) | `Program.cs` |
-| 10.4 | Verificar | `GET /health` → 200; BD caída → 503 |
+| # | Tarea | Archivos | Estado |
+|---|-------|----------|--------|
+| 10.1 | `Infrastructures/HealthChecksConfig.cs`: `AddHealthChecks()` con PG (`CanConnectAsync`), Mongo (ping); Redis si prod. **Sin paquetes NuGet** (checks propios) | nuevo | ✅ byte-idéntico al origen |
+| 10.2 | `MapHealthChecks("/health", ...)` con JSON (`status`, `checks[]` con `name`, `status`, `duration`) | `HealthChecksConfig.cs` | ✅ |
+| 10.3 | Registrar en `Program.cs` (servicios + endpoint) | `Program.cs` | ✅ |
+| 10.4 | Verificar | `GET /health` → 200; BD caída → 503 | ✅ 200 `status=OK` (postgresql+mongodb); `docker stop` → 503 `status=ERROR` → `start` → 200 |
 
 > El Bruno `[001] Health Check` y el Automation ya esperan `GET /health`.
 
 ### 1B · Índices EF en el modelo (#2)
 
-| # | Tarea | Archivos |
-|---|-------|----------|
-| 2.1 | `Producto`: `HasIndex(CategoriaId)`, `HasIndex(CreatedAt)`, `HasIndex(IsDeleted)`, compuesto `(CategoriaId, Precio)` | `Data/TiendaDbContext.cs` |
-| 2.2 | `User`: `HasIndex(Role)` | `Data/TiendaDbContext.cs` |
-| 2.3 | **Solo añadir**, no quitar índices existentes (categorías/users únicos) | — |
-| 2.4 | Aplicación en BD viva → **Fase 8 (migraciones)**; en dev con drop+create bastan | — |
+| # | Tarea | Archivos | Estado |
+|---|-------|----------|--------|
+| 2.1 | `Producto`: `HasIndex(CategoriaId)`, `HasIndex(CreatedAt)`, `HasIndex(IsDeleted)`, compuesto `(CategoriaId, Precio)` | `Data/TiendaDbContext.cs` | ✅ |
+| 2.2 | `User`: `HasIndex(Role)` | `Data/TiendaDbContext.cs` | ✅ |
+| 2.3 | **Solo añadir**, no quitar índices existentes (categorías/users únicos) | — | ✅ |
+| 2.4 | Aplicación en BD viva → **Fase 8 (migraciones)**; en dev con drop+create bastan | — | ✅ verificados en `pg_indexes` tras reset |
 
 ### 1C · Endurecer `Task.Run` (FF)
 
-| # | Tarea | Archivos |
-|---|-------|----------|
-| FF.1 | Inventario de ~30 `_ = Task.Run(...)` | grep |
-| FF.2 | Interior con `try { ... } catch (Exception ex) { logger.LogError(ex, "..."); }` — **sin await, sin WhenAll** | `ProductoService` (~13), `PedidosService` (~11), `CategoriaService` (2), `UserService` (3) |
-| FF.3 | Verificar | Build; crear producto → HTTP rápido + logs sin excepciones en background |
+| # | Tarea | Archivos | Estado |
+|---|-------|----------|--------|
+| FF.1 | Inventario de ~30 `_ = Task.Run(...)` | grep | ✅ **25 sitios en 23 ficheros** (`Features/*` + `ProductoService` ×3) |
+| FF.2 | Interior con `try { ... } catch (Exception ex) { logger.LogError(ex, "..."); }` — **sin await, sin WhenAll** | handlers MediatR y servicios | ✅ `catch { }` → `Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache")` (Serilog estático, sin inyectar logger) |
+| FF.3 | Verificar | Build; crear producto → HTTP rápido + logs sin excepciones en background | ✅ build 0/0; E2E en verde |
 
-### 📋 Verificación Fase 1 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 1 — 26/09/2026 (semillas frescas por grupo, ver Hallazgo 9)
+
+| Comprobación | Resultado |
+|--------------|-----------|
+| Build | **0 errores / 0 advertencias** |
+| Tests | **1032/1032 · 0 fallos · 32 omitidos (EF-272)** (1064 total) — idéntico al cierre de Fase 14: sin regresión |
+| `GET /health` (10.4) | **200** JSON `{"status":"OK","checks":[{"name":"postgresql",...},{"name":"mongodb",...}]}`; Redis no registrado en dev |
+| BD caída (10.4) | **503** `status=ERROR`, `postgresql=ERROR`, `mongodb=OK` → `docker start` → **200** |
+| Índices (2.x) | `IX_productos_CategoriaId`, `IX_productos_CategoriaId_Precio`, `IX_productos_CreatedAt`, `IX_productos_IsDeleted`, `IX_users_Role` (+ únicos preexistentes) |
+| Newman (grupo 1) | **95/95 assertions, 0 fallos** — los 2 fallos históricos de `/health` ya no existen |
+| Automation (grupo 2) | **55/55, 0 KO** (antes 54/55 por `/health`) |
+| Bruno (grupo 3) | **127/127 assertions, 0 fallos** (antes 125/127); los 2 *requests* `[080]/[081]` (WebSocket) fallan con `ENOTFOUND {{basews}}` — **pre-existente**: environment byte-idéntico al origen, sin variable `baseWs`, sin relación con esta fase |
+
+> **FF:** los 25 `Task.Run` ya no tragan en silencio: cualquier fallo de caché en background queda en el log como `Log.Warning`.
 
 ---
 
@@ -507,10 +520,10 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 
 | Diferencia | Fase que la resuelve |
 |-----------|---------------------|
-| Sin `/health` endpoint | Fase 1 |
+| Sin `/health` endpoint | ✅ Fase 1 (26/09/2026): `GET /health` 200/503 |
 | Sin HTTP Output Cache (ETag/304) | Fase 4 |
 | Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) — mitigado en 14.2 (`ToHttpResult` ya en los 5 controllers), confirmar el resto en Fase 9 |
-| Sin índices EF en modelo | Fase 1 (índices) |
+| Sin índices EF en modelo | ✅ Fase 1 (26/09/2026): 5 índices añadidos al modelo |
 | Sin `AsNoTracking` selectivo | Fase 2 |
 
 ### Contenido mínimo del `CONTRATO-PARIDAD.md`
