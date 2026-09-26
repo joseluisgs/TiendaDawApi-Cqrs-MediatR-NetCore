@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 5, 13 y 14 COMPLETADAS** — fases 2-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 5, 13 y 14 COMPLETADAS** — fases 3-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -100,15 +100,26 @@
 
 ---
 
-## Fase 2 — Consultas (`AsNoTracking`) ⬜ PENDIENTE (replicar)
+## Fase 2 — Consultas (`AsNoTracking`) ✅ COMPLETADA (26/09/2026)
 
-| # | Tarea | Detalle |
-|---|-------|---------|
-| 1.1 | Sí | `FindAllAsync`, `FindAllPagedAsync`, `FindByCategoriaIdAsync`, `GetRecentlyCreatedAsync`, listados de `User` |
-| 1.2 | **No tocar** | `FindByIdAsync`, `DeleteAsync` (soft-delete depende de tracking), rutas de `Update` |
-| 1.3 | Verificar | GETs OK; **PUT/DELETE** producto/categoría/user OK (E2E) |
+| # | Tarea | Detalle | Estado |
+|---|-------|---------|--------|
+| 1.1 | Sí | `FindAllAsync`, `FindAllPagedAsync`, `FindByCategoriaIdAsync`, `GetRecentlyCreatedAsync`, listados de `User` | ✅ **9 sitios** = diff del origen (`a82e7a5`): 2 categorías, 4 productos, 3 users (incluye `GetActiveUsersAsync`) |
+| 1.2 | **No tocar** | `FindByIdAsync`, `DeleteAsync` (soft-delete depende de tracking), rutas de `Update` | ✅ intocados; ningún handler de escritura consume `FindAll*` |
+| 1.3 | Verificar | GETs OK; **PUT/DELETE** producto/categoría/user OK (E2E) | ✅ verificación abajo |
 
-### 📋 Verificación Fase 2 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 2 — 26/09/2026 (semillas frescas por grupo, ver Hallazgo 9)
+
+| Comprobación | Resultado |
+|--------------|-----------|
+| Build | **0 errores / 0 advertencias** |
+| Tests | **1032/1032 · 0 fallos · 32 omitidos (EF-272)** — sin regresión |
+| Dif con origen | `+9/−1`, mismo sitio en cada método que el `a82e7a5` |
+| Newman (grupo 1) | **95/95 assertions, 0 fallos** (GETs + PUT/DELETE de categorías, productos, users y pedidos) |
+| Automation (grupo 2) | **55/55, 0 KO** (CRUD completo) |
+| Bruno (grupo 3) | **127/127 assertions, 0 fallos**; 2 requests WS `[080]/[081]` con `ENOTFOUND {{basews}}` — pre-existente (el environment no define `baseWs`) |
+
+> Pedidos (`PedidosEfCoreRepository`/`PedidosNativeRepository`) y el read model Mongo (`ProductoReadRepository`) **no aplican**: fuera de la receta del origen / no es EF.
 
 ---
 
@@ -524,7 +535,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 | Sin HTTP Output Cache (ETag/304) | Fase 4 |
 | Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) — mitigado en 14.2 (`ToHttpResult` ya en los 5 controllers), confirmar el resto en Fase 9 |
 | Sin índices EF en modelo | ✅ Fase 1 (26/09/2026): 5 índices añadidos al modelo |
-| Sin `AsNoTracking` selectivo | Fase 2 |
+| Sin `AsNoTracking` selectivo | ✅ Fase 2 (26/09/2026): 9 sitios en 3 repos |
 
 ### Contenido mínimo del `CONTRATO-PARIDAD.md`
 
