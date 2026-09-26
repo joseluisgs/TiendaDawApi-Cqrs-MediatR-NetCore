@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 5, 13 y 14 COMPLETADAS** — fases 3-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 5, 13 y 14 COMPLETADAS** — fases 4-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -123,18 +123,29 @@
 
 ---
 
-## Fase 3 — Paginación real de pedidos (#4) ⬜ PENDIENTE (replicar)
+## Fase 3 — Paginación real de pedidos (#4) ✅ COMPLETADA (26/09/2026)
 
-| # | Tarea | Archivos |
-|---|-------|----------|
-| 4.1 | `FindAllPagedAsync(page, size)` → `(Items, TotalCount)` | `IPedidosRepository.cs` |
-| 4.2 | Mongo: `Skip/Limit` + `CountDocuments` | `PedidosNativeRepository.cs` |
-| 4.3 | EF: `Skip/Take` + `CountAsync` | `PedidosEfCoreRepository.cs` |
-| 4.4 | Servicio delega al repo; **borrar** paginación en memoria (`PedidosService.cs:65-69`) | `PedidosService.cs` |
-| 4.5 | Misma firma de servicio → controller intacto | — |
-| 4.6 | Verificar | `GET /api/pedidos/paged` devuelve solo `size` |
+| # | Tarea | Archivos | Estado |
+|---|-------|----------|--------|
+| 4.1 | `FindAllPagedAsync(page, size)` → `(Items, TotalCount)` (página base 0) | `IPedidosRepository.cs` | ✅ |
+| 4.2 | Mongo: `Skip/Limit` + `CountDocuments` | `PedidosNativeRepository.cs` | ✅ |
+| 4.3 | EF: `Skip/Take` + `CountAsync` | `PedidosEfCoreRepository.cs` | ✅ |
+| 4.4 | Delegación al repo; **borrar** paginación en memoria (en CQRS: el handler, no el service) | `GetAllPedidosQuery.cs` (antes L27-34: `FindAllAsync` + `Skip/Take` en memoria) | ✅ |
+| 4.5 | Misma firma → controller intacto | `PedidosController` sin cambios; +2 mocks en `GetAllPedidosQueryHandlerTests` | ✅ |
+| 4.6 | Verificar | `GET /api/pedidos/paged` devuelve solo `size` | ✅ verificación abajo |
 
-### 📋 Verificación Fase 3 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 3 — 26/09/2026 (semillas frescas por grupo, ver Hallazgo 9)
+
+| Comprobación | Resultado |
+|--------------|-----------|
+| Build | **0 errores / 0 advertencias** |
+| Tests | **1032/1032 · 0 fallos · 32 omitidos (EF-272)** — sin regresión |
+| Smoke en vivo (4.6) | `?page=1&size=2` → **2 items** (no todos), `totalCount`, `page`/`pageSize`; `?page=2&size=2` → 2 items; header **`Link`** con `rel="next"` y `rel="last"` |
+| Newman (grupo 1) | **95/95 assertions, 0 fallos** |
+| Automation (grupo 2) | **55/55, 0 KO** |
+| Bruno (grupo 3) | **127/127 assertions, 0 fallos**; 2 requests WS `[080]/[081]` `ENOTFOUND {{basews}}` — pre-existente |
+
+> La paginación vive en la consulta (Mongo/EF), nunca en memoria — regla del origen (nota *"Replicar en CQRS"* de su BITACORA, `9b05682`).
 
 ---
 

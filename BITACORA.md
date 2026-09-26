@@ -39,7 +39,8 @@
 | 14 · Contrato de Paridad (CQRS) | `2f9fdcc` | `DomainErrorExtensions.cs` + `error.ToHttpResult()` en 5 controllers (31 sitios), `CONTRATO-PARIDAD.md`, `**/results.json` en `.gitignore`, Postman environment restaurado, +67 tests de integración de handlers MediatR (5 ficheros; 32 `[Ignore]` EF-272): build 0/0 · tests **1032/1032** · E2E **con semillas frescas por grupo**: Newman 95 (2 `/health`) · Automation 54/55 · Bruno 125/127 | ✅ |
 | 1 · Health + índices + Task.Run | `229152e` | `HealthChecksConfig.cs` (PG/Mongo, JSON; Redis fuera de dev) + `MapHealthEndpoint` + 5 índices EF + 25 `Task.Run` con `Log.Warning`: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
 | 2 · AsNoTracking selectivo | `8de2097` | `.AsNoTracking()` en 9 listados de solo lectura (2 categorías, 4 productos, 3 users) = diff origen `a82e7a5`; `FindById`/`Delete`/`Update` intactos: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
-| 3-4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 3 · Paginación real de pedidos | `cc5eedc` | `FindAllPagedAsync(page,size)` en `IPedidosRepository` + Mongo (`CountDocuments`+`Skip/Limit`) y EF (`CountAsync`+`Skip/Take`); handler delega (sin paginar en memoria); controller intacto, +2 mocks: build 0/0 · tests **1032/1032** · smoke `?page=1&size=2` → 2 items + header `Link` · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
+| 4, 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 
