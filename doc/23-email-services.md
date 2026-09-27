@@ -12,7 +12,8 @@
   - [23.7. Envío de Emails desde Servicios de Negocio](#237-envo-de-emails-desde-servicios-de-negocio)
   - [23.8. Configuración](#238-configuracin)
   - [23.9. docker-compose para Testing de Emails](#239-docker-compose-para-testing-de-emails)
-  - [23.10. Resumen y Buenas Prácticas](#2310-resumen-y-buenas-prcticas)
+  - [23.10. Resiliencia con Polly (Fase 6)](#2310-resiliencia-con-polly-fase-6)
+  - [23.11. Resumen y Buenas Prácticas](#2311-resumen-y-buenas-prcticas)
 
 ---
 
@@ -948,7 +949,124 @@ services:
 
 ---
 
-## 23.10. Resumen y Buenas Prácticas
+## 23.10. Resiliencia con Polly (Fase 6)
+
+SMTP es el I/O externo clásico con **fallos transitorios**: servidor que se cae 10 segundos, red inestable, límite de conexiones. La política del proyecto es: **reintentar automáticamente en background, cortar el flujo si persiste, y nunca dejar que el email rompa un request HTTP**.
+
+### El pipeline: `Infrastructures/PollyConfig.cs`
+
+```csharp
+public static class PollyConfig
+{
+    /// <summary>Timeout por intento: si SMTP no responde en 10s, se cancela y cuenta como fallo.</summary>
+    public static readonly TimeSpan EmailTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>Cuánto tiempo queda el circuito abierto tras saltar.</summary>
+    public static readonly TimeSpan EmailBreakDuration = TimeSpan.FromSeconds(30);
+
+    /// <summary>Reintentos: 3 (1 original + 3), backoff 2^n → 1s, 2s, 4s.</summary>
+    public static RetryStrategyOptions EmailRetryOptions(ILogger? logger = null, TimeSpan? delay = null) => new()
+    {
+        MaxRetryAttempts = 3,
+        BackoffType = DelayBackoffType.Exponential,
+        Delay = delay ?? TimeSpan.FromSeconds(1),
+        ShouldHandle = new PredicateBuilder()
+            .Handle<Exception>(ex => ex is not BrokenCircuitException and not OperationCanceledException),
+        OnRetry = args =>
+        {
+            logger?.LogWarning(
+                "Polly[email] reintento {Attempt}/3 tras fallo de SMTP (próximo intento en {Delay})",
+                args.AttemptNumber, args.RetryDelay);
+            return ValueTask.CompletedTask;
+        }
+    };
+
+    public static ResiliencePipeline BuildEmailPipeline(ILogger? logger = null) =>
+        new ResiliencePipelineBuilder()
+            .AddRetry(EmailRetryOptions(logger))             // externo
+            .AddCircuitBreaker(EmailCircuitBreakerOptions(logger))  // medio
+            .AddTimeout(EmailTimeout)                        // interno: 10s por intento
+            .Build();
+}
+```
+
+**Orden y semántica** (de fuera hacia dentro):
+
+```mermaid
+flowchart LR
+    A[SendEmailAsync] --> R["Retry<br/>3 intentos, 1s→2s→4s"]
+    R --> CB["CircuitBreaker<br/>3 fallos → abierto 30s"]
+    CB --> T["Timeout<br/>10s por intento"]
+    T --> S[SMTP Connect/Auth/Send]
+```
+
+1. **Timeout (intento)**: si `ConnectAsync` no responde en 10 s, se cancela y cuenta como fallo.
+2. **Retry**: hasta 3 reintentos con espera exponencial (`1s, 2s, 4s`) — evita martillear un servidor caído.
+3. **CircuitBreaker**: 3 fallos seguidos → **30 s sin llamar a SMTP** (log `circuito ABIERTO`). Después entra en *half-open*: una llamada de prueba; si funciona, se cierra; si no, se reabre.
+
+### Registro e inyección
+
+```csharp
+// EmailConfig.AddEmail (solo rama de producción — MailKit)
+services.AddSingleton(static sp =>
+    PollyConfig.BuildEmailPipeline(
+        sp.GetRequiredService<ILoggerFactory>().CreateLogger("Polly.Email")));
+services.TryAddScoped<IEmailService, MailKitEmailService>();
+services.AddHostedService<EmailBackgroundService>();
+```
+
+### Envoltura del envío: `MailKitEmailService`
+
+```csharp
+public class MailKitEmailService(
+    IConfiguration configuration,
+    ILogger<MailKitEmailService> logger,
+    Channel<EmailMessage> emailChannel,
+    ResiliencePipeline? emailPipeline = null      // desde DI en producción
+) : IEmailService
+{
+    private readonly ResiliencePipeline _emailPipeline =
+        emailPipeline ?? PollyConfig.BuildEmailPipeline(logger);
+
+    public async Task SendEmailAsync(EmailMessage message)
+    {
+        // ...validación de configuración SMTP + construcción del MimeMessage...
+
+        await _emailPipeline.ExecuteAsync(async _ =>
+        {
+            using var client = new SmtpClient();    // un cliente NUEVO por intento
+            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.SendAsync(mimeMessage);
+            await client.DisconnectAsync(true);
+        }, CancellationToken.None);
+    }
+}
+```
+
+Los errores distinguen el motivo para dejar buenas trazas: `BrokenCircuitException` → `LogWarning` ("circuito abierto, envío omitido"), timeout → `LogWarning`, resto → `LogError`.
+
+### Por qué el request HTTP nunca falla
+
+El pipeline está **detrás** de la cola (23.6): `EmailBackgroundService` desencola y llama a `SendEmailAsync` dentro de su propio `try/catch`. Si SMTP falla 4 veces y el circuito se abre, la excepción muere en el background service — el usuario que creó el pedido recibió su `201` hace rato.
+
+### Tests (Fase 6 → 1037 unit)
+
+`Unit/Infrastructures/PollyConfigTests.cs`, 5 tests con `delay: TimeSpan.Zero` para que sean instantáneos:
+
+| Test | Comprueba |
+|---|---|
+| Pipeline no nulo | `BuildEmailPipeline()` devuelve un `ResiliencePipeline` listo (no null) |
+| Falla 2× y al 3º OK | 3 intentos y envío correcto |
+| Siempre falla | 4 intentos (1+3) y propaga el último error |
+| CB con 3 fallos | Abre y la 4ª llamada **no ejecuta** el callback (`BrokenCircuitException`) |
+| Pipeline completo | El retry **no insiste** con el circuito abierto |
+
+> Comparado con el reintento a mano de `CreatePedidoCommand.MaxRetries` (ver «Polly en este proyecto» en `15-pedidos-transacciones.md`): aquí backoff, cortacircuitos y timeout son declarativos y testeables por separado, sin bucles `for` ni `Task.Delay` repartidos por el código.
+
+---
+
+## 23.11. Resumen y Buenas Prácticas
 
 ### Arquitectura de Emails
 
@@ -1003,7 +1121,7 @@ Con emails dominados, el siguiente paso es aprender sobre REST best practices.
 - MimeKit: https://github.com/jstedfast/MimeKit
 - Email Background Service: https://learn.microsoft.com/dotnet/core/extensions/background-service-pattern
 
-## 23.11. EmailService como INotificationHandler
+## 23.12. EmailService como INotificationHandler
 
 Con CQRS + MediatR el `EmailService` ya no necesita ser llamado directamente desde cada caso de uso. Ahora los commands publican eventos de dominio y un `INotificationHandler` decide si debe encolar un correo.
 

@@ -550,6 +550,53 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
+### Polly en este proyecto: dónde está y dónde NO (Fase 6)
+
+El ejemplo de arriba usa la **API clásica de Polly v7** (`Policy.Handle<T>().WaitAndRetryAsync(...)`) con `DbUpdateConcurrencyException`. En este proyecto la realidad es distinta y conviene saber por qué:
+
+**1. Los pedidos NO reintentan con Polly.** El reintento de serialización es **a mano**, con el contador explícito del handler:
+
+```csharp
+// CreatePedidoCommand.cs (handler MediatR)
+private const int MaxRetries = 3;
+
+for (var attempt = 1; attempt <= MaxRetries; attempt++)
+{
+    try
+    {
+        return await CreateWithSerializableTransactionAsync(request, cancellationToken);
+    }
+    catch (SerializationFailureException) when (attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);          // backoff lineal (50, 100, 150 ms)
+    }
+    catch (DbUpdateException ex) when (IsSerializationFailure(ex) && attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);
+    }
+    catch (NpgsqlException ex) when (IsSerializationFailureMessage(ex.Message) && attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);
+    }
+}
+
+return Result.Failure<PedidoDto, DomainError>(PedidoError.ErrorProcesando());
+```
+
+Tres intentos y backoff lineal acotados con `when` a fallos de serialización… pero sin dependencia de Polly. ¿Por qué no envolverlo?
+
+**2. `EnableRetryOnFailure` de EF Core está deliberadamente OFF.** La transacción explícita de pedidos (`BeginTransactionAsync`, ver «Transacciones con EF Core en Handlers» — 15.3) es **incompatible** con la *retrying strategy* de EF: con retry activo, EF lanza `InvalidOperationException` al abrir una transacción manual. El patrón oficial (`CreateExecutionStrategy().ExecuteAsync(...)`) obligaría a reestructurar el flujo central `POST /api/pedidos/me` — riesgo alto sin beneficio demostrable. Documentado en la Fase 11.
+
+**3. Polly SÍ está, pero sobre el email** (Fase 6, `Infrastructures/PollyConfig.cs`) — el otro I/O externo con fallos transitorios (SMTP). Pipeline v8 `ResiliencePipeline`: Retry(3, 2^n) → CircuitBreaker(3 fallos → 30 s) → Timeout(10 s), todo **en background** vía `EmailBackgroundService`, así que un SMTP caído nunca bloquea ni rompe una respuesta HTTP. Detalle completo en `23-email-services.md`.
+
+| I/O externo | Estrategia elegida | Motivo |
+|---|---|---|
+| PostgreSQL (pedidos) | Reintento a mano + transacción Serializable | Transacción explícita incompatible con retry de EF |
+| SMTP (email) | **Polly v8** (Retry + CircuitBreaker + Timeout) | I/O sin transacción, con fallos transitorios clásicos |
+| MongoDB/Redis | Sin retry extra | Conexiones de larga duración, sin caso de uso |
+
+> **Lección**: Polly (o cualquier librería de resiliencia) es para cuando aporta más de lo que cuesta. Antes de envolver un flujo, comprueba incompatibilidades (transacciones), coste de reintento (¿idempotente?) y si el fallo llega al usuario (aquí no: background).
+
 ---
 
 ## 15.4. Enfoque Pesimista
