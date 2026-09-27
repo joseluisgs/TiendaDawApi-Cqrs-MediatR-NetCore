@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 9, 13 y 14 COMPLETADAS** — fases 6-8, 10-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 8, 9, 13 y 14 COMPLETADAS** — fases 6-7, 10-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -292,7 +292,7 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 8 — Migraciones EF Core (índices y esquema en BD existente) ⬜ PENDIENTE (replicar)
+## Fase 8 — Migraciones EF Core (índices y esquema en BD existente) ✅ COMPLETADA (26/09/2026)
 
 > **Problema:** hoy `EnsureCreated` **no** altera BDs ya creadas → los índices de la Fase 1B **no se aplican** en producción ni en volúmenes Docker persistentes.  
 > **Objetivo:** introducir **EF Core Migrations** sin romper el flujo de desarrollo.
@@ -310,7 +310,16 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 **Orden recomendado:** Fase 1B (definir índices en modelo) → **Fase 8** (migración que los materializa) → Fase 7 Automation valida todo.
 
-### 📋 Verificación Fase 8 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 8 - 26/09/2026 (semillas frescas por grupo)
+
+| # | Resultado |
+|---|-----------|
+| 8.1 | `Microsoft.EntityFrameworkCore.Design` ya presente + **nuevo** `Data/TiendaDbContextFactory.cs` byte-idéntico al origen (`IDesignTimeDbContextFactory`; evita ejecutar `Program.cs` en design-time) · `dotnet-ef` 10.0.12 |
+| 8.2-8.3 | **5 ficheros de migración byte-idénticos** al origen (`fc /B` = 0 diff) en `TiendaApi.Api/Migrations/`: `InitialCreate` (3 tablas + 3 índices únicos) + `AddOptimizationIndexes` (los 5 índices de Fase 1B, `Down` → `DropIndex`) + `ModelSnapshot` · `dotnet ef migrations has-pending-model-changes --context TiendaDbContext` → **"No changes"** (modelo CQRS = snapshot del origen) |
+| 8.4 | **Decisión:** Producción → `Migrate()` vía `ApplyPendingMigrationsAsync` (con baseline, 8.5); **Desarrollo → `EnsureDeleted + EnsureCreated`** sin cambios · el bloque `ProductoReadSeeder` (Fase 13, CQRS) se conserva en ambos caminos |
+| 8.5 | **Baseline:** si `InitialCreate` está pendiente y la tabla `categorias` ya existe → se crea `__EFMigrationsHistory` y se marca `InitialCreate` sin ejecutarla; `Migrate()` corre solo lo pendiente |
+| 8.6-8.7 | Volumen Docker persistente: el siguiente arranque aplica solo lo pendiente · reset de semillas sin cambios |
+| 8.8 | **En vivo (Production, `--no-launch-profile`; override `ConnectionStrings__DefaultConnection=Host=localhost` porque `appsettings.Production.json` apunta al host Docker `postgres`):** `DROP INDEX` de los 5 → arranque → logs *"…'InitialCreate' marcada como aplicada (baseline, sin ejecutar)"* + *"Migraciones aplicadas — pendientes antes: [InitialCreate, AddOptimizationIndexes]"* → `\di`: **8 índices** (5 recreados + 3 únicos) · `__EFMigrationsHistory`: **2 filas** · **datos intactos** (4 users / 4 categorías / 5 productos). Build **0/0** · **1032/1032** tests · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** |
 
 ---
 
