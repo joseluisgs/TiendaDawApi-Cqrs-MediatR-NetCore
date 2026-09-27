@@ -63,8 +63,9 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
     - [Arquitectura](#arquitectura)
   - [⚒️ Diagrama de Clases del Dominio](#️-diagrama-de-clases-del-dominio)
   - [🗄️ Entidades por Base de Datos](#️-entidades-por-base-de-datos)
-    - [🐘 PostgreSQL (Datos Maestros)](#-postgresql-datos-maestros)
+    - [🐘 PostgreSQL (Escritura: datos maestros)](#-postgresql-escritura-datos-maestros)
     - [🍃 MongoDB (Pedidos - Documentos Embebidos)](#-mongodb-pedidos---documentos-embebidos)
+    - [🍃 MongoDB (Read Model CQRS: productos_read)](#-mongodb-read-model-cqrs-productos_read)
   - [📂 Estructura del Proyecto](#-estructura-del-proyecto)
     - [Descripción de Carpetas Principales](#descripción-de-carpetas-principales)
   - [🏗️ Arquitectura Híbrida Onion-Like](#️-arquitectura-híbrida-onion-like)
@@ -239,11 +240,11 @@ API_PORT=5000
 
 ## 🧪 Estrategia de Testing
 
-TiendaDawApi implementa una pirámide de pruebas profesional (estado actual):
+TiendaDawApi implementa una pirámide de pruebas profesional:
 
-- **Unit Tests**: Validación de CQRS Handlers, Repositories y Controllers — **868 tests**
-- **Integration Tests**: Bases de datos reales con Testcontainers (PostgreSQL + MongoDB) — **201 tests** (169 ejecutados · 32 omitidos, EF-272)
-- **E2E**: **Newman** (95 assertions) · **Bruno** (127 tests) · **Automation en Node** (55 checks)
+- **Unit Tests**: Validación de CQRS Handlers, Repositories y Controllers — NUnit + Moq
+- **Integration Tests**: Bases de datos reales con Testcontainers (PostgreSQL + MongoDB)
+- **E2E**: Colecciones **Newman** (Postman) y **Bruno** + runner **Automation** en Node contra la API en `:5031`
 - **Coverage**: Indicadores de cobertura con Coverlet
 
 ### Ejecución de Tests
@@ -287,7 +288,7 @@ Pruebas end-to-end de la API. **Requisito:** la API levantada en `http://localho
 #### Automation (Node)
 
 ```bash
-# 55 checks de todos los controladores; sin instalar nada (Node 18+)
+# Chequea todos los controladores; sin instalar nada (Node 18+)
 # Si no hay API levantada, el runner la levanta y la para él solo
 node TiendaApi.Tests.E2E/Automation/test-runner.mjs
 
@@ -315,7 +316,7 @@ newman run TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_collection.
   --reporter-junit-export junit-report.xml
 ```
 
-**95 assertions** por corrida. Si el rate limit corta la corrida (429), ejecútala por
+**La colección completa** en una sola corrida. Si el rate limit corta la corrida (429), ejecútala por
 carpetas con `--folder` (así se validó en desarrollo: 4 tandas, exit 0).
 
 **Colección disponible en:** `TiendaApi.Tests.E2E/Postman-Cli/`
@@ -340,8 +341,8 @@ bru run "0 - SETUP" "1 - AUTHENTICATION" "2 - CATEGORÍAS" "3 - PRODUCTOS" \
   "4 - PEDIDOS (Usuario)" "5 - PEDIDOS (Admin)" "6 - USUARIOS" "7 - STORAGE" \
   "10 - GRAPHQL CATEGORÍAS" "11 - GRAPHQL PRODUCTOS" "90 - TEARDOWN" \
   --env-file "environments/TiendaApi__NET_-_Environment.json" --delay 3200
-# 76 requests / 127 tests / 0 fallos. Fuera del run: "12 - WEBSOCKETS" (la CLI no
-# soporta WS y la variable basews no existe en el env → 2 ENOTFOUND preexistentes)
+# Corrida completa sin fallos. Fuera del run: "12 - WEBSOCKETS" (la CLI no
+# soporta WS y la variable basews no existe en el env → ENOTFOUND preexistentes)
 ```
 
 **Tests disponibles en:** `TiendaApi.Tests.E2E/{Bruno-Cli, Bruno-Local}/`
@@ -538,8 +539,31 @@ classDiagram
     +string CodigoPostal
   }
 
+  %% READ MODEL - MongoDB (queries CQRS: replica de PostgreSQL)
+  class ProductoRead {
+    +long Id
+    +string Nombre
+    +string Descripcion
+    +decimal Precio
+    +int Stock
+    +string? Imagen
+    +bool IsDeleted
+    +long CategoriaId
+    +CategoriaRead Categoria
+    +DateTime CreatedAt
+    +DateTime UpdatedAt
+    +DateTime SyncAt
+  }
+
+  class CategoriaRead {
+    +long Id
+    +string Nombre
+  }
+
   %% RELACIONES - Enums y Composiciones
   User ..> UserRole : "usa rol"
+  ProductoRead *-- CategoriaRead : "categoria embebida"
+  ProductoRead ..> Producto : "replica (mismo Id)"
   Pedido ..> PedidoEstado : "usa estado"
   User "1" --> "*" Pedido : "referencia"
   Categoria "1" --> "*" Producto : "tiene"
@@ -552,10 +576,17 @@ classDiagram
 
 ## 🗄️ Entidades por Base de Datos
 
-### 🐘 PostgreSQL (Datos Maestros)
+Distribución CQRS de los datos:
+
+- ✍️ **Escrituras (Commands)** → **PostgreSQL** (fuente de verdad)
+- 📖 **Queries de Productos** → **MongoDB `productos_read`** (read model desnormalizado, sincronizado por eventos)
+- 📖 **Queries de Usuarios y Categorías** → **PostgreSQL** (sin read model propio)
+- 🛒 **Pedidos** → **MongoDB** (documentos embebidos, escritura y lectura)
+- ⚡ **Caché de lectura** → **Redis** (Cache-Aside) o memoria en desarrollo
+
+### 🐘 PostgreSQL (Escritura: datos maestros)
 ```mermaid
 erDiagram
-    USER ||--o{ PEDIDO : "referencia"
     CATEGORIA ||--o{ PRODUCTO : "tiene"
     
     USER {
@@ -627,11 +658,41 @@ erDiagram
     }
 ```
 
+### 🍃 MongoDB (Read Model CQRS: productos_read)
+
+Réplica desnormalizada de los productos desde PostgreSQL para responder las queries
+(sincronizada con Domain Events + seeder de arranque; `SyncAt` marca la última réplica):
+
+```mermaid
+erDiagram
+    PRODUCTO_READ ||--o| CATEGORIA_READ : "categoria embebida"
+
+    PRODUCTO_READ {
+        long Id PK "mismo Id que PostgreSQL"
+        string Nombre
+        string Descripcion
+        decimal Precio
+        int Stock
+        string Imagen
+        bool IsDeleted
+        long CategoriaId FK
+        datetime CreatedAt
+        datetime UpdatedAt
+        datetime SyncAt "momento de la replica"
+    }
+
+    CATEGORIA_READ {
+        long Id PK "FK a PostgreSQL"
+        string Nombre
+    }
+```
+
 **Resumen:**
-| Base de Datos    | Entidades                                   | Tipo                 |
-| ---------------- | ------------------------------------------- | -------------------- |
-| **🐘 PostgreSQL** | User, Categoria, Producto                   | Relacional (FK)      |
-| **🍃 MongoDB**    | Pedido, PedidoItem, Destinatario, Direccion | Documentos embebidos |
+| Base de Datos    | Rol en CQRS                                  | Entidades                                   | Tipo                 |
+| ---------------- | -------------------------------------------- | ------------------------------------------- | -------------------- |
+| **🐘 PostgreSQL** | Escrituras y queries de usuarios/categorías  | User, Categoria, Producto                   | Relacional (FK)      |
+| **🍃 MongoDB**    | Read model de productos + pedidos            | productos_read; Pedido, PedidoItem, Destinatario, Direccion | Documentos embebidos |
+| **🔴 Redis**      | Caché de lectura (Cache-Aside)               | Claves por entidad/usuario                  | Key-value            |
 
 
 
@@ -694,7 +755,7 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 │   └── coverage/                     # Reporte de cobertura de código
 │
 ├── TiendaApi.Tests.E2E/              # Tests E2E (Postman + Bruno + Automation)
-│   ├── Automation/                   # Runner Node sin dependencias (test-runner.mjs, 55 checks)
+│   ├── Automation/                   # Runner Node sin dependencias (test-runner.mjs)
 │   ├── Postman-Cli/                  # Colección Postman + compose Newman
 │   │   ├── TiendaApi.NetCore.postman_collection.json
 │   │   ├── TiendaApi.NetCore.postman_environment.json
@@ -749,7 +810,7 @@ El proyecto implementa una **arquitectura híbrida inspirada en Onion Architectu
 | **Inversión de dependencias**       | Interfaces en core, implementaciones en infraestructura               |
 | **Separación de responsabilidades** | Controllers → Services → Repositories → Data                          |
 | **Cross-cutting concerns**          | AutoMapper, FluentValidation, Result Pattern como utilidades          |
-| **Multi-Database**                  | PostgreSQL (datos maestros), MongoDB (documentos), Redis (cache)      |
+| **Multi-Database**                  | PostgreSQL (escritura), MongoDB (lectura CQRS y pedidos), Redis (caché) |
 
 ### Capas de la Arquitectura
 
@@ -810,15 +871,16 @@ graph TB
             CLAIMS[Claims & Roles<br/>Authorization]
         end
         subgraph "External Services"
+            SVC[Services<br/>Email, Storage,<br/>Background]
             SMTP_EXT[SMTP Service<br/>MailKit]
             FS_EXT[File Storage<br/>Static Files]
         end
     end
 
     subgraph "💾 Data Stores"
-        PG[(🐘 PostgreSQL<br/>Users, Categorias,<br/>Productos)]
-        MONGO_DB[(🍃 MongoDB<br/>Pedidos, Items<br/>Embebidos)]
-        REDIS_DB[(🔴 Redis<br/>Cache, Sessions)]
+        PG[(🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos)]
+        MONGO_DB[(🍃 MongoDB<br/>LECTURA (queries CQRS)<br/>productos_read + Pedidos)]
+        REDIS_DB[(🔴 Redis<br/>Caché de lectura<br/>Cache-Aside)]
     end
 
     %% Flujo de datos
@@ -834,6 +896,7 @@ graph TB
     MID --> LOG
     
     CTRL --> CMD
+    CTRL --> QRY
     CMD --> ROP
     CMD --> VAL
     CMD --> MAP
@@ -845,6 +908,7 @@ graph TB
     MAP --> DOM
     
     CMD --> REPO
+    QRY --> REPO
     REPO --> EF
     REPO --> MONGO
     REPO --> REDIS
@@ -852,6 +916,13 @@ graph TB
     EF --> PG
     MONGO --> MONGO_DB
     REDIS --> REDIS_DB
+
+    %% CQRS: lectura → read model + caché; notifications → sync y evict
+    QRY --> MONGO
+    QRY --> REDIS
+    CMD --> NOT
+    NOT --> MONGO
+    NOT --> REDIS
     
     CTRL --> JWT
     CTRL --> BCRYPT
@@ -866,7 +937,6 @@ graph TB
     style WS fill:#9b59b6,color:#fff
     style BG fill:#8e44ad,color:#fff
     style CTRL fill:#2980b9,color:#fff
-    style CQRS fill:#27ae60,color:#fff
     style SVC fill:#16a085,color:#fff
     style DOM fill:#f39c12,color:#000
     style REPO fill:#16a085,color:#fff
@@ -911,7 +981,7 @@ graph TB
     subgraph "🔴 Infrastructure"
         DA["💾 Data Access<br/>Repositories, EF Core<br/>MongoDB, Redis"]
         SVC["🏢 Services<br/>Auth, Cache, Email<br/>Storage, Background"]
-        DS["🗄️ Data Stores<br/>PostgreSQL, MongoDB<br/>Redis Cache"]
+        DS["🗄️ Data Stores<br/>PostgreSQL (escritura)<br/>MongoDB productos_read (lectura)<br/>Redis (caché)"]
         SEC["🔐 Security<br/>JWT, BCrypt, Claims<br/>Roles, Policies"]
         EXT["📧 External Services<br/>SMTP, File System<br/>SignalR, Background Jobs"]
     end
@@ -1065,32 +1135,45 @@ sequenceDiagram
     participant Controller as Controller
     participant MediatR as MediatR
     participant Handler as Handler
-    participant Repo as Repository
-    participant DB as Base de Datos
+    participant PG as 🐘 PostgreSQL<br/>BD de escritura
+    participant Mongo as 🍃 MongoDB<br/>productos_read (lectura)
+    participant Cache as 🔴 Caché<br/>Memory / Redis
 
-    Note over Client, DB: COMMAND (Escritura)
+    rect rgb(230, 244, 255)
+    Note over Client, Cache: COMMAND (Escritura) — fuente de verdad: PostgreSQL
     Client->>Controller: POST /productos (CreateProductoCommand)
     Controller->>MediatR: Send(command)
-    MediatR->>Handler: Route to CreateProductoCommandHandler
-    Handler->>Repo: AddAsync(producto)
-    Repo->>DB: INSERT
-    DB-->>Repo: producto creada
-    Repo-->>Handler: Result<Producto>
+    MediatR->>Handler: CreateProductoCommandHandler
+    Handler->>PG: INSERT (EF Core)
+    PG-->>Handler: producto creado
+    Handler->>Cache: EvictByTagAsync (invalida tags producto/categoría)
+    Handler-->>MediatR: Publish(ProductoCreadoNotification)
+    Note over MediatR, Mongo: Notification → SyncHandler: réplica PG → read model
+    MediatR->>Mongo: upsert en productos_read
+    MediatR-->>Handler: publish completado
     Handler-->>MediatR: Result<ProductoDto>
     MediatR-->>Controller: Result<ProductoDto>
-    Controller-->>Client: 201 Created + producto
+    Controller-->>Client: 201 Created
+    end
 
-    Note over Client, DB: QUERY (Lectura)
+    rect rgb(232, 255, 236)
+    Note over Client, Cache: QUERY (Lectura) — productos desde MongoDB
     Client->>Controller: GET /productos/{id} (GetProductoByIdQuery)
     Controller->>MediatR: Send(query)
-    MediatR->>Handler: Route to GetProductoByIdQueryHandler
-    Handler->>Repo: GetByIdAsync(id)
-    Repo->>DB: SELECT
-    DB-->>Repo: producto
-    Repo-->>Handler: Producto
-    Handler-->>MediatR: ProductoDto
-    MediatR-->>Controller: ProductoDto
-    Controller-->>Client: 200 OK + producto
+    MediatR->>Handler: GetProductoByIdQueryHandler
+    alt caché hit
+        Handler->>Cache: get clave
+        Cache-->>Handler: ProductoDto en caché
+    else caché miss
+        Handler->>Mongo: find productos_read (desnormalizado)
+        Mongo-->>Handler: documento
+        Handler->>Cache: set con TTL
+    end
+    Handler-->>Controller: ProductoDto
+    Controller-->>Client: 200 OK
+    end
+
+    Note over Controller, PG: Queries de USUARIOS y CATEGORÍAS leen PostgreSQL (sin read model)
 ```
 
 ### Estructura de Features
@@ -1188,13 +1271,13 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 
 | Base de Datos    | Uso                                  | Entidades                                   | Tecnologías                                         |
 | ---------------- | ------------------------------------ | ------------------------------------------- | --------------------------------------------------- |
-| **🐘 PostgreSQL** | Datos maestros relacionales          | User, Categoria, Producto                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
-| **🍃 MongoDB**    | Documentos transaccionales embebidos | Pedido, PedidoItem, Destinatario, Direccion | MongoDB.Driver nativo (por defecto) + EF Core MongoDB (opcional)           |
-| **🔴 Redis**      | Cache distribuido                    | Sessions, consultas frecuentes              | StackExchange.Redis (Cache-Aside)                   |
+| **🐘 PostgreSQL** | Escritura (commands) y queries de usuarios/categorías | User, Categoria, Producto                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
+| **🍃 MongoDB**    | Read model de queries de productos + pedidos transaccionales | productos_read; Pedido, PedidoItem, Destinatario, Direccion | MongoDB.Driver nativo (por defecto) + EF Core MongoDB (opcional) |
+| **🔴 Redis**      | Caché distribuida de lectura               | Sessions, consultas frecuentes              | StackExchange.Redis (Cache-Aside)                   |
 
 **Patrón de datos:**
-- PostgreSQL: Entidades normalizadas con Foreign Keys
-- MongoDB: Documentos embebidos para mantener historial de precios (los items del pedido no cambian si el producto cambia)
+- PostgreSQL: Entidades normalizadas con Foreign Keys (fuente de verdad)
+- MongoDB: Documentos embebidos para mantener historial de precios (los items del pedido no cambian si el producto cambia) + read model `productos_read` (réplica CQRS de los productos para las queries)
 
 ## 🔐 Seguridad
 
