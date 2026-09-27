@@ -13,6 +13,9 @@ public class ProductoCreadoEmailHandler(
     IConfiguration configuration)
     : INotificationHandler<ProductoCreadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoCreado y envía el email de notificación al administrador.
+    /// </summary>
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
     {
         var adminEmail = configuration["Smtp:AdminEmail"];

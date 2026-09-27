@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoActualizadoSignalRHandler(IHubContext<ProductosHub> hubContext)
     : INotificationHandler<ProductoActualizadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoActualizado y difunde el producto actualizado por SignalR.
+    /// </summary>
     public async Task Handle(ProductoActualizadoNotification notification, CancellationToken cancellationToken)
     {
         Log.Information("📡 SignalR: Recibida notificación ProductoActualizado para ID: {ProductoId}", notification.Producto.Id);

@@ -12,6 +12,9 @@ namespace TiendaApi.Api.GraphQL.Types;
 /// </summary>
 public class CategoriaReadType : ObjectType<CategoriaRead>
 {
+    /// <summary>
+    /// Configura el nombre, la descripción y los campos del tipo GraphQL.
+    /// </summary>
     protected override void Configure(IObjectTypeDescriptor<CategoriaRead> descriptor)
     {
         descriptor.Name("CategoriaRead");

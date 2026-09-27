@@ -13,6 +13,9 @@ public class PedidoActualizadoAdminEmailHandler(
     IConfiguration configuration)
     : INotificationHandler<EstadoPedidoActualizadoNotification>
 {
+    /// <summary>
+    /// Procesa el cambio de estado realizado por un administrador y envía el email de aviso al admin.
+    /// </summary>
     public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken)
     {
         var adminEmail = configuration["Smtp:AdminEmail"];

@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoEliminadoGraphQLHandler(IEventPublisher eventPublisher)
     : INotificationHandler<ProductoEliminadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoEliminado y publica la suscripción GraphQL onProductoEliminado.
+    /// </summary>
     public async Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken)
     {
         await eventPublisher.PublishAsync("onProductoEliminado", new ProductoEliminadoEvent

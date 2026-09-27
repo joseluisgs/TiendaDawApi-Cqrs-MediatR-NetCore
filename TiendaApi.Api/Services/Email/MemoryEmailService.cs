@@ -11,6 +11,10 @@ public class MemoryEmailService : IEmailService
 {
     private readonly ILogger<MemoryEmailService> _logger;
 
+    /// <summary>
+    /// Crea una instancia del servicio de email de desarrollo.
+    /// </summary>
+    /// <param name="logger">Logger de la aplicación.</param>
     public MemoryEmailService(ILogger<MemoryEmailService> logger)
     {
         _logger = logger;

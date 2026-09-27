@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoStockBajoGraphQLHandler(IEventPublisher eventPublisher)
     : INotificationHandler<ProductoStockBajoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoStockBajo y publica la suscripción GraphQL onStockBajo.
+    /// </summary>
     public async Task Handle(ProductoStockBajoNotification notification, CancellationToken cancellationToken)
     {
         await eventPublisher.PublishAsync("onStockBajo", new ProductoStockBajoEvent

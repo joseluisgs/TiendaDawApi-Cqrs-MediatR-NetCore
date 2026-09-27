@@ -30,6 +30,15 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class CategoriasController(IMediator mediator) : ControllerBase
 {
+    /// <summary>
+    /// Obtiene el listado paginado de categorías con filtros y ordenación.
+    /// </summary>
+    /// <param name="nombre">Filtro por nombre (búsqueda parcial).</param>
+    /// <param name="isDeleted">Filtra por estado de eliminación lógica.</param>
+    /// <param name="page">Índice de página (base 0).</param>
+    /// <param name="size">Tamaño de página.</param>
+    /// <param name="sortBy">Campo de ordenación.</param>
+    /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet]
     [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(PagedResult<CategoriaDto>), StatusCodes.Status200OK)]
@@ -64,6 +73,10 @@ public class CategoriasController(IMediator mediator) : ControllerBase
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Obtiene una categoría por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
     [HttpGet("{id}")]
     [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
@@ -81,6 +94,10 @@ public class CategoriasController(IMediator mediator) : ControllerBase
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Crea una nueva categoría (solo administradores).
+    /// </summary>
+    /// <param name="dto">Datos de la categoría a crear.</param>
     [HttpPost]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status201Created)]
@@ -96,6 +113,11 @@ public class CategoriasController(IMediator mediator) : ControllerBase
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza una categoría existente (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
+    /// <param name="dto">Datos actualizados de la categoría.</param>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
@@ -112,6 +134,10 @@ public class CategoriasController(IMediator mediator) : ControllerBase
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina una categoría por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

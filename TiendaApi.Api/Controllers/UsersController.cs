@@ -23,6 +23,16 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class UsersController(IMediator mediator, ILogger<UsersController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Obtiene el listado paginado de usuarios con filtros y ordenación (solo administradores).
+    /// </summary>
+    /// <param name="username">Filtro por nombre de usuario.</param>
+    /// <param name="email">Filtro por correo electrónico.</param>
+    /// <param name="isDeleted">Filtra por estado de eliminación lógica.</param>
+    /// <param name="page">Índice de página (base 0).</param>
+    /// <param name="size">Tamaño de página.</param>
+    /// <param name="sortBy">Campo de ordenación.</param>
+    /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
@@ -50,6 +60,10 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
+    /// <summary>
+    /// Obtiene un usuario por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del usuario.</param>
     [HttpGet("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -65,6 +79,10 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Registra un nuevo usuario (solo administradores).
+    /// </summary>
+    /// <param name="dto">Datos de registro del usuario.</param>
     [HttpPost]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
@@ -81,6 +99,11 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza los datos de un usuario por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del usuario.</param>
+    /// <param name="dto">Datos actualizados del usuario.</param>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -98,6 +121,11 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza el avatar de un usuario (el propio usuario o un administrador).
+    /// </summary>
+    /// <param name="id">Identificador del usuario.</param>
+    /// <param name="dto">Nueva URL del avatar.</param>
     [HttpPatch("{id}/avatar")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -121,6 +149,10 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina un usuario por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del usuario.</param>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -135,6 +167,9 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         return resultado.Error.ToHttpResult();
     }
 
+    /// <summary>
+    /// Obtiene el perfil del usuario autenticado.
+    /// </summary>
     [HttpGet("me/profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -151,6 +186,10 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza el perfil del usuario autenticado.
+    /// </summary>
+    /// <param name="dto">Datos a actualizar del perfil.</param>
     [HttpPut("me/profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -170,6 +209,9 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
             onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina la cuenta del usuario autenticado.
+    /// </summary>
     [HttpDelete("me/profile")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -186,6 +228,10 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         return resultado.Error.ToHttpResult();
     }
 
+    /// <summary>
+    /// Actualiza el avatar del usuario autenticado.
+    /// </summary>
+    /// <param name="dto">Nueva URL del avatar.</param>
     [HttpPatch("me/profile/avatar")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
