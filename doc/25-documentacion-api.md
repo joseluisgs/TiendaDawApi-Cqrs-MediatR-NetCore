@@ -669,3 +669,84 @@ Con documentación y versionado dominado, el siguiente paso es aprender sobre pa
 - Swagger/OpenAPI: https://swagger.io/docs/specification/about/
 - Swashbuckle: https://github.com/domaindrivendev/Swashbuckle.AspNetCore
 - API Versioning: https://github.com/Microsoft/aspnet-api-versioning
+
+---
+
+## 25.7. Documentación XML en el Código Fuente
+
+C# permite añadir comentarios XML a clases, métodos y propiedades usando las triple barra `///`. Estos comentarios se compilan en un fichero `.xml` que Swagger puede leer para generar documentación enriquecida automáticamente.
+
+### Sintaxis de comentarios XML
+
+Los comentarios XML utilizan etiquetas estándar que el compilador reconoce:
+
+- `/// <summary>`: descripción breve del elemento documentado.
+- `/// <param name="...">`: describe un parámetro de un método.
+- `/// <returns>`: describe el valor de retorno de un método.
+- `/// <example>`: proporciona un ejemplo de uso que aparecerá en la UI de Swagger.
+
+```csharp
+/// <summary>
+/// Obtiene un producto por su identificador único.
+/// </summary>
+/// <param name="id">Identificador numérico del producto.</param>
+/// <returns>El producto encontrado con todos sus campos.</returns>
+/// <example>
+/// GET /api/productos/1
+/// Response: { "id": 1, "nombre": "Laptop", "precio": 999.99 }
+/// </example>
+[HttpGet("{id:long}")]
+[ProducesResponseType(typeof(ProductoDto), StatusCodes.Status200OK)]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+public async Task<IActionResult> GetById(long id)
+{
+    // ...
+}
+```
+
+### Habilitar generación de documentación XML
+
+Para que el compilador genere el fichero `.xml`, el proyecto debe incluir la propiedad `<GenerateDocumentationFile>` en su `.csproj`:
+
+```xml
+<PropertyGroup>
+  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  <NoWarn>$(NoWarn);CS1591</NoWarn>
+</PropertyGroup>
+```
+
+La advertencia **CS1591** se genera cuando un miembro público no tiene documentación XML. Se puede suprimir con `<NoWarn>` o atender añadiendo los comentarios correspondientes. La advertencia **CS1570** indica sintaxis XML incorrecta en los comentarios y ayuda a mantener la documentación completa y bien formada.
+
+---
+
+## 25.8. Integración de Documentación XML con Swagger (IncludeXmlComments)
+
+Swashbuckle puede leer el fichero `.xml` generado por el compilador e incluir los summaries, parámetros y ejemplos directamente en la documentación de la API. Esto significa que los comentarios XML que escribas en el código aparecen automáticamente en la UI de Swagger sin duplicar esfuerzo.
+
+### Configuración en AddSwaggerGen
+
+La integración se configura en `Program.cs` dentro de `AddSwaggerGen()` usando `options.IncludeXmlComments(path)`:
+
+```csharp
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "TiendaApi",
+        Version = "v1",
+        Description = "API de comercio electrónico"
+    });
+
+    // Incluir documentación XML en Swagger
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
+```
+
+### Efecto en la UI de Swagger
+
+Una vez configurado, cada `<summary>` se muestra como descripción del endpoint, cada `<param>` aparece como descripción del parámetro, cada `<returns>` se incluye en la documentación de la respuesta, y los tags `<example>` se muestran como ejemplos en la sección de pruebas de Swagger UI. Esto permite que la documentación viva junto al código y siempre esté sincronizada con la implementación real.

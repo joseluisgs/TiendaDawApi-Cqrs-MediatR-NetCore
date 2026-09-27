@@ -934,3 +934,89 @@ Con la comprensión de la inyección de dependencias, el siguiente paso es apren
 - Documentación de DI en ASP.NET Core: https://docs.microsoft.com/aspnet/core/fundamentals/dependency-injection
 - Tiempos de vida: https://docs.microsoft.com/aspnet/core/fundamentals/dependency-injection#service-lifetimes
 - Constructores primarios: https://docs.microsoft.com/dotnet/csharp/whats-new/csharp-14#primary-constructors
+
+---
+
+## 3.8. TimeProvider — Abstracción del Tiempo para Testabilidad
+
+En .NET 8+, `TimeProvider` es una abstracción del sistema de tiempo que permite inyectar un proveedor de tiempo en los servicios. Esto permite testear lógica que depende del tiempo (expiración de tokens JWT, timeouts, cálculos con fechas) sin depender del reloj del sistema.
+
+### El problema sin TimeProvider
+
+Cuando un servicio usa `DateTime.UtcNow` directamente, es imposible testear comportamientos que dependen del tiempo. Por ejemplo, un servicio que verifica si un token JWT ha expirado no puede testearse porque el tiempo real siempre avanza.
+
+```csharp
+// PROBLEMA: Tiempo acoplado al reloj del sistema
+public class TokenService
+{
+    public bool IsTokenExpired(DateTime expiresAt)
+    {
+        return DateTime.UtcNow > expiresAt; // Imposible de testear
+    }
+}
+```
+
+### La solución con TimeProvider
+
+`TimeProvider.System` devuelve el tiempo real en producción, pero en tests se puede inyectar un `FakeTimeProvider` con tiempo controlado. El servicio recibe `TimeProvider` como parámetro opcional con valor por defecto `TimeProvider.System`.
+
+```csharp
+using Microsoft.Extensions.Time.Testing;
+
+public class TokenService(TimeProvider? timeProvider = null)
+{
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+
+    public bool IsTokenExpired(DateTime expiresAt)
+    {
+        return _timeProvider.GetUtcNow() > new DateTimeOffset(expiresAt, TimeSpan.Zero);
+    }
+}
+```
+
+### Registro en DI y uso en tests
+
+```csharp
+// En Program.cs (producción)
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+
+// En un test unitario
+[Fact]
+public void IsTokenExpired_FutureDate_ReturnsFalse()
+{
+    // Arrange
+    var fakeTime = new FakeTimeProvider();
+    var service = new TokenService(fakeTime);
+
+    // Avanzar el tiempo controladamente
+    fakeTime.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+    // Act
+    var result = service.IsTokenExpired(new DateTime(2025, 12, 31));
+
+    // Assert
+    result.Should().BeFalse();
+}
+
+[Fact]
+public void IsTokenExpired_PastDate_ReturnsTrue()
+{
+    // Arrange
+    var fakeTime = new FakeTimeProvider();
+    var service = new TokenService(fakeTime);
+
+    fakeTime.SetUtcNow(new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+    // Act
+    var result = service.IsTokenExpired(new DateTime(2025, 12, 31));
+
+    // Assert
+    result.Should().BeTrue();
+}
+```
+
+### Ventajas
+
+- **Testabilidad**: se puede simular cualquier instante del tiempo para verificar expiraciones, timeouts y cálculos temporales.
+- **Separación de concerns**: el servicio no conoce la implementación del tiempo, solo la abstracción.
+- **Producción transparente**: el valor por defecto `TimeProvider.System` hace que el código funcione igual en producción sin configuración adicional.

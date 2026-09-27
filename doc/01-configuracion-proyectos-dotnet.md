@@ -1263,3 +1263,133 @@ Con la configuración básica lista, el siguiente paso es entender cómo funcion
 - Documentación de NUnit: https://docs.nunit.org
 - Paquetes NuGet: https://www.nuget.org
 - Hot Reload: https://docs.microsoft.com/dotnet/core/tools/dotnet-watch
+
+---
+
+## 1.10. Gestión Centralizada de Paquetes NuGet (CPM)
+
+En proyectos grandes con múltiples `.csproj`, mantener la misma versión de un paquete en cada proyecto es propenso a errores. Si un proyecto usa `AutoMapper 12.0.0` y otro usa `AutoMapper 13.0.0`, pueden surgir incompatibilidades sutiles. El **Central Package Management (CPM)** resuelve esto definiendo la versión una vez en un fichero central.
+
+### Cómo funciona CPM
+
+El SDK de .NET gestiona la resolución de paquetes a través del fichero `Directory.Packages.props` ubicado en la raíz de la solución. Este fichero define la versión de cada paquete, y cada `.csproj` solo referencia el paquete sin especificar versión.
+
+```xml
+<!-- Directory.Packages.props (en la raíz de la solución) -->
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="AutoMapper" Version="13.0.1" />
+    <PackageVersion Include="FluentValidation" Version="11.9.0" />
+    <PackageVersion Include="MediatR" Version="12.4.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageVersion Include="NUnit" Version="4.3.2" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.1" />
+  </ItemGroup>
+</Project>
+```
+
+En cada `.csproj`, los paquetes se referencian sin versión:
+
+```xml
+<!-- TiendaApi.Core.csproj -->
+<ItemGroup>
+  <PackageReference Include="AutoMapper" />
+  <PackageReference Include="FluentValidation" />
+  <PackageReference Include="MediatR" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+</ItemGroup>
+```
+
+### Ventajas de CPM
+
+- **Consistencia**: todos los proyectos usan exactamente la misma versión de cada paquete.
+- **Actualizaciones centralizadas**: al actualizar la versión en `Directory.Packages.props`, todos los proyectos se benefician automáticamente.
+- **Menor drift**: se elimina el riesgo de que proyectos de la solución diverjan en versiones de dependencias compartidas.
+- **Visibilidad**: un solo fichero muestra todas las dependencias externas del proyecto y sus versiones exactas.
+
+---
+
+## 1.11. Configuración de Estilo de Código (.editorconfig)
+
+El fichero `.editorconfig` define reglas de formato (indentación, saltos de línea, charset, espaciado) que cualquier IDE o editor respeta. Esto asegura que todo el equipo y las herramientas automatizadas formateen el código de la misma manera, eliminando discusiones sobre estilo y reduciendo la fricción en las revisiones de código.
+
+### Estructura de .editorconfig
+
+```ini
+# .editorconfig en la raíz del proyecto
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{json,yml,yaml}]
+indent_size = 2
+```
+
+### Integración con dotnet format
+
+`dotnet format` es una herramienta de línea de comandos que aplica automáticamente las reglas definidas en `.editorconfig`. Ejecutar `dotnet format` reformatea todo el proyecto según las convenciones establecidas, lo que es especialmente útil antes de hacer un commit para asegurar que el código cumple con el estilo del equipo.
+
+```bash
+# Aplicar formato según .editorconfig
+dotnet format
+
+# Verificar sin modificar (modo dry-run)
+dotnet format --verify-no-changes
+```
+
+---
+
+## 1.12. Fijación de Versión del SDK (global.json)
+
+El fichero `global.json` en la raíz delimita la versión exacta del SDK de .NET que debe usarse para compilar la solución. Esto evita que diferentes desarrolladores o entornos de CI usen versiones distintas del SDK que podrían causar comportamientos sutiles diferentes en la compilación, por ejemplo, cambios en el sistema de paquetes o en el compilador.
+
+### Contenido de global.json
+
+```json
+{
+  "sdk": {
+    "version": "8.0.400",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false
+  }
+}
+```
+
+### Opciones de rollForward
+
+| Valor | Comportamiento |
+|-------|----------------|
+| `latestPatch` | Usa la versión especificada o la última parche compatible (recomendado) |
+| `latestFeature` | Usa la última versión dentro de la misma versión mayor (8.x) |
+| `latestMinor` | Usa la última versión dentro del mismo Feature Band |
+| `latestMajor` | Usa la última versión disponible |
+| `disable` | No hace roll-forward, falla si la versión exacta no está instalada |
+
+### Por qué importa
+
+Si un desarrollador tiene instalado .NET SDK `8.0.401` y el proyecto requiere `8.0.400` con `rollForward: latestPatch`, el SDK `8.0.401` se usará sin problemas. Sin embargo, si `rollForward` está en `disable` y la versión exacta no está instalada, la compilación fallará con un mensaje claro que indica qué versión se necesita. Esto garantiza reproducibilidad en todos los entornos.

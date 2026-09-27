@@ -1662,6 +1662,42 @@ Con testing dominado, tienes todas las herramientas para crear APIs robustas en 
 
 ---
 
+## 26.16. Scripts de Verificación Automatizada
+
+Los scripts automatizados son herramientas que verifican automáticamente la calidad del código como parte del pipeline de desarrollo. Ejecutan comprobaciones que de otro modo requerirían intervención manual, garantizando consistencia en cada commit o despliegue.
+
+### check-style
+
+El script `check-style` verifica que los ficheros del proyecto cumplan las reglas de formato definidas en `.editorconfig`. Comprueba aspectos como:
+
+- **Charset**: que los ficheros estén codificados en UTF-8.
+- **Newline final**: que cada fichero termine con un salto de línea.
+- **Encoding**: que no haya caracteres de relleno o BOM innecesarios en ficheros que no lo requieren.
+
+Si algún fichero no cumple las reglas, el script falla y muestra qué ficheros necesitan corrección. Esto se ejecuta típicamente como parte del pipeline de verificación junto con la compilación y los tests.
+
+### check-audit
+
+El script `check-audit` ejecuta `dotnet list package --vulnerable` para detectar paquetes NuGet con vulnerabilidades conocidas (CVE). Esta comprobación es esencial para mantener la seguridad de la aplicación, ya que los paquetes con vulnerabilidades pueden exponer la API a ataques.
+
+Si se detectan paquetes vulnerables, el script falla y lista las dependencias afectadas junto con los CVEs conocidos. Esto permite al equipo actualizar o reemplazar los paquetes antes de que las vulnerabilidades sean explotadas.
+
+### Integración en el pipeline
+
+Ambos scripts se ejecutan como parte del pipeline de verificación, normalmente después de la compilación y antes de ejecutar los tests:
+
+```bash
+# Verificación de estilo
+powershell -ExecutionPolicy Bypass -File scripts\check-style.ps1
+
+# Verificación de auditoría de seguridad
+node scripts/check-docs.mjs
+```
+
+La combinación de verificación de estilo y auditoría de seguridad automatiza dos aspectos críticos de la calidad del código que de otro modo podrían pasarse por alto en el día a día del desarrollo.
+
+---
+
 ## 26.13. Testing E2E con Postman y Newman
 
 Los tests **End-to-End (E2E)** verifican que la API completa funciona correctamente desde la perspectiva del cliente, incluyendo autenticación, validación y flujos de negocio completos.

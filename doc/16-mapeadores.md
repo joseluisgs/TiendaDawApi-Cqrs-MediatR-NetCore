@@ -572,3 +572,41 @@ Con mapeadores dominados, tienes todas las herramientas para transformar datos e
 - AutoMapper: https://automapper.org/
 - AutoMapper Documentation: https://docs.automapper.org/
 - Extension Methods: https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/extension-methods
+
+---
+
+## 16.10. Configuración de AutoMapper con el Paquete Core
+
+AutoMapper se puede configurar de dos formas principales. Anteriormente se usaba el paquete `AutoMapper.Extensions.microsoft.DependencyInjection`, pero este paquete está **obsoleto** desde AutoMapper 12.x. La forma recomendada actualmente es usar el **paquete core** `AutoMapper` directamente, que ya incluye la integración con DI a través de `Microsoft.Extensions.Options`.
+
+### Paquete obsoleto (no usar)
+
+```bash
+# PAQUETE OBSOLETO — no usar en nuevos proyectos
+dotnet add package AutoMapper.Extensions.Microsoft.DependencyInjection
+```
+
+Este paquete fue necesario cuando AutoMapper no tenía integración nativa con el contenedor de DI de ASP.NET Core. Desde AutoMapper 12.x, esta funcionalidad está integrada en el propio paquete core.
+
+### Paquete core (recomendado)
+
+```bash
+# Paquete recomendado
+dotnet add package AutoMapper
+```
+
+La configuración se realiza directamente en `Program.cs`:
+
+```csharp
+// Forma recomendada: registrar desde un ensamblado que contenga Profiles
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(assembly));
+```
+
+### Diferencias en la configuración
+
+| Paquete | Configuración | Estado |
+|---------|---------------|--------|
+| `AutoMapper` (core) | `services.AddAutoMapper(cfg => cfg.AddMaps(assembly))` | Recomendado |
+| `AutoMapper.Extensions...` | `services.AddAutoMapper(typeof(Profile))` | Obsoleto |
+
+La ventaja del paquete core es que el método `AddAutoMaps()` acepta un delegate de configuración donde se pueden añadir filtros de ensamblado, configuración global de naming conventions, y otras opciones avanzadas. Además, al depender de `Microsoft.Extensions.Options` en lugar del paquete de extensión, se reduce el número de dependencias externas.
