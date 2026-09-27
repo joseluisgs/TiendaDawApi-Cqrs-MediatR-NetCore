@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 8, 9, 13 y 14 COMPLETADAS** — fases 6-7, 10-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 7, 8, 9, 13 y 14 COMPLETADAS** — fases 6, 10-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -251,7 +251,7 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 7 — Automation E2E en Node (todos los controladores) ⬜ PENDIENTE (replicar)
+## Fase 7 — Automation E2E en Node (todos los controladores) ✅ COMPLETADA (26/09/2026)
 
 > Estilo UD02 `ejemplos/*/automation/test-runner.mjs` (Node nativo, sin npm install).  
 > **Directorio:** `TiendaApi.Tests.E2E/Automation/`
@@ -288,7 +288,16 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 - Fallback: si `dotnet run` no responde, intenta `docker compose up -d --build`.
 - Compatible con Fase 1: espera `/health` primero; si aún no existe, acepta `/swagger` o `/api/productos`.
 
-### 📋 Verificación Fase 7 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 7 - 26/09/2026 (semillas frescas por grupo)
+
+| # | Resultado |
+|---|-----------|
+| 7.1-7.2 | `TiendaApi.Tests.E2E/Automation/test-runner.mjs` **byte-idéntico** al origen (`fc /B` = 0 diff, 27.050 bytes, Node nativo sin npm): llegó con la base de replicación (`9d91574`) · **55 tests** en los 11 bloques (Health · Auth · Categorías · Productos · Pedidos user · Pedidos admin · Users admin · Users perfil · Storage · GraphQL · Limpieza) |
+| 7.3 | Helper `st()` → **FAIL explícito en 429**; suite diseñada con **18 POSTs** (< límite 20/min) |
+| 7.4 | Seed `admin/admin` · `userdaw/userdaw`; usuarios auto con nombre único `auto_<timestamp>` |
+| 7.5 | `node TiendaApi.Tests.E2E/Automation/test-runner.mjs` desde la raíz: detecta infra existente (no la toca), spawnea API en 5031 (`--no-launch-profile`, Development) → espera `/health` → suite → kill API + stop solo de las BDs que él levantó (nunca `down -v`) |
+| 7.6 | CI opcional: fuera del alcance (el origen tampoco lo creó en `227cb9d`) |
+| Resultado | **Total: 55 · OK: 55 · KO: 0** en vivo (semillas frescas, HEAD `4008ae5`) · build **0/0** y tests **1032/1032** + Newman **95/95** y Bruno **127/127** verificados en Fase 8 sobre el mismo código |
 
 ---
 
