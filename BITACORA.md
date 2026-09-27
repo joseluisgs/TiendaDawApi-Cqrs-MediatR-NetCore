@@ -41,7 +41,8 @@
 | 2 · AsNoTracking selectivo | `8de2097` | `.AsNoTracking()` en 9 listados de solo lectura (2 categorías, 4 productos, 3 users) = diff origen `a82e7a5`; `FindById`/`Delete`/`Update` intactos: build 0/0 · tests **1032/1032** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
 | 3 · Paginación real de pedidos | `cc5eedc` | `FindAllPagedAsync(page,size)` en `IPedidosRepository` + Mongo (`CountDocuments`+`Skip/Limit`) y EF (`CountAsync`+`Skip/Take`); handler delega (sin paginar en memoria); controller intacto, +2 mocks: build 0/0 · tests **1032/1032** · smoke `?page=1&size=2` → 2 items + header `Link` · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
 | 4 · Caché HTTP (OutputCache + ETag) | `6cc1c90` | `Infrastructures/OutputCacheConfig.cs` + registro en `Program.cs` + `[OutputCache(60s, tags)]` y ETag en los 5 GETs anónimos (Productos/Categorías) + `EvictByTagAsync` en 8 handlers (5 productos, 3 categorías); pedidos/users/auth/GraphQL sin caché: build 0/0 · tests **1032/1032** · smoke 304 + invalidación en vivo · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
-| 6-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 9 · ToHttpResult (confirmación) | `2f9fdcc` (aplicado en 14.2) | Extensión `DomainErrorExtensions.cs` byte-idéntica al origen (`fc /B`); 31/31 sitios `ToHttpResult()` con 0 switches residuales; audit 9.3 (BusinessRuleError→400, ValidationError con `errors`); **sin cambios de código** (todo llegó en Fase 14): build 0/0 · tests **1032/1032** · smoke **15/15** (401/403/404/400/409) · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** | ✅ |
+| 6-8, 10-12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 

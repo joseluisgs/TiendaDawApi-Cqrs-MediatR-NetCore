@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 13 y 14 COMPLETADAS** — fases 6-12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 9, 13 y 14 COMPLETADAS** — fases 6-8, 10-12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -314,7 +314,7 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 9 — Integración Result→HTTP · **Opción C** (`ToHttpResult`) ⬜ PENDIENTE (replicar)
+## Fase 9 — Integración Result→HTTP · **Opción C** (`ToHttpResult`) ✅ COMPLETADA (26/09/2026)
 
 > **Fuente:** doc UD02 §7 *Excepciones y patrón Result* (`UD02/07-excepciones-patron-result.md`) + ejemplo `UD02/ejemplos/07-ProductosResult/Extensions/DomainErrorExtensions.cs`.  
 > **Viabilidad:** ⬜ **ALTA** — todos los prerrequisitos ya existen en la API: `DomainError` tipado (`NotFoundError`, `ValidationError`, `BusinessRuleError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`, `InternalError`), fábricas de error por dominio (`ProductoError`, `CategoriaError`, `UsuarioError`, `AuthError`, `PedidoError`, `StorageError`), `Result<T, DomainError>` + `Match` en los controladores y CSharpFunctionalExtensions 3.7.0.  
@@ -331,7 +331,17 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 **Riesgo:** 🟡 bajo — solo capa de presentación; obligatorio preservar códigos y shape `{message, ...}` de cada respuesta.
 
-### 📋 Verificación Fase 9 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 9 - 26/09/2026 (semillas frescas por grupo)
+
+| # | Resultado |
+|---|-----------|
+| 9.1 | `TiendaApi.Api/Extensions/DomainErrorExtensions.cs` **byte-idéntico** al origen (`fc /B` sin diferencias): `ToHttpResult` con la matriz 404/400+errors/409/400/401/403/500 |
+| 9.2 | **Sin cambios necesarios**: ya aplicado en Fase 14 (`2f9fdcc`) - **31/31 sitios** `error.ToHttpResult()` (Auth 2 · Users 9 · Pedidos 8 · Productos 7 · Categorías 5), **0 `error switch`** residuales, `using TiendaApi.Api.Extensions` en los 5 controllers |
+| 9.3 | **Divergencias auditadas (mismas decisiones que el origen):** ① `BusinessRuleError` → 400 (matriz del plan); grep de asserts 500 en tests → solo `GlobalExceptionHandlerTests` (correcto: excepción no capturada → 500) ② `ValidationError` unificado a `{message, errors}` vía la extensión ③ tipos sin rama en algún switch → su código real (403/401), hoy inalcanzables por `Authorize` previo |
+| 9.4 | **0 tests que actualizar**: la suite CQRS no contiene los 2 tests `...Retorna500` que renombró el origen (estructura de tests distinta; la paridad HTTP la cubre E2E) |
+| 9.5 | Build **0/0** · **1032/1032** tests · **en vivo 15/15**: 401 ×2 · 403 rol USER · 404 ×5 (con `{message}`) · 400 signup inválido · 409 duplicado (con `{message}`) · 200 ×5 (users, productos, categorías, pedidos, profile) · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** |
+
+> El 403 vacío lo emite el middleware `Authorize` y el 400 del signup es ProblemDetails de `[ApiController]` — idénticos en origen y CQRS (paridad E2E).
 
 ---
 
@@ -555,7 +565,7 @@ ARRANQUE   ProductoReadSeeder → dev: drop+bulk | prod: upsert+podar (tras SqlS
 |-----------|---------------------|
 | Sin `/health` endpoint | ✅ Fase 1 (26/09/2026): `GET /health` 200/503 |
 | Sin HTTP Output Cache (ETag/304) | ✅ Fase 4 (26/09/2026): OutputCache 60s + ETag + 304 + invalidación por tag |
-| Error handling más estrecho (500 en vez de status correcto) | Fase 9 (ToHttpResult) — mitigado en 14.2 (`ToHttpResult` ya en los 5 controllers), confirmar el resto en Fase 9 |
+| Error handling más estrecho (500 en vez de status correcto) | ✅ Fase 9 (26/09/2026): confirmada - extensión byte-idéntica al origen + 31/31 sitios desde 14.2 + smoke 15/15 (401/403/404/400/409) |
 | Sin índices EF en modelo | ✅ Fase 1 (26/09/2026): 5 índices añadidos al modelo |
 | Sin `AsNoTracking` selectivo | ✅ Fase 2 (26/09/2026): 9 sitios en 3 repos |
 
