@@ -189,7 +189,6 @@ public class PedidosEfHandlerIntegrationTests
 
     #region ========== FIND ==========
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindAllAsync_SinPedidos_RetornaListaVacia()
     {
@@ -199,7 +198,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Should().NotBeNull();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindByUserIdAsync_SinPedidos_RetornaListaVacia()
     {
@@ -209,7 +207,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Should().NotBeNull();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindByIdAsync_SinPedidos_RetornaNotFound()
     {
@@ -222,7 +219,6 @@ public class PedidosEfHandlerIntegrationTests
 
     #region ========== CREATE ==========
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConItemsValidos_RetornaPedidoCreado()
     {
@@ -234,7 +230,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Items.Should().HaveCount(1);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConItemsVacios_RetornaError()
     {
@@ -245,7 +240,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConProductoNoExistente_RetornaError()
     {
@@ -254,7 +248,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConStockCero_RetornaErrorDeStock()
     {
@@ -265,7 +258,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConStockInsuficiente_RetornaErrorDeStock()
     {
@@ -276,7 +268,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_ConStockSuficiente_DecrementaStockCorrectamente()
     {
@@ -291,7 +282,6 @@ public class PedidosEfHandlerIntegrationTests
         productoActualizado!.Stock.Should().Be(stockInicial - 5);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_CantidadExactaStock_PermitePedido()
     {
@@ -306,7 +296,6 @@ public class PedidosEfHandlerIntegrationTests
         productoFinal!.Stock.Should().Be(0);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_CantidadMayorStock_RechazaPedido()
     {
@@ -321,7 +310,6 @@ public class PedidosEfHandlerIntegrationTests
         productoFinal!.Stock.Should().Be(stockInicial);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task CreateAsync_UsuarioNoExistente_RetornaError()
     {
@@ -336,7 +324,6 @@ public class PedidosEfHandlerIntegrationTests
 
     #region ========== DECREMENTO DE STOCK ==========
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DecrementStockAsync_StockInsuficiente_NoDecrementa()
     {
@@ -353,7 +340,6 @@ public class PedidosEfHandlerIntegrationTests
         productoFinal!.Stock.Should().Be(3);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DecrementStockAsync_StockSuficiente_Decrementa()
     {
@@ -374,7 +360,6 @@ public class PedidosEfHandlerIntegrationTests
 
     #region ========== MÉTODOS DE ADMINISTRADOR ==========
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindAllPagedAsync_ConPaginacion_RetornaPedidosPaginados()
     {
@@ -387,7 +372,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.TotalCount.Should().BeGreaterThanOrEqualTo(0);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindAllPagedAsync_SegundaPagina_RetornaPaginaCorrecta()
     {
@@ -398,7 +382,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Page.Should().Be(2);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateAdminAsync_ConDireccion_ActualizaPedido()
     {
@@ -413,7 +396,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.DireccionEnvio.Should().Contain("Calle Nueva");
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateAdminAsync_PedidoNoExistente_RetornaNotFound()
     {
@@ -424,7 +406,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateEstadoAsync_EstadoValido_ActualizaEstado()
     {
@@ -438,7 +419,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Estado.Should().Be(PedidoEstado.ENVIADO);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateEstadoAsync_EstadoInvalido_RetornaError()
     {
@@ -448,7 +428,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DeleteAdminAsync_PedidoExistente_MarcaComoEliminado()
     {
@@ -467,7 +446,6 @@ public class PedidosEfHandlerIntegrationTests
         findResult.Value.Should().NotBeNull();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DeleteAdminAsync_PedidoNoExistente_RetornaNotFound()
     {
@@ -480,7 +458,6 @@ public class PedidosEfHandlerIntegrationTests
 
     #region ========== MÉTODOS DE USUARIO ==========
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindMyPedidosAsync_ConPedidos_RetornaPedidosDelUsuario()
     {
@@ -493,7 +470,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Should().HaveCountGreaterThan(0);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindMyPedidosAsync_SinPedidos_RetornaListaVacia()
     {
@@ -503,7 +479,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Should().BeEmpty();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindMyPedidosPagedAsync_ConPaginacion_RetornaPedidosPaginados()
     {
@@ -515,7 +490,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.PageSize.Should().Be(10);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindMyPedidoAsync_PedidoPropio_RetornaPedido()
     {
@@ -530,7 +504,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.Id.Should().Be(pedidoId);
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task FindMyPedidoAsync_PedidoAjeno_RetornaError()
     {
@@ -539,7 +512,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateMyPedidoAsync_EstadoPendiente_ActualizaDireccion()
     {
@@ -555,7 +527,6 @@ public class PedidosEfHandlerIntegrationTests
         result.Value.DireccionEnvio.Should().Contain("Nueva Direccion");
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task UpdateMyPedidoAsync_EstadoNoPendiente_RetornaError()
     {
@@ -571,7 +542,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DeleteMyPedidoAsync_EstadoPendiente_MarcaEliminado()
     {
@@ -584,7 +554,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DeleteMyPedidoAsync_EstadoNoPendiente_RetornaError()
     {
@@ -599,7 +568,6 @@ public class PedidosEfHandlerIntegrationTests
         result.IsFailure.Should().BeTrue();
     }
 
-    [Ignore("Bug EF-272 - requiere MongoDB.EntityFrameworkCore compatible con EF Core 10")]
     [Test]
     public async Task DeleteMyPedidoAsync_PedidoAjeno_RetornaError()
     {
