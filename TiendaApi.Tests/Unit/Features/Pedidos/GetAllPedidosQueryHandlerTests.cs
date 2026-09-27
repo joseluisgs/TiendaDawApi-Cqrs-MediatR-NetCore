@@ -17,19 +17,19 @@ public class GetAllPedidosQueryHandlerTests
     public async Task Handle_PedidosExisten_DevuelvePagedResult()
     {
         var repository = new Mock<IPedidosRepository>();
-        
+
         var pedidos = new List<Pedido>
         {
             new() { Id = ObjectId.GenerateNewId(), Estado = "Pendiente" },
             new() { Id = ObjectId.GenerateNewId(), Estado = "Enviado" }
         };
-        
+
         repository.Setup(r => r.FindAllPagedAsync(0, 10)).ReturnsAsync((pedidos, pedidos.Count));
-        
+
         var handler = new GetAllPedidosQueryHandler(repository.Object);
-        
+
         var result = await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
-        
+
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(2);
     }
@@ -39,11 +39,11 @@ public class GetAllPedidosQueryHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         repository.Setup(r => r.FindAllPagedAsync(0, 10)).ReturnsAsync((new List<Pedido>(), 0));
-        
+
         var handler = new GetAllPedidosQueryHandler(repository.Object);
-        
+
         var result = await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
-        
+
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
     }

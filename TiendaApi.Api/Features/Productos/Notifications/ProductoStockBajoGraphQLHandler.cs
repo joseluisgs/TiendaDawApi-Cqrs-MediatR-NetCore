@@ -21,7 +21,7 @@ public class ProductoStockBajoGraphQLHandler(IEventPublisher eventPublisher)
             UmbralStock = notification.UmbralStock,
             DetectedAt = DateTime.UtcNow
         });
-        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Stock bajo ID={ProductoId}, Stock={Stock}", 
+        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Stock bajo ID={ProductoId}, Stock={Stock}",
             notification.Producto.Id, notification.Producto.Stock);
     }
 }

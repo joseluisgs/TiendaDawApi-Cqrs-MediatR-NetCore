@@ -1,6 +1,6 @@
+using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
-using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Moq;
@@ -8,8 +8,8 @@ using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Models;
-using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;

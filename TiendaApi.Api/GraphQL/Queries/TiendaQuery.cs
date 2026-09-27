@@ -1,12 +1,12 @@
 using HotChocolate;
-using HotChocolate.Types;
 using HotChocolate.Data;
+using HotChocolate.Types;
+using TiendaApi.Api.Dtos.Categorias;
+using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Dtos.Categorias;
-using TiendaApi.Api.Dtos.Productos;
-using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.GraphQL.Queries;

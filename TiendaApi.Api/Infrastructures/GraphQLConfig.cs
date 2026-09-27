@@ -1,5 +1,6 @@
 using HotChocolate;
 using HotChocolate.Execution.Configuration;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TiendaApi.Api.GraphQL.Mutations;
@@ -7,7 +8,6 @@ using TiendaApi.Api.GraphQL.Publishers;
 using TiendaApi.Api.GraphQL.Queries;
 using TiendaApi.Api.GraphQL.Subscriptions;
 using TiendaApi.Api.GraphQL.Types;
-using Microsoft.AspNetCore.Builder;
 
 namespace TiendaApi.Api.Infrastructures;
 
@@ -22,9 +22,9 @@ public static class GraphQLConfig
     public static IRequestExecutorBuilder AddGraphQL(this IServiceCollection services, IWebHostEnvironment environment)
     {
         Log.Information("🔍 Configurando GraphQL con HotChocolate...");
-        
+
         services.AddGraphQLPubSub();
-        
+
         return services
             .AddGraphQLServer()
             .AddAuthorization()
@@ -35,7 +35,7 @@ public static class GraphQLConfig
             .AddType<ProductoType>()
             .AddType<CategoriaType>()
             .AddType<CategoriaReadType>()
-            .ModifyRequestOptions(opt => 
+            .ModifyRequestOptions(opt =>
             {
                 opt.IncludeExceptionDetails = environment.IsDevelopment();
             });

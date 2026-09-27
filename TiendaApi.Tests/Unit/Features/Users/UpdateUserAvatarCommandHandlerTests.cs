@@ -19,10 +19,10 @@ public class UpdateUserAvatarCommandHandlerTests
     {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, Avatar = "old-avatar.jpg", IsDeleted = false });
         repository.Setup(r => r.UpdateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
-        
+
         var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdateUserAvatarCommand(1, "new-avatar.jpg"), CancellationToken.None);
@@ -35,9 +35,9 @@ public class UpdateUserAvatarCommandHandlerTests
     {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((User?)null);
-        
+
         var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdateUserAvatarCommand(999, "new-avatar.jpg"), CancellationToken.None);
@@ -50,9 +50,9 @@ public class UpdateUserAvatarCommandHandlerTests
     {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, IsDeleted = true });
-        
+
         var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdateUserAvatarCommand(1, "new-avatar.jpg"), CancellationToken.None);

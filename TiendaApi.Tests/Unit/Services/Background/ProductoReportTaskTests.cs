@@ -6,10 +6,10 @@ using Moq;
 using NUnit.Framework;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Models.Read;
-using TiendaApi.Api.Services.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
 using TiendaApi.Api.Services.Background.Jobs;
 using TiendaApi.Api.Services.Email;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Tests.Unit.Services.Background;
 

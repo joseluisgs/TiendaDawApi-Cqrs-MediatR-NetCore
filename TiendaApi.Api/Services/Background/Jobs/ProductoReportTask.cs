@@ -33,7 +33,7 @@ public class ProductoReportTask(
     /// <returns>UnitResult con error en caso de fallo.</returns>
     public async Task<UnitResult<DomainError>> ExecuteAsync()
     {
-        logger.LogInformation("Ejecutando reporte de productos - Modo: {Modo}", 
+        logger.LogInformation("Ejecutando reporte de productos - Modo: {Modo}",
             _isDevelopment ? "DESARROLLO" : "PRODUCCION");
 
         if (_isDevelopment)
@@ -54,7 +54,7 @@ public class ProductoReportTask(
         logger.LogDebug("Obteniendo productos de los ultimos {Dias} dias", _days);
 
         var productos = await productoService.GetRecentlyCreatedAsync(_days);
-        
+
         logger.LogInformation("Encontrados {Cantidad} productos nuevos", productos.Count);
         return Result.Success<IEnumerable<ProductoRead>, DomainError>(productos);
     }
