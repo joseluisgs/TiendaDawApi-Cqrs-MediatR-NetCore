@@ -5,7 +5,7 @@ using TiendaApi.Api.Models.Read;
 namespace TiendaApi.Api.Services.Productos;
 
 /// <summary>
-/// Fachada única de lectura de productos (CQRS — Fase 13).
+/// Fachada única de lectura de productos (CQRS).
 ///
 /// Todo lo que lee productos — REST, GraphQL y el reporte background — pasa por
 /// aquí: servicio → (caché) → MongoDB (<c>productos_read</c>). PostgreSQL solo

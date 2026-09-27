@@ -49,7 +49,7 @@ public static class ProductoMapper
 
     /// <summary>
     /// Proyecta el DTO publicado en una notificación al modelo de lectura de MongoDB.
-    /// Used por el sync de eventos (Fase 13): la notificación no lleva IsDeleted
+    /// Used por el sync de eventos: la notificación no lleva IsDeleted
     /// (solo los productos no eliminados se crean/actualizan), así que se asume false.
     /// </summary>
     public static ProductoRead ToRead(this ProductoDto dto) => new()
@@ -70,7 +70,7 @@ public static class ProductoMapper
 
     /// <summary>
     /// Proyecta la entidad de PostgreSQL al modelo de lectura de MongoDB.
-    /// Used por el seeder de arranque (Fase 13); requiere Categoria cargada (Include).
+    /// Used por el seeder de arranque; requiere Categoria cargada (Include).
     /// </summary>
     public static ProductoRead ToRead(this Producto producto) => new()
     {

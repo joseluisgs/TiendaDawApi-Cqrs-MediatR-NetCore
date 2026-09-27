@@ -4,7 +4,7 @@ using TiendaApi.Api.Models.Read;
 namespace TiendaApi.Api.GraphQL.Types;
 
 /// <summary>
-/// Tipo de GraphQL para el producto (read model — Fase 13).
+/// Tipo de GraphQL para el producto (read model).
 ///
 /// El CLR detrás del tipo pasó de <c>Producto</c> (PostgreSQL) a
 /// <c>ProductoRead</c> (MongoDB), pero el nombre GraphQL «Producto» y todos los

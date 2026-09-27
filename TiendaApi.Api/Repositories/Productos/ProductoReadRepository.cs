@@ -9,7 +9,7 @@ namespace TiendaApi.Api.Repositories.Productos;
 /// <summary>
 /// Implementación del repositorio lector de productos con MongoDB Driver nativo.
 ///
-/// Colección <c>productos_read</c> (Fase 13): documento desnormalizado con la categoría
+/// Colección <c>productos_read</c>: documento desnormalizado con la categoría
 /// embebida. Replica la semántica de consultas del repositorio de PostgreSQL
 /// (filtros LIKE case-sensitive, soft-delete global, whitelist de orden) para que la
 /// respuesta del cliente sea idéntica venga de donde venga.

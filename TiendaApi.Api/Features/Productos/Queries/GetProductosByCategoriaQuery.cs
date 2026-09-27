@@ -17,7 +17,7 @@ public record GetProductosByCategoriaQuery(long CategoriaId)
 /// <summary>
 /// Handler de la query GetProductosByCategoriaQuery.
 ///
-/// Fase 13 (CQRS): la validación de existencia de la categoría sigue en
+/// La validación de existencia de la categoría sigue en
 /// PostgreSQL (write model) y la lectura de productos delega en
 /// IProductoService (caché + MongoDB).
 /// </summary>

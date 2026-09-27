@@ -69,7 +69,7 @@ public class UpdateCategoriaCommandHandler(
             }
         });
 
-        // Fase 13: propagar el renombre al read model de productos (nombres embebidos en Mongo).
+        // Propagar el renombre al read model de productos (nombres embebidos en Mongo).
         await mediator.Publish(
             new CategoriaActualizadaNotification(request.Id, dto.Nombre), cancellationToken);
 

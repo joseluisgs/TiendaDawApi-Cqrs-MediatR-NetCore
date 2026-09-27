@@ -27,7 +27,7 @@ public static class RepositoriesConfig
         services.AddScoped<IProductoRepository, ProductoRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
-        // Read model CQRS (Fase 13): siempre registrado, sin depender del switch de pedidos.
+        // Read model CQRS: siempre registrado, sin depender del switch de pedidos.
         services.AddScoped<IProductoReadRepository, ProductoReadRepository>();
 
         var pedidosRepoType = configuration["Pedidos:RepositoryType"] ?? "MongoDbNative";

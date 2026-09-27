@@ -16,7 +16,7 @@ public record GetAllProductosQuery(ProductoFilterDto Filter)
 /// <summary>
 /// Handler de la query GetAllProductosQuery.
 ///
-/// Fase 13 (CQRS): la lectura delega en la fachada IProductoService
+/// La lectura delega en la fachada IProductoService
 /// (caché + MongoDB). El handler solo orquesta.
 /// </summary>
 public class GetAllProductosQueryHandler(IProductoService service)

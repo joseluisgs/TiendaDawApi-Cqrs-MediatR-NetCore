@@ -9,7 +9,7 @@ using TiendaApi.Api.Services.Cache;
 namespace TiendaApi.Api.Services.Productos;
 
 /// <summary>
-/// Implementación de la fachada de lectura de productos (Fase 13).
+/// Implementación de la fachada de lectura de productos.
 ///
 /// Camino de lectura: caché (claves/TTL idénticas a las de siempre) →
 /// <see cref="IProductoReadRepository"/> (MongoDB). Las escrituras siguen en

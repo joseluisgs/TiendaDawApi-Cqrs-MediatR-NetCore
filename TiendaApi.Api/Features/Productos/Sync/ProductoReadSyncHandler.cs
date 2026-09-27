@@ -7,7 +7,7 @@ using TiendaApi.Api.Repositories.Productos;
 namespace TiendaApi.Api.Features.Productos.Sync;
 
 /// <summary>
-/// Handler de sincronización del read model de productos (CQRS — Fase 13).
+/// Handler de sincronización del read model de productos (CQRS).
 ///
 /// Escucha las notificaciones publicadas por los commands (que escriben en
 /// PostgreSQL) y replica los cambios en MongoDB (<c>productos_read</c>).

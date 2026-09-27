@@ -13,7 +13,7 @@ namespace TiendaApi.Api.Services.Background.Jobs;
 /// Servicio de reportes de productos.
 /// Obtiene productos nuevos y envía notificaciones por email.
 ///
-/// Fase 13 (CQRS): la lectura de productos pasa por IProductoService
+/// La lectura de productos pasa por IProductoService
 /// (fachada → MongoDB); PostgreSQL solo interviene en las escrituras.
 /// </summary>
 public class ProductoReportTask(

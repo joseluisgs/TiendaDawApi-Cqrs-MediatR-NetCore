@@ -16,7 +16,7 @@ public record GetProductoByIdQuery(long Id)
 /// <summary>
 /// Handler de la query GetProductoByIdQuery.
 ///
-/// Fase 13 (CQRS): la lectura delega en la fachada IProductoService
+/// La lectura delega en la fachada IProductoService
 /// (caché + MongoDB). El handler conserva el mapeo de errores.
 /// </summary>
 public class GetProductoByIdQueryHandler(IProductoService service)

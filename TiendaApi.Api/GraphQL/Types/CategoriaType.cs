@@ -22,7 +22,7 @@ public class CategoriaType : ObjectType<Categoria>
         descriptor.Field(c => c.UpdatedAt).Type<NonNullType<DateTimeType>>().Description("Fecha de última actualización");
         descriptor.Field(c => c.IsDeleted).Type<NonNullType<BooleanType>>().Description("Si la categoría está eliminada");
 
-        // Navegación EF de PostgreSQL: se excluye del esquema GraphQL (Fase 13 — CQRS).
+        // Navegación EF de PostgreSQL: se excluye del esquema GraphQL.
         // Dejarla expuesta registraría automáticamente un tipo ObjectType<Producto> (PG)
         // con el nombre «Producto», que colisiona con ProductoType (read model de Mongo),
         // y permitiría leer productos por navegación saltándose las queries del read model.

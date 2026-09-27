@@ -49,7 +49,7 @@ public static class DatabaseInitializationExtensions
             await ApplyPendingMigrationsAsync(context, logger);
         }
 
-        // Fase 13: sincronizar el read model de productos PostgreSQL → MongoDB (dev y prod).
+        // Sincronizar el read model de productos PostgreSQL → MongoDB (dev y prod).
         // Sin esto, las queries de productos (REST/GraphQL/reporte) no encontrarían datos:
         // la creación por seeder/migraciones no dispara los Domain Events de sincronización.
         try

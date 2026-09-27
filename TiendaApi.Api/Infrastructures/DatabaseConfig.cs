@@ -25,7 +25,7 @@ public static class DatabaseConfig
 
         services.AddDbContext<TiendaDbContext>(options => options.UseNpgsql(connectionString));
 
-        // MongoDB: el cliente y la base de datos se registran SIEMPRE (Fase 13).
+        // MongoDB: el cliente y la base de datos se registran SIEMPRE.
         // El read model de productos (productos_read) no puede depender del switch
         // de Pedidos:RepositoryType — toda lectura de productos sale de MongoDB.
         Log.Information("Configurando MongoDB (cliente + base de datos)...");

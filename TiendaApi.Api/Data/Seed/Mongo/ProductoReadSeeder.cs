@@ -7,7 +7,7 @@ using TiendaApi.Api.Repositories.Productos;
 namespace TiendaApi.Api.Data.Seed.Mongo;
 
 /// <summary>
-/// Seeder del read model de productos (Fase 13 — CQRS).
+/// Seeder del read model de productos (CQRS).
 ///
 /// Sincroniza PostgreSQL (fuente de verdad) → MongoDB <c>productos_read</c>:
 /// <list type="bullet">
