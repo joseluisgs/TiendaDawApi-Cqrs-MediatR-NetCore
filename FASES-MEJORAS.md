@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 7, 8, 9, 11, 13 y 14 COMPLETADAS** — fases 6, 10, 12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13 y 14 COMPLETADAS** — fases 10, 12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -236,18 +236,27 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 6 — Polly educativa ⬜ PENDIENTE (replicar)
+## Fase 6 — Polly educativa ✅ COMPLETADA (26/09/2026)
 
 | # | Tarea | Detalle | Estado |
 |---|-------|---------|--------|
-| 6.1 | Paquetes | `Polly` **8.8.0** en `TiendaApi.csproj`. **`Microsoft.Extensions.Http.Polly` NO**: solo aporta policies para `HttpClient` y la API no tiene llamadas salientes reales (decisión coherente con "No aplica" más abajo) | ⬜ |
-| 6.2 | `Infrastructures/PollyConfig.cs` | `ResiliencePipeline` v8: **Retry(3, backoff exponencial 2^n → 1s/2s/4s)** → **CircuitBreaker(ratio 100%, mínimo 3 fallos, ventana 30s, abierto 30s)** → **Timeout(10s por intento)**, con logs Serilog en `OnRetry`/`OnOpened`/`OnClosed`/`OnHalfOpened`. Los builders (`EmailRetryOptions`, `EmailCircuitBreakerOptions`, `BuildEmailPipeline`) son públicos para poder testear con `delay: TimeSpan.Zero` | ⬜ |
-| 6.3 | Envolver email | `MailKitEmailService.SendEmailAsync`: el bloque SMTP (`Connect→Auth→Send→Disconnect`, ahora dentro del callback para crear un `SmtpClient` por intento) va bajo `await _emailPipeline.ExecuteAsync(...)`. El pipeline se inyecta desde DI (singleton en `EmailConfig.AddEmail`) con parámetro opcional para los tests existentes | ⬜ |
-| 6.4 | Fallback | Agota reintentos o circuito abierto → `LogWarning`/`LogError` en el servicio y el error se relanza… pero el caller es `EmailBackgroundService` (try/catch) → **el request HTTP nunca falla por email** | ⬜ |
-| 6.5 | Doc/comentario | Comentario XML en `PollyConfig` comparándolo con el reintento a mano de `PedidosService.cs:40` (`MaxRetries = 3` + bucle `for` + `Task.Delay`): aquí backoff, cortacircuitos y timeout declarativos y testeables | ⬜ |
-| 6.6 | Test | 5 tests nuevos en `Unit/Infrastructures/PollyConfigTests.cs`: falla 2× y al 3º OK (3 intentos) · agota reintentos (1+3=4 y propaga) · CB abre a los 3 y la 4ª llamada no ejecuta el callback (`BrokenCircuitException`) · pipeline completo: el retry no insiste con el circuito abierto | ⬜ |
+| 6.1 | Paquetes | `Polly` **8.8.0** en `TiendaApi.csproj`. **`Microsoft.Extensions.Http.Polly` NO**: solo aporta policies para `HttpClient` y la API no tiene llamadas salientes reales (decisión coherente con "No aplica" más abajo) | ✅ |
+| 6.2 | `Infrastructures/PollyConfig.cs` | `ResiliencePipeline` v8: **Retry(3, backoff exponencial 2^n → 1s/2s/4s)** → **CircuitBreaker(ratio 100%, mínimo 3 fallos, ventana 30s, abierto 30s)** → **Timeout(10s por intento)**, con logs Serilog en `OnRetry`/`OnOpened`/`OnClosed`/`OnHalfOpened`. Los builders (`EmailRetryOptions`, `EmailCircuitBreakerOptions`, `BuildEmailPipeline`) son públicos para poder testear con `delay: TimeSpan.Zero` | ✅ |
+| 6.3 | Envolver email | `MailKitEmailService.SendEmailAsync`: el bloque SMTP (`Connect→Auth→Send→Disconnect`, ahora dentro del callback para crear un `SmtpClient` por intento) va bajo `await _emailPipeline.ExecuteAsync(...)`. El pipeline se inyecta desde DI (singleton en `EmailConfig.AddEmail`) con parámetro opcional para los tests existentes | ✅ |
+| 6.4 | Fallback | Agota reintentos o circuito abierto → `LogWarning`/`LogError` en el servicio y el error se relanza… pero el caller es `EmailBackgroundService` (try/catch) → **el request HTTP nunca falla por email** | ✅ |
+| 6.5 | Doc/comentario | Comentario XML en `PollyConfig` comparándolo con el reintento a mano de `PedidosService.cs:40` (`MaxRetries = 3` + bucle `for` + `Task.Delay`): aquí backoff, cortacircuitos y timeout declarativos y testeables | ✅ |
+| 6.6 | Test | 5 tests nuevos en `Unit/Infrastructures/PollyConfigTests.cs`: falla 2× y al 3º OK (3 intentos) · agota reintentos (1+3=4 y propaga) · CB abre a los 3 y la 4ª llamada no ejecuta el callback (`BrokenCircuitException`) · pipeline completo: el retry no insiste con el circuito abierto | ✅ |
 | 6.7 | *(opt.)* Endpoint demo `GET /api/demo/polly` | **No realizado**: la API no tiene carpeta/controllador demo y añadiría superficie HTTP nueva solo con fines didácticos; los 5 tests unitarios cubren el comportamiento | — |
-| 6.8 | Verificar | build **0/0** · unit **1039/1039** (+5) · integración **161/0/32** · runner **55/55** · smoke: health OK, Swagger 200, ETag→304 · logs **0 excepciones / 0 ERR** | ⬜ |
+| 6.8 | Verificar | build **0/0** · unit **1039/1039** (+5) · integración **161/0/32** · runner **55/55** · smoke: health OK, Swagger 200, ETag→304 · logs **0 excepciones / 0 ERR** | ✅ |
+
+### 📋 Verificación Fase 6 - 26/09/2026
+
+| # | Resultado |
+|---|-----------|
+| 6.1-6.5 | Ficheros **byte-idénticos** a `fc0ee21` (`fc /B` = 0 diff): `PollyConfig.cs` (88 líneas, builders públicos con `delay: TimeSpan.Zero`), `PollyConfigTests.cs` (119), `EmailConfig.cs` (+singleton del pipeline en `AddEmail`), `MailKitEmailService.cs` (SMTP dentro de `_emailPipeline.ExecuteAsync` + catches `BrokenCircuitException`/`TimeoutException`), `TiendaApi.csproj` (+`Polly` 8.8.0; `Microsoft.Extensions.Http.Polly` NO) |
+| 6.6 | 5 tests nuevos en `Unit/Infrastructures/PollyConfigTests.cs`: pipeline no nulo · falla 2ª y OK a la 3ª (3 intentos) · agota 1+3=4 y propaga · CB abre a los 3 y la 4ª llamada no ejecuta el callback (`BrokenCircuitException`) · pipeline completo: el retry no insiste con el circuito abierto |
+| 6.7 | Endpoint demo `GET /api/demo/polly`: no realizado (decisión del origen) |
+| 6.8 | build **0/0** · tests **1037/1037** (+5; baseline CQRS 1032), 0 fallos / 32 omitidos (EF-272) · E2E con semillas frescas por grupo: Newman **95/95** · Automation **55/55** · Bruno **127/127** · smoke en vivo: health **200** · Swagger **200** (`/swagger/v1/swagger.json`) · ETag→**304** · logs **0 Exception / 0 ERR** |
 
 ---
 
