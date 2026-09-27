@@ -24,6 +24,7 @@
 | 6 · Polly educativa | `fc0ee21` (+`70eb1d0` docs) | Retry + CircuitBreaker + Timeout en email | ✅ |
 | 10 · Documentación didáctica | `f6acd04` (+`79e857b` docs) | Secciones en `doc/NN-*.md` existentes | ✅ |
 | 12 · README | `afe3862` | README: 5 errores, comandos E2E reales, estructura, estado actual | ✅ |
+| Mantenimiento · EF-272 | `22820e7` | Reactivación de los 32 tests `[Ignore]` de Pedidos (EF-272 fixeado en MongoDB.EF 10.0.0) — 0 omitidos | ✅ |
 
 ---
 
@@ -487,6 +488,17 @@ Los 5 controladores CQRS (o los handlers que devuelvan `Result`) pueden usar la 
 1. Revisar el README del repo CQRS con la misma lista: nombre de proyecto (`TiendaApi.Api` o el real), puerto dev, rutas E2E y comandos de compose.
 2. Las cifras de la pirámide de tests **son las de este repo**; en CQRS habrá que poner las suyas (unit/integración/E2E propios).
 3. Si CQRS usa las mismas colecciones (`Postman-Cli`, `Bruno-*`), hereda el comando de las 10 carpetas del Bruno Local.
+
+---
+
+## Mantenimiento — Reactivación tests EF-272 (`22820e7`) ✅
+
+> **Fecha:** 27/09/2026 · **Objetivo:** volver a ejecutar los 32 tests de integración de Pedidos (handlers MediatR con `Pedidos:RepositoryType=EfCore`) que estaban con `[Ignore]`.
+
+- **Causa original:** EF-272 (`jira.mongodb.org/browse/EF-272`) — `MongoDB.EntityFrameworkCore 9.0.3` incompatible con EF Core 10: `MongoConventionSetBuilder.CreateConventionSet()` fallaba al crear el modelo de MongoDB. Se heredaron del origen al crear `PedidosEfHandlerIntegrationTests.cs` (Fase 14).
+- **Estado upstream:** EF-272 *Closed/Done*, Fix Version **10.0.0** (05/02/2026). Este repo ya usa `MongoDB.EntityFrameworkCore 10.0.4` + EF Core 10.0.12 (últimas disponibles) → el bug ya no aplica.
+- **Cambio:** eliminados los 32 `[Ignore]` de `PedidosEfHandlerIntegrationTests.cs`. El fixture no necesitó más ajustes (su DI ya mockeaba `IJwtTokenExtractor`/`IHubContext` desde su creación).
+- **Verificación:** build **0/0** · fixture **32/32** · suite **1069/1069, 0 fallos, 0 omitidos** (antes 1037 + 32 omit) · sin cambios en código de producto (E2E sin cambios). Los cierres históricos (Fases 6/11/14) mantienen sus cifras de época.
 
 ---
 
