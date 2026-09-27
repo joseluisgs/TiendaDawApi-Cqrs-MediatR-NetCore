@@ -46,7 +46,9 @@
 | 7 · Automation E2E (Node) | `9d91574` (base; runner idéntico a `227cb9d`) | `test-runner.mjs` byte-idéntico al origen (`fc /B` = 0 diff): 55 tests / 11 bloques, rate-limit aware (`st()` → FAIL en 429), spawn/kill propio de la API; en vivo 26/09 con semillas frescas: **55/55** · build 0/0 y tests **1032/1032** + Newman/Bruno en Fase 8 (mismo código) | ✅ |
 | 11 · Infra Docker saludable + imágenes | `9d91574` (base; idéntico a `6f4cfce`) | compose local + Bruno-Cli + Postman-Cli + `TestContainerImages.cs` byte-idénticos al origen (`fc /B`); prod/appsettings/.env con diffs exclusivas de Fases 13-14; `retryWrites=true` en 12/12 conn strings MongoDB; `start_period: 30s` + `depends_on: service_healthy`; `TestContainerImages` en 11 ficheros/20 llamadas: config **4/4** · stack **healthy** · sin tag `mongo:7` · build 0/0 · tests **1032/1032** | ✅ |
 | 6 · Polly educativa (email) | `4f7dd14` | `Polly` 8.8.0 + `Infrastructures/PollyConfig.cs` (Retry 3 backoff 2^n → CircuitBreaker 3/30s → Timeout 10s por intento, builders públicos testeables con `delay: Zero`) envolviendo el SMTP de `MailKitEmailService` (pipeline inyectado desde `EmailConfig.AddEmail`; `BrokenCircuitException`/`TimeoutException` logueados y relanzados — el caller es EmailBackgroundService, el request HTTP nunca falla por email); 5 tests nuevos: build 0/0 · tests **1037/1037** · E2E semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** · smoke health/Swagger/304 y logs 0/0 | ✅ |
-| 10, 12 · Replicación | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
+| 10 · Documentación didáctica | `3aeb985` | 9 ficheros `doc/` modificados, 0 creados — **716+ líneas** (11.6, 10.10 → 10.11, 6.3, 6.7, 8.5, 29.3, 29.5, 24.13, 15.3, 23.10-12, 26.15) con snippets y cifras CQRS; build 0/0 · tests **1037/1037** | ✅ |
+| Docs CQRS 12/14 · consistencia eventual | `—` | `doc/12` 12.15 con flujo real + contrapartida, y `doc/14` nueva **§14.11** con 4 diagramas (ciclo con marcas de tiempo, ventana de inconsistencia, polling vs domain events, errores de sync) + Resumen → 14.12; TOC actualizados | ✅ |
+| 12 · README | — | ver detalle de tareas y verificaciones en `FASES-MEJORAS.md` | ⬜ PENDIENTE |
 
 ---
 
@@ -490,9 +492,9 @@ Los 5 controladores CQRS (o los handlers que devuelvan `Result`) pueden usar la 
 
 ## Fases pendientes
 
-**Ninguna — las 13 fases del plan (0-12) están completadas y documentadas.**
+**En el origen: ninguna — las 13 fases del plan (0-12) están completadas y documentadas. En este repo (CQRS): solo queda la Fase 12 (README).**
 
-> **Consistencia automática:** `node scripts/check-docs.mjs` valida índice↔secciones, hashes de esta bitácora contra `git log`, fases 0-12 en ambos documentos y el TOC del README.
+> **Consistencia automática:** `node scripts/check-docs.mjs` (script del origen; no está incluido en este repo) valida índice↔secciones, hashes de esta bitácora contra `git log`, fases 0-12 en ambos documentos y el TOC del README.
 
 ---
 

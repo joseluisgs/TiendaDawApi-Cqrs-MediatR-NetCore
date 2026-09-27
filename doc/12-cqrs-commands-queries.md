@@ -1503,6 +1503,30 @@ En teoría, CQRS propone tener **bases de datos separadas** para Commands y Quer
     (Eventos/CDC)          (Proyecciones)
 ```
 
+### El flujo real en este proyecto
+
+```mermaid
+flowchart LR
+    subgraph W["Escritura — Commands"]
+        CMD["Create / Update / Delete"] -->|EF Core| PG[("PostgreSQL<br/>fuente de verdad")]
+    end
+    PG -->|"Publish(Notification)"| SYNC["ProductoReadSyncHandler"]
+    SYNC -->|UpsertAsync| M[("MongoDB<br/>productos_read")]
+    subgraph R["Lectura — Queries"]
+        Q["REST / GraphQL"] --> CACHE{"Caché"}
+        CACHE -->|hit| REDIS[("Redis / memoria<br/>TTL 10 min · OutputCache 60 s")]
+        CACHE -->|miss| M
+    end
+    CMD -.->|invalida claves y tag| CACHE
+```
+
+En este repositorio la separación write/read **existe para productos** (Fase 13):
+
+1. El **command** escribe en PostgreSQL y publica su notification (sección 12.7).
+2. `ProductoReadSyncHandler` replica el cambio en MongoDB `productos_read` (categoría embebida incluida).
+3. La **query** responde desde la caché o, en caso de miss, desde el read model de MongoDB.
+4. Cada escritura invalida además la caché (`EvictByTagAsync` de OutputCache + `RemoveAsync` de las claves afectadas).
+
 ### Patrones de Sincronización
 
 | Patrón | Cómo funciona | Pros | Contras |
@@ -1516,11 +1540,17 @@ En teoría, CQRS propone tener **bases de datos separadas** para Commands y Quer
 
 Este proyecto utiliza un **enfoque híbrido**:
 
-- PostgreSQL para datos relacionales (Users, Categorías, Productos)
-- MongoDB para documentos transaccionales (Pedidos con items embebidos)
-- Redis para caché
+- **PostgreSQL**: fuente de verdad de Users, Categorías y Productos (escrituras vía commands, EF Core).
+- **MongoDB**: Pedidos con items embebidos y el read model `productos_read`, la réplica de productos que alimenta las lecturas.
+- **Redis / memoria**: caché de fachada (TTL 10 min) y OutputCache HTTP (60 s con tags).
 
-Esto **no es CQRS puro** (tenemos una sola fuente de verdad), pero es un patrón válido y más simple para proyectos educativos. La separaciónCQRS se aplica a nivel de código (Commands/Queries), no a nivel de base de datos.
+La separación CQRS se aplica **a nivel de código** en todos los módulos (Commands/Queries) y **a nivel de datos en productos**: desde la Fase 13 las lecturas de productos responden desde MongoDB mientras la escritura ocurre en PostgreSQL. No hay Event Sourcing ni CDC: la réplica la sostienen los propios eventos de MediatR (`ProductoReadSyncHandler`) y un seeder de arranque (`ProductoReadSeeder`).
+
+### La contrapartida: consistencia eventual
+
+Separar el camino de lectura del de escritura tiene un precio: entre que el command confirma en PostgreSQL y la réplica de MongoDB recibe el cambio, una lectura concurrente puede ver el estado anterior. Esa **ventana de inconsistencia** dura milisegundos aquí (el `Publish` se espera antes de devolver el 201), pero con caché de por medio puede alargarse hasta el TTL. Es el intercambio clásico de CQRS: más disponibilidad y escalabilidad de lecturas a cambio de gestionar la consistencia eventual.
+
+> El tema completo —diagramas con marcas de tiempo, polling frente a domain events, manejo de errores de la sincronización y estrategias— está en `doc/14-mediatr-cqrs-eventos.md`, sección **14.11**.
 
 ### Cuándo merecía la pena ir a CQRS puro
 

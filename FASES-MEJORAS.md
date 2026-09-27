@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13 y 14 COMPLETADAS** — fases 10, 12 pendientes de replicar.  
+> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13 y 14 COMPLETADAS** — fases 12 pendientes de replicar.  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -372,7 +372,7 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 10 — Documentación didáctica ⬜ PENDIENTE (replicar)
+## Fase 10 — Documentación didáctica ✅ COMPLETADA (26/09/2026)
 
 > **Regla:** **NO** crear documentos nuevos. Insertar secciones explicativas en el `doc/NN-*.md` **oportuno** para cada tema, con el estilo del resto del documento (código real del proyecto) y **actualizando su Índice**. Cubre **todas** las fases del plan, estén completas (⬜) o previstas.
 
@@ -390,6 +390,18 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 | 10.10 | Verificar | ⬜ | **9 documentos modificados, 0 creados** · TOC↔headings coherentes en los 9 · build 0/0 · **1039 unit** (1034 + 5 de Polly) |
 
 **Detalle de inserciones:** 11.6 → subsección "Opción C aplicada en el proyecto: `ToHttpResult()` (Fase 9)" (31 call sites en 5 controladores) · 10 → nueva **10.10 "Caché HTTP con OutputCache y ETag"** (Resumen → 10.11) · 06 → 6.3 subsección "Paginación real (Fase 3)" + 6.7 subsección "Patrón real (Fase 4)" · 08 → 8.5 subsecciones factory/baseline/dev-vs-prod · 27 → 27.3 subsección "Índices reales (Fase 1)" + 27.5 subsección "AsNoTracking selectivo (Fase 2)" · 22 → nueva **22.12 "Fire & Forget Endurecido"** (Resumen → 22.13) · 13 → 13.3 subsección "Polly en este proyecto: dónde está y dónde NO" + 21 → nueva **21.10 "Resiliencia con Polly (Fase 6)"** (Resumen → 21.11) · 24 → nueva **24.15 "Automation E2E con Node"**.
+
+> **Nota:** la tabla anterior receta el origen (numeración y rutas `doc/27`, `doc/22`, `doc/13`, `doc/21`, `doc/24`). En el destino CQRS las inserciones se adaptaron a los ficheros y secciones reales — ver la verificación ↓.
+
+### 📋 Verificación Fase 10 — 26/09/2026 (replicación de docs)
+
+| # | Resultado |
+|---|-----------|
+| Archivos | **9 modificados, 0 creados** · `git diff --stat` → **716 inserciones / 7 eliminaciones** (las 7 = TOC y headings renumerados en 10, 23 y 24 + rename 23.11 → 23.12) |
+| TOC ↔ headings | coherentes en los 9 · seams de inserción verificados (06, 08, 10, 11, 15, 23, 24, 26 EOF, 29) · BOM UTF-8 y finales LF preservados |
+| Build | **0 errores / 0 avisos** |
+| Tests | **1037/1037** (0 fallos, 32 omitidos EF-272, total 1069) · integración 169/32 de 201 |
+| Adaptaciones al CQRS | destinos renumerados respecto al origen: `doc/29-optimizacion.md` (era 27), `doc/24-background-jobs.md` (era 22), `doc/15-pedidos-transacciones.md` (era 13), `doc/23-email-services.md` (era 21), `doc/26-testing.md` (era 24); secciones nuevas **10.10 → 10.11**, **23.10-12** (Polly + EmailService), **24.12-13** (Fire & Forget), **26.15** (Automation); snippets CQRS (`GetAllPedidosQuery`, `mediator.Send`, `CreatePedidoCommand`, `CreateProductoCommand`); inventario real **25 `Task.Run`** endurecidos; cifras **1037 tests** y E2E **95/55/127** |
 
 ---
 
