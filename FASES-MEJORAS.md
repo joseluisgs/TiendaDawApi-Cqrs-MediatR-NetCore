@@ -3,7 +3,7 @@
 > **Proyecto:** `TiendaDawApi-Cqrs-MediatR-NetCore` (CQRS + MediatR)  
 > **Rama:** `feature/polly`  
 > **Proyecto origen:** `TiendaDawApi-NetCore` — fases 0-12 **completadas allí** (ver su `FASES-MEJORAS.md` y esta misma `BITACORA.md`, con el checklist "Replicar en CQRS" por fase)  
-> **Estado:** 🟡 **en curso — Fases 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13 y 14 COMPLETADAS** — fases 12 pendientes de replicar.  
+> **Estado:** ✅ **TODAS COMPLETADAS — Fases 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 y 14** (réplica 0-12 + fases propias 13-14; última: Fase 12, 26/09/2026).  
 > **Orden de ejecución:** Fase 0 → Fase 5 → Fase 13 → **Fase 14 (Paridad)** → Fase 1 → Fase 2 → Fase 3 → Fase 4 → Fase 9 → Fase 8 → Fase 7 → Fase 11 → Fase 6 → Fase 10 → Fase 12  
 > **Regla de oro:** no romper nada de lo existente (E2E Bruno/Newman, tests unitarios, flujos de pedidos). El cliente no debe saber si usa el proyecto A o el B.
 
@@ -446,7 +446,7 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 ---
 
-## Fase 12 — Corrección y actualización del README ⬜ PENDIENTE (replicar)
+## Fase 12 — Corrección y actualización del README ✅ COMPLETADA (26/09/2026)
 
 > **Alcance:** solo `README.md` (+112/−84 líneas). **Sin cambios de código.** Cierra la deuda documentada de la fase 10 con el README raíz.
 
@@ -454,22 +454,33 @@ El test **`[019] PUT - Actualizar (Admin)`** de Bruno descubrió un bug real: `C
 
 | # | Tarea | Detalle | Estado |
 |---|-------|---------|--------|
-| 12.1 | Errores de comandos y puertos | `dotnet run --project TiendaApi.Apis` → **`TiendaApi.Api`** (no existía); acceso dev `localhost:5000` → **`localhost:5031`** (launchSettings real; 5000 es prod vía `API_PORT`); añadido `GET /health` al bloque de inicio; `docker-compose` (v1) → **`docker compose`**; `cp .env.example` → `cp .env.prod.example .env` en el bloque prod | ⬜ |
-| 12.2 | Versión de BD | Tecnologías: `PostgreSQL 15` → **`PostgreSQL 17`** (`postgres:17-alpine`) | ⬜ |
-| 12.3 | Rutas E2E inexistentes | `TiendaApi.ApiTests/{Postman,Bruno}` (carpeta que **no existe**) → **`TiendaApi.Tests.E2E/{Postman-Cli,Bruno-Cli,Bruno-Local,Automation}`** | ⬜ |
-| 12.4 | Comandos E2E reescritos | Newman/Bruno con rutas reales, `--delay-request 3200` / `--delay 3200` (rate limit `POST:*` 20/min), `bru run … --env-file <fichero.json>` (`.json` soportado según `--help` de la CLI), requisito "API en :5031" y nota de los informes en `reports/` (gitignored) | ⬜ |
-| 12.5 | Estado actual de las fases | Nueva subsección **Automation (Node)** (`test-runner.mjs`, auto/externo); pirámide de tests con cifras (**1039 unit · 161 integración · 95 Newman · 108 Bruno · 55 runner**); +5 características (`/health`, OutputCache+ETag/304, Polly, paginación real, `ToHttpResult`); **Polly 8** en tecnologías; typo `Tescontainers` | ⬜ |
-| 12.6 | Estructura del proyecto | Retirado `docker-compose.yml` de raíz (**no existe**); subárbol E2E real (`Automation/`, `Postman-Cli/`, `Bruno-Local/`, `Bruno-Cli/`); añadidos `FASES-MEJORAS.md`, `BITACORA.md`, `.env.development`, `.env.prod.example`; `Services/Usuarios` → **`Services/Users`** (+ `Auth/`, `Cache/`), `Extensions/`; tabla: `StorageController`, `PedidosService`, `MailKitEmailService`, fila **Extensions** (`ToHttpResult()`) | ⬜ |
-| 12.7 | Coherencia interna | TOC ↔ headings verificados con el algoritmo de anclas de GitHub (script): **66/66** · endpoints de ejemplo `localhost:5000` → `5031` (imagen GraphQL y WS) | ⬜ |
+| 12.1 | Errores de comandos y puertos | `dotnet run --project TiendaApi.Apis` → **`TiendaApi.Api`** (no existía); acceso dev `localhost:5000` → **`localhost:5031`** (launchSettings real; 5000 es prod vía `API_PORT`); añadido `GET /health` al bloque de inicio; `docker-compose` (v1) → **`docker compose`**; `cp .env.example` → `cp .env.prod.example .env` en el bloque prod | ✅ |
+| 12.2 | Versión de BD | Tecnologías: `PostgreSQL 15` → **`PostgreSQL 17`** (`postgres:17-alpine`) | ✅ |
+| 12.3 | Rutas E2E inexistentes | `TiendaApi.ApiTests/{Postman,Bruno}` (carpeta que **no existe**) → **`TiendaApi.Tests.E2E/{Postman-Cli,Bruno-Cli,Bruno-Local,Automation}`** | ✅ |
+| 12.4 | Comandos E2E reescritos | Newman/Bruno con rutas reales, `--delay-request 3200` / `--delay 3200` (rate limit `POST:*` 20/min), `bru run … --env-file <fichero.json>` (`.json` soportado según `--help` de la CLI), requisito "API en :5031" y nota de los informes en `reports/` (gitignored) | ✅ |
+| 12.5 | Estado actual de las fases | Nueva subsección **Automation (Node)** (`test-runner.mjs`, auto/externo); pirámide de tests con cifras (**1039 unit · 161 integración · 95 Newman · 108 Bruno · 55 runner**); +5 características (`/health`, OutputCache+ETag/304, Polly, paginación real, `ToHttpResult`); **Polly 8** en tecnologías; typo `Tescontainers` | ✅ |
+| 12.6 | Estructura del proyecto | Retirado `docker-compose.yml` de raíz (**no existe**); subárbol E2E real (`Automation/`, `Postman-Cli/`, `Bruno-Local/`, `Bruno-Cli/`); añadidos `FASES-MEJORAS.md`, `BITACORA.md`, `.env.development`, `.env.prod.example`; `Services/Usuarios` → **`Services/Users`** (+ `Auth/`, `Cache/`), `Extensions/`; tabla: `StorageController`, `PedidosService`, `MailKitEmailService`, fila **Extensions** (`ToHttpResult()`) | ✅ |
+| 12.7 | Coherencia interna | TOC ↔ headings verificados con el algoritmo de anclas de GitHub (script): **66/66** · endpoints de ejemplo `localhost:5000` → `5031` (imagen GraphQL y WS) | ✅ |
 
 ### Hallazgos y decisiones
 
-1. **Bruno Local debe excluir `12 - WEBSOCKETS`**: verificado en vivo con `@usebruno/cli` **4.2.0** (temp) — `bru run .` arrastra esa carpeta y falla porque la variable `basews` no está en el environment. Se documenta la **lista explícita de 10 carpetas** → **64 requests** (idéntico al conteo de la Fase 5). `6 - USUARIOS` está vacía (PASS con 0 requests).
+1. **Bruno Local: `12 - WEBSOCKETS` fuera; `6 - USUARIOS` sí entra**: en CQRS la carpeta `6 - USUARIOS` **no está vacía** (12 requests heredadas del origen) y la última corrida (`results.json`) la incluye: 78 peticiones en total (las 2 de WS devuelven `ENOTFOUND {{basews}}` — pre-existente: la CLI no soporta WS y `basews` no está en el env), **127 tests, 0 fallos**. El README documenta las **11 carpetas sin WS** en corrida única con `--delay 3200` (los tokens no sobreviven entre tandas; 76 peticiones → mismos 127 tests).
 2. **`--env-file` acepta `.json`**: confirmado en `bru run --help` ("Path to environment file (.bru or .json)"), así que el environment JSON de `Bruno-Local` es válido para la CLI.
 3. **Los composes E2E no levantan la API**: apuntan a `host.docker.internal:5031` → el README ahora lo declara como requisito de la sección.
 4. El automation sí levanta su propia API (modo auto), por eso es el comando más cómodo para clase.
+5. **Sin conteos de tests en los README** (decisión del profesor, 26/09/2026): los recuentos cambian entre fases y envejecen mal; el README describe la pirámide y los comandos sin cifras. Las cifras del momento (build/tests/E2E) quedan registradas aquí y en `BITACORA.md`. Se aplicó también al README del origen (`4403e54`).
+6. **Diagramas con las BDs separadas** (26/09/2026): en el README CQRS todos los diagramas dicen dónde está cada cosa — comandos → **PostgreSQL** (fuente de verdad), queries de productos → **MongoDB `productos_read`** (read model sincronizado por notifications), queries de usuarios/categorías → **PostgreSQL**, caché → **Redis**. Se reescribió la secuencia CQRS (antes usaba un único "Base de Datos"), se añadió el read model al class diagram y su ER (`productos_read`/`categoria` embebida), y los diagramas de capas/dependencias rotularon `ESCRITURA`/`LECTURA` + flujos `QRY`/`NOT`. En el origen (sin CQRS) se rotuló `commands y queries` en las mismas BDs para que no se malinterprete.
 
-### 📋 Verificación Fase 12 — pendiente (ejecutar en CQRS y sustituir los valores del origen)
+### 📋 Verificación Fase 12 — 26/09/2026
+
+| # | Verificación | Resultado |
+|---|--------------|-----------|
+| 1 | README: `TiendaApi.Api`, `:5031`, `GET /health`, `docker compose`, `cp .env.prod.example`, PostgreSQL 17, rutas `TiendaApi.Tests.E2E/{Postman-Cli,Bruno-Cli,Bruno-Local,Automation}`, árbol real (sin `docker-compose.yml` raíz) → commit `a4010f7` | ✅ |
+| 2 | Ajustes: 0 conteos de tests + diagramas CQRS con BDs separadas (PG escritura · Mongo `productos_read` lectura · Redis caché; secuencia con Notification→sync; read model en class/ER; `commands y queries` en el origen) → commit `fedbf07` (CQRS) + commit `4403e54` (origen) | ✅ |
+| 3 | TOC ↔ headings (anclas GitHub): CQRS **73/73** (incl. entradas nuevas de E2E y read model); origen OK vía `node scripts/check-docs.mjs` → **TODO OK** | ✅ |
+| 4 | 0 conteos de tests · 0 enlaces `doc/` rotos · 0 restos (`TiendaApi.Apis`, `localhost:5000`, `docker-compose `, `ApiTests`, `PostgreSQL 15`, `Tescontainers`, `(vacía)`) · rutas citadas existen en disco | ✅ |
+| 5 | Estructura: fences ``` pares (CQRS 78 · origen 70) · LF 0 CRLF · sin BOM · diagramas mermaid balanceados (CQRS 8 · origen 6: subgraph/rect/alt = end) | ✅ |
+| 6 | build **0/0** y tests **1037/1037** (32 omitidos EF-272, total 1069) en CQRS · build **0/0** y tests **1200/1200** (32 omitidos, total 1232) en el origen | ✅ |
 
 ---
 
