@@ -128,28 +128,58 @@ En este proyecto usamos **NUnit** por su sintaxis clara y atributos descriptivos
 
 ```
 TiendaApi.Tests/
-â”œâ”€â”€ Unit/
-â”‚   â”œâ”€â”€ Services/
-â”‚   â”‚   â”œâ”€â”€ ProductoServiceTests.cs
-â”‚   â”‚   â””â”€â”€ CategoriaServiceTests.cs
-â”‚   â”œâ”€â”€ Validators/
-â”‚   â”‚   â””â”€â”€ ProductoValidatorTests.cs
-â”‚   â””â”€â”€ Repositories/
-â”‚       â””â”€â”€ ProductoRepositoryTests.cs
-â”œâ”€â”€ Integration/
-â”‚   â”œâ”€â”€ Controllers/
-â”‚   â”‚   â””â”€â”€ ProductosControllerTests.cs
-â”‚   â”œâ”€â”€ Repositories/
-â”‚   â”‚   â””â”€â”€ ProductoRepositoryIntegrationTests.cs
-â”‚   â””â”€â”€ Services/
-â”‚       â””â”€â”€ ProductoServiceIntegrationTests.cs
-â”œâ”€â”€ Fixtures/
-â”‚   â”œâ”€â”€ TiendaApiWebApplicationFactory.cs
-â”‚   â””â”€â”€ TestContainersFixture.cs
-â”œâ”€â”€ Helpers/
-â”‚   â”œâ”€â”€ TestDataFactory.cs
-â”‚   â””â”€â”€ AssertionHelpers.cs
-â””â”€â”€ TiendaApi.Tests.csproj
+├── Unit/
+│   ├── Controllers/
+│   │   ├── AuthControllerTests.cs
+│   │   ├── PedidosControllerTests.cs
+│   │   ├── ProductosControllerTests.cs
+│   │   └── ...
+│   ├── Dtos/
+│   ├── Features/
+│   │   ├── Auth/AuthCommandHandlerTests.cs
+│   │   ├── Categorias/CreateCategoriaCommandHandlerTests.cs
+│   │   ├── Pedidos/CreatePedidoCommandHandlerTests.cs
+│   │   ├── Productos/CreateProductoCommandHandlerTests.cs
+│   │   ├── Users/CreateUserCommandHandlerTests.cs
+│   │   └── ...
+│   ├── Services/
+│   │   ├── Auth/AuthServiceTests.cs
+│   │   ├── Cache/RedisCacheServiceTests.cs
+│   │   ├── Email/EmailServiceTests.cs
+│   │   ├── Storage/FileSystemStorageServiceTests.cs
+│   │   └── ...
+│   ├── Validators/
+│   │   ├── Productos/ProductoRequestValidatorTests.cs
+│   │   ├── Usuarios/RegisterValidatorTests.cs
+│   │   └── ...
+│   ├── Repositories/
+│   │   ├── TiendaDbContextInMemory.cs
+│   │   ├── Productos/ProductoRepositoryTests.cs
+│   │   └── ...
+│   ├── GraphQL/
+│   ├── Infrastructures/
+│   ├── Mappers/
+│   ├── Middleware/
+│   ├── Models/
+│   ├── Realtime/
+│   ├── SignalR/
+│   └── WebSockets/
+├── Integration/
+│   ├── TestContainers/
+│   │   ├── AssemblyContainerFixture.cs    # [SetUpFixture]: 1 PostgreSQL + 1 MongoDB por ensamblado
+│   │   ├── TestContainerImages.cs
+│   │   ├── ErrorShape/ErrorShapeApiTests.cs
+│   │   ├── Categorias/
+│   │   ├── Pedidos/
+│   │   ├── Productos/
+│   │   │   ├── ProductosContainersIntegrationTests.cs
+│   │   │   ├── ProductoReadSyncIntegrationTests.cs
+│   │   │   ├── Services/ProductoHandlerIntegrationTests.cs
+│   │   │   └── Validators/ProductoValidatorsIntegrationTests.cs
+│   │   └── Usuarios/
+│   └── Services/Storage/FileSystemStorageServiceIntegrationTests.cs
+├── TestCategories.cs    # Categorías y atributos NUnit (Unit, Integration, Docker...)
+└── TiendaApi.Tests.csproj
 ```
 
 ### Archivo de Proyecto (.csproj)
