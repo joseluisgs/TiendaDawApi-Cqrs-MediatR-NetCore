@@ -61,6 +61,8 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
     - [Testing y Calidad](#testing-y-calidad)
     - [DevOps y Producción](#devops-y-producción)
     - [Arquitectura](#arquitectura)
+    - [Decisiones de Arquitectura (ADR)](#decisiones-de-arquitectura-adr)
+    - [Peticiones HTTP (REST Client)](#peticiones-http-rest-client)
   - [⚒️ Diagrama de Clases del Dominio](#️-diagrama-de-clases-del-dominio)
   - [🗄️ Entidades por Base de Datos](#️-entidades-por-base-de-datos)
     - [🐘 PostgreSQL (Escritura: datos maestros)](#-postgresql-escritura-datos-maestros)
@@ -435,6 +437,34 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | --- | --------------------------------------------------------- | --------------------------------- |
 | 31  | [Clean Architecture](doc/31-clean-architecture.md)        | Capas, estructura                 |
 | 32  | [Organización Program.cs](doc/32-organizacion-program.md) | Extension Methods, modularización |
+
+### Decisiones de Arquitectura (ADR)
+
+| #   | Documento                                                                            | Descripción                            |
+| --- | ------------------------------------------------------------------------------------ | -------------------------------------- |
+| 00  | [Plantilla ADR](doc/adr/00-plantilla.md)                                             | Plantilla para nuevos ADR              |
+| 01  | [Patrón Result (ADR-0001)](doc/adr/01-errores-dominio-patron-result.md)              | Errores de dominio como valores        |
+| 02  | [Arquitectura en capas (ADR-0002)](doc/adr/02-arquitectura-en-capas.md)              | Capas y nota de la variante CQRS       |
+| 03  | [Repositorios EF Core (ADR-0003)](doc/adr/03-repositorios-ef-core-postgresql.md)     | Repositorios y PostgreSQL              |
+| 04  | [Pedidos en MongoDB (ADR-0004)](doc/adr/04-mongodb-para-pedidos.md)                  | Documentos y read model                |
+| 05  | [JWT y roles (ADR-0005)](doc/adr/05-jwt-roles-y-autorizacion.md)                     | Autenticación y autorización           |
+| 06  | [Validación en cascada (ADR-0006)](doc/adr/06-validacion-en-cascada.md)              | DataAnnotations y FluentValidation     |
+| 07  | [Rate limiting nativo (ADR-0007)](doc/adr/07-rate-limiting-nativo.md)                | Middleware propio sin librerías        |
+| 08  | [Caché multinivel (ADR-0008)](doc/adr/08-cache-multinivel.md)                        | Cache-Aside + OutputCache + ETag       |
+| 09  | [Testcontainers (ADR-0009)](doc/adr/09-testcontainers-para-integracion.md)           | Integración con contenedores efímeros  |
+| 10  | [Contrato OpenAPI (ADR-0010)](doc/adr/10-contrato-openapi-verificado.md)             | Esquema verificado y Swagger           |
+
+### Peticiones HTTP (REST Client)
+
+| #   | Documento                                                        | Descripción                  |
+| --- | ---------------------------------------------------------------- | ---------------------------- |
+| 00  | [00-base.http](doc/http/00-base.http)                            | Variables, salud, version y tokens |
+| 01  | [01-auth.http](doc/http/01-auth.http)                            | Registro y login             |
+| 02  | [02-categorias.http](doc/http/02-categorias.http)                | CRUD de categorías           |
+| 03  | [03-productos.http](doc/http/03-productos.http)                  | CRUD de productos e imagen   |
+| 04  | [04-pedidos.http](doc/http/04-pedidos.http)                      | Pedidos de usuario y admin   |
+| 05  | [05-users.http](doc/http/05-users.http)                          | Usuarios y perfil propio     |
+| 06  | [06-infraestructura.http](doc/http/06-infraestructura.http)      | Storage y GraphQL            |
 
 ## ⚒️ Diagrama de Clases del Dominio
 
