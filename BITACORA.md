@@ -518,6 +518,15 @@ Los 5 controladores CQRS (o los handlers que devuelvan `Result`) pueden usar la 
 
 ---
 
+## Mantenimiento — Tests: fixture compartido y forma de errores ✅
+
+- **Fixture por assembly:** `AssemblyContainerFixture` (nuevo `[SetUpFixture]` en `Integration/TestContainers`) arranca **1 PostgreSQL + 1 MongoDB** por suite; `CreatePostgresDatabaseAsync(dbName)` crea la BD con nombre por clase y `DropPostgresDatabaseAsync` la elimina con `DROP DATABASE ... WITH (FORCE)`; MongoDB usa nombre único + `DropDatabase`. Los contenedores se detienen al terminar el assembly.
+- **Clases migradas (11):** 9 con PG+Mongo (los `*ContainersIntegrationTests` y los `*HandlerIntegrationTests`), `ProductoConcurrencyIntegrationTests` solo PG y `ProductoReadSyncIntegrationTests` solo Mongo. BDs por clase: `it_categoria_containers`, `it_categoria_handler`, `it_pedidos_containers`, `it_pedidos_ef_handler`, `it_pedidos_handler`, `it_producto_concurrency`, `it_producto_read_sync`, `it_producto_containers`, `it_producto_handler`, `it_usuario_containers`, `it_user_handler`. Arranques de contenedores por suite: **20 → 2**.
+- **Forma de errores:** nuevo `ErrorShapeApiTests` (10 tests, `WebApplicationFactory<Program>` sobre los contenedores compartidos + `public partial class Program`): `/version` (200 con metadatos), `/health`, `/health/live` y `/health/ready` (200 con `status: OK` y checks `postgresql`/`mongodb`), 400 con problem details de `[ApiController]`, 401 de challenge JWT (`WWW-Authenticate: Bearer`), 401 de dominio (`{message}`), 404 y 409 de dominio (`{message}`), y 429 de rate limiting (`errorType: RateLimitError`, `limit: 10`, `window: 1m`, `Retry-After` y `RateLimit-Limit/Remaining/Reset`) usando `X-Forwarded-For` propio para aislar el contador. Sin cambios en las colecciones E2E.
+- **Medición antes/después:** suite de integración **201 → 211** tests y **94,2 s → 24 s**; dos pasadas sin fallos; suite completa **1078 → 1088**; build 0/0; `check-style` · `check-parity` · `check-audit` **TODO OK**.
+
+---
+
 ## Fases pendientes
 
 **En el origen: ninguna — las 13 fases del plan (0-12) están completadas y documentadas. En este repo (CQRS): ninguna — las 13 fases (0-12) están completadas y documentadas.**

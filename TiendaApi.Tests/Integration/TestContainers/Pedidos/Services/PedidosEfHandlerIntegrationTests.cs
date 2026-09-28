@@ -6,8 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Testcontainers.MongoDb;
-using Testcontainers.PostgreSql;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
@@ -36,8 +34,9 @@ namespace TiendaApi.Tests.Integration.TestContainers.Pedidos.Services;
 [NonParallelizable]
 public class PedidosEfHandlerIntegrationTests
 {
-    private MongoDbContainer? _mongoContainer;
-    private PostgreSqlContainer? _postgresContainer;
+    private const string DatabaseName = "it_pedidos_ef_handler";
+    private string _connectionString = string.Empty;
+    private string _mongoConnectionString = string.Empty;
     private ServiceProvider? _provider;
     private IMediator? _mediator;
     private TiendaDbContext? _dbContext;
@@ -47,33 +46,15 @@ public class PedidosEfHandlerIntegrationTests
     [OneTimeSetUp]
     public async Task OneTimeSetup()
     {
-        _mongoContainer = new MongoDbBuilder(TestContainerImages.Mongo)
-            .WithPortBinding(27017, true)
-            .Build();
-
-        await _mongoContainer.StartAsync();
-
-        _postgresContainer = new PostgreSqlBuilder(TestContainerImages.Postgres)
-            .WithDatabase("tienda_test")
-            .WithUsername("test")
-            .WithPassword("test")
-            .Build();
-
-        await _postgresContainer.StartAsync();
+        _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
+        _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
     public async Task OneTimeTearDown()
     {
-        if (_mongoContainer != null)
-        {
-            await _mongoContainer.DisposeAsync();
-        }
-
-        if (_postgresContainer != null)
-        {
-            await _postgresContainer.DisposeAsync();
-        }
+        await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
+        AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
@@ -82,9 +63,9 @@ public class PedidosEfHandlerIntegrationTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "ConnectionStrings:DefaultConnection", _postgresContainer!.GetConnectionString() },
-                { "MongoDbSettings:ConnectionString", _mongoContainer!.GetConnectionString() },
-                { "MongoDbSettings:DatabaseName", "tienda_test" },
+                { "ConnectionStrings:DefaultConnection", _connectionString },
+                { "MongoDbSettings:ConnectionString", _mongoConnectionString },
+                { "MongoDbSettings:DatabaseName", DatabaseName },
                 { "MongoDbSettings:ProductosCollection", "productos_read" },
                 { "Pedidos:RepositoryType", "EfCore" },
                 { "Cache:CategoriaCacheTTLMinutes", "10" },

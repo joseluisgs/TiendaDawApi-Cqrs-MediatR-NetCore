@@ -3,8 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Testcontainers.MongoDb;
-using Testcontainers.PostgreSql;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Features.Categorias.Commands;
@@ -26,41 +24,24 @@ namespace TiendaApi.Tests.Integration.TestContainers.Categorias.Services;
 [NonParallelizable]
 public class CategoriaHandlerIntegrationTests
 {
-    private MongoDbContainer? _mongoContainer;
-    private PostgreSqlContainer? _postgresContainer;
+    private const string DatabaseName = "it_categoria_handler";
+    private string _connectionString = string.Empty;
+    private string _mongoConnectionString = string.Empty;
     private ServiceProvider? _provider;
     private IMediator? _mediator;
 
     [OneTimeSetUp]
     public async Task OneTimeSetup()
     {
-        _mongoContainer = new MongoDbBuilder(TestContainerImages.Mongo)
-            .WithPortBinding(27017, true)
-            .Build();
-
-        await _mongoContainer.StartAsync();
-
-        _postgresContainer = new PostgreSqlBuilder(TestContainerImages.Postgres)
-            .WithDatabase("tienda_test")
-            .WithUsername("test")
-            .WithPassword("test")
-            .Build();
-
-        await _postgresContainer.StartAsync();
+        _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
+        _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
     public async Task OneTimeTearDown()
     {
-        if (_mongoContainer != null)
-        {
-            await _mongoContainer.DisposeAsync();
-        }
-
-        if (_postgresContainer != null)
-        {
-            await _postgresContainer.DisposeAsync();
-        }
+        await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
+        AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
@@ -69,9 +50,9 @@ public class CategoriaHandlerIntegrationTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "ConnectionStrings:DefaultConnection", _postgresContainer!.GetConnectionString() },
-                { "MongoDbSettings:ConnectionString", _mongoContainer!.GetConnectionString() },
-                { "MongoDbSettings:DatabaseName", "tienda_test" },
+                { "ConnectionStrings:DefaultConnection", _connectionString },
+                { "MongoDbSettings:ConnectionString", _mongoConnectionString },
+                { "MongoDbSettings:DatabaseName", DatabaseName },
                 { "MongoDbSettings:ProductosCollection", "productos_read" },
                 { "Cache:CategoriaCacheTTLMinutes", "10" },
                 { "Cache:ProductoCacheTTLMinutes", "10" },

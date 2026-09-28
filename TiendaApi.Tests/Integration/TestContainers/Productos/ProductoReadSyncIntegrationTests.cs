@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using Testcontainers.MongoDb;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Features.Productos.Notifications;
@@ -31,7 +30,9 @@ public class ProductoReadSyncIntegrationTests
     private static long _nextId = 50_000_000;
     private static long NewId() => Interlocked.Increment(ref _nextId);
 
-    private MongoDbContainer? _mongoContainer;
+    private const string DatabaseName = "it_producto_read_sync";
+
+    private string _mongoConnectionString = string.Empty;
     private ServiceProvider? _provider;
     private ProductoReadSyncHandler? _handler;
     private IProductoReadRepository? _readRepository;
@@ -40,16 +41,13 @@ public class ProductoReadSyncIntegrationTests
     [OneTimeSetUp]
     public async Task OneTimeSetup()
     {
-        _mongoContainer = new MongoDbBuilder(TestContainerImages.Mongo)
-            .Build();
-
-        await _mongoContainer.StartAsync();
+        _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "MongoDbSettings:ConnectionString", _mongoContainer.GetConnectionString() },
-                { "MongoDbSettings:DatabaseName", "tienda_sync_test" },
+                { "MongoDbSettings:ConnectionString", _mongoConnectionString },
+                { "MongoDbSettings:DatabaseName", DatabaseName },
                 { "MongoDbSettings:ProductosCollection", "productos_read" },
                 { "Cache:ProductoCacheTTLMinutes", "10" }
             }!)
@@ -82,10 +80,7 @@ public class ProductoReadSyncIntegrationTests
     {
         _provider?.Dispose();
 
-        if (_mongoContainer != null)
-        {
-            await _mongoContainer.DisposeAsync();
-        }
+        AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     private static ProductoDto NuevoProducto(long id, string categoriaNombre = "Electrónica") =>
