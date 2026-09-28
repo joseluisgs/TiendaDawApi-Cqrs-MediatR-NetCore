@@ -3,7 +3,7 @@
 ## Índice
 
 [24. Background Jobs y Tareas Programadas](#24-background-jobs-y-tareas-programadas)
-  - [24.1. Â¿Qué son Background Jobs?](#241-qu-son-background-jobs)
+  - [24.1. ¿Qué son Background Jobs?](#241-qu-son-background-jobs)
   - [24.2. Arquitectura de Background Jobs](#242-arquitectura-de-background-jobs)
   - [24.3. Implementación del Job de Reporte de Productos](#243-implementacin-del-job-de-reporte-de-productos)
   - [24.4. Background Service Orchestrator](#244-background-service-orchestrator)
@@ -19,7 +19,7 @@
 
 ---
 
-## 24.1. Â¿Qué son Background Jobs?
+## 24.1. ¿Qué son Background Jobs?
 
 Los **background jobs** son tareas que se ejecutan fuera del flujo principal de las solicitudes HTTP, permitiendo operaciones largas sin bloquear la respuesta al usuario.
 
@@ -79,15 +79,15 @@ flowchart TB
 
 ```
 Services/
-â””â”€â”€ Background/
-    â”œâ”€â”€ Jobs/                          â† Tareas individuales
-    â”‚   â”œâ”€â”€ IProductoReportTask.cs     â† Interfaz del job
-    â”‚   â””â”€â”€ ProductoReportTask.cs      â† Implementación del job
-    â””â”€â”€ Host/                          â† Orchestrator
-        â””â”€â”€ BackgroundJobService.cs    â† Hosted Service
+└── Background/
+    ├── Jobs/                          ← Tareas individuales
+    │   ├── IProductoReportTask.cs     ← Interfaz del job
+    │   └── ProductoReportTask.cs      ← Implementación del job
+    └── Host/                          ← Orchestrator
+        └── BackgroundJobService.cs    ← Hosted Service
 
 Infrastructures/
-â””â”€â”€ BackgroundJobsConfig.cs            â† Configuración DI
+└── BackgroundJobsConfig.cs            ← Configuración DI
 ```
 
 ```mermaid
@@ -394,7 +394,7 @@ services.AddCache(environment);
 services.AddEmail(environment);
 services.AddStorage();
 services.AddWebSockets();
-services.AddBackgroundJobs();  // â† Registrar aquí
+services.AddBackgroundJobs();  // ← Registrar aquí
 ```
 
 ---

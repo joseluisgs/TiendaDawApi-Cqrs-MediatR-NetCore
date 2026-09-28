@@ -19,7 +19,7 @@
 
 Una **solución** en .NET es un contenedor lógico que agrupa uno o más proyectos relacionados. Separar la solución del código fuente permite gestionar mejor las dependencias entre proyectos y facilita el trabajo en equipo. Cuando creas una solución, estás creando un archivo .sln que actúa como índice de todos los proyectos que forman parte de tu aplicación.
 
-### Â¿Por qué usar soluciones?
+### ¿Por qué usar soluciones?
 
 Imagina que tienes una aplicación de tienda con tres partes: la API que expone los endpoints, la lógica de negocio que contiene las reglas y entidades, y los tests que verifican que todo funcione. Cada una de estas partes es un proyecto independiente, pero están relacionadas entre sí. La solución actúa como el pegamento que las une, permitiéndote abrir todo el código en Visual Studio o Rider con un solo archivo.
 
@@ -85,7 +85,8 @@ flowchart TB
     subgraph "Proyecto Tests"
         TESTS["TiendaApi.Tests/"]
         TESTS --> TESTS_CS["TiendaApi.Tests.csproj"]
-        TESTS --> UNIT["UnitTests/"]
+        TESTS --> UNIT["Unit/"]
+        TESTS --> INTEG["Integration/"]
     end
     
     SLN -.-> API
@@ -103,7 +104,7 @@ flowchart TB
 
 NuGet es el gestor de paquetes de .NET. Cuando necesitas una funcionalidad que no viene incluida en el framework, como conectar con PostgreSQL o validar datos con FluentValidation, buscas el paquete correspondiente y lo instalas con un comando. Los paquetes se descargan desde nuget.org y se almacenan en caché en tu máquina.
 
-### Â¿Qué son los paquetes NuGet?
+### ¿Qué son los paquetes NuGet?
 
 Piensa en NuGet como una biblioteca gigante donde desarrolladores de todo el mundo comparten código reusable. Entity Framework Core para acceder a bases de datos, AutoMapper para convertir entre objetos, o Serilog para registrar logs, todos son paquetes NuGet que puedes incorporar a tu proyecto con un solo comando.
 
@@ -193,7 +194,7 @@ dotnet add package AutoMapper --version 12.0.0
 
 Una arquitectura bien organizada separa las responsabilidades en capas claramente definidas. Esto facilita el mantenimiento, las pruebas y la evolución del código. En este proyecto utilizamos una arquitectura por capas donde cada proyecto tiene una responsabilidad específica.
 
-### Â¿Por qué separar en proyectos?
+### ¿Por qué separar en proyectos?
 
 Cuando estás desarrollando, es tentador poner todo en un solo proyecto para ir más rápido. Sin embargo, a medida que la aplicación crece, esta decisión se convierte en un problema. Los tests necesitan acceder a tu código sin arrastrar dependencias de servidor web, y quieres poder reutilizar la lógica de negocio en diferentes aplicaciones (web, móvil, CLI). Separar en proyectos te da esta flexibilidad.
 
@@ -201,55 +202,75 @@ Cuando estás desarrollando, es tentador poner todo en un solo proyecto para ir 
 
 ```
 TiendaApi.sln
-â”‚
-â”œâ”€â”€ TiendaApi.Apis/                          # Capa de presentación: controladores, middleware y configuración Web
-â”‚   â”œâ”€â”€ Controllers/                          # Controladores REST (Auth, Users, Productos, etc.)
-â”‚   â”œâ”€â”€ Middleware/                           # Middlewares personalizados (Exception Handler, etc.)
-â”‚   â”œâ”€â”€ WebSockets/                           # Hubs de SignalR para tiempo real
-â”‚   â”œâ”€â”€ GraphQL/                              # Tipos y resolvers de GraphQL
-â”‚   â”œâ”€â”€ Program.cs                            # Punto de entrada y configuración
-â”‚   â”œâ”€â”€ appsettings.json                      # Configuración general
-â”‚   â”œâ”€â”€ appsettings.Development.json          # Configuración específica de desarrollo
-â”‚   â””â”€â”€ TiendaApi.Apis.csproj                 # Archivo de proyecto
-â”‚
-â”œâ”€â”€ TiendaApi.Core/                           # Capa de negocio: entidades, servicios e interfaces
-â”‚   â”œâ”€â”€ Models/                               # Entidades de dominio (User, Producto, Pedido, etc.)
-â”‚   â”œâ”€â”€ Dtos/                                 # Data Transfer Objects para la API
-â”‚   â”‚   â”œâ”€â”€ Common/                           # DTOs compartidos (PagedResult, etc.)
-â”‚   â”‚   â”œâ”€â”€ Auth/                             # DTOs de autenticación
-â”‚   â”‚   â”œâ”€â”€ Productos/                        # DTOs de productos
-â”‚   â”‚   â”œâ”€â”€ Pedidos/                          # DTOs de pedidos
-â”‚   â”‚   â””â”€â”€ ...
-â”‚   â”œâ”€â”€ Mappers/                              # Perfiles de AutoMapper
-â”‚   â”œâ”€â”€ Services/                             # Servicios de negocio con lógica de dominio
-â”‚   â”‚   â”œâ”€â”€ Auth/                             # AuthService, JwtService, etc.
-â”‚   â”‚   â”œâ”€â”€ Productos/                        # ProductoService
-â”‚   â”‚   â”œâ”€â”€ Pedidos/                          # PedidosService
-â”‚   â”‚   â””â”€â”€ ...
-â”‚   â”œâ”€â”€ Repositories/                         # Implementaciones de repositorios
-â”‚   â”‚   â”œâ”€â”€ Productos/
-â”‚   â”‚   â”œâ”€â”€ Pedidos/
-â”‚   â”‚   â””â”€â”€ ...
-â”‚   â”œâ”€â”€ Interfaces/                           # Contratos (interfaces) para inyección de dependencias
-â”‚   â”‚   â”œâ”€â”€ IServices/
-â”‚   â”‚   â”œâ”€â”€ IRepositories/
-â”‚   â”‚   â””â”€â”€ ...
-â”‚   â”œâ”€â”€ Validators/                           # Validadores de FluentValidation
-â”‚   â”œâ”€â”€ Errors/                               # Tipos de errores personalizados (DomainError, etc.)
-â”‚   â”œâ”€â”€ Exceptions/                           # Excepciones personalizadas
-â”‚   â”œâ”€â”€ Data/                                 # DbContext y configuración de datos
-â”‚   â”‚   â”œâ”€â”€ Seed/                             # Seeders de datos iniciales
-â”‚   â”‚   â””â”€â”€ Interceptors/                     # Interceptors de EF Core
-â”‚   â””â”€â”€ TiendaApi.Core.csproj
-â”‚
-â””â”€â”€ TiendaApi.Tests/                          # Capa de pruebas: unitarias y de integración
-    â”œâ”€â”€ UnitTests/                            # Tests unitarios
-    â”‚   â”œâ”€â”€ Services/
-    â”‚   â”œâ”€â”€ Controllers/
-    â”‚   â””â”€â”€ Mappers/
-    â”œâ”€â”€ IntegrationTests/                     # Tests de integración
-    â”œâ”€â”€ Fixtures/                             # Clases de configuración para tests
-    â””â”€â”€ TiendaApi.Tests.csproj
+│
+├── TiendaApi.Apis/                          # Capa de presentación: controladores, middleware y configuración Web
+│   ├── Controllers/                          # Controladores REST (Auth, Users, Productos, etc.)
+│   ├── Middleware/                           # Middlewares personalizados (Exception Handler, etc.)
+│   ├── WebSockets/                           # Hubs de SignalR para tiempo real
+│   ├── GraphQL/                              # Tipos y resolvers de GraphQL
+│   ├── Program.cs                            # Punto de entrada y configuración
+│   ├── appsettings.json                      # Configuración general
+│   ├── appsettings.Development.json          # Configuración específica de desarrollo
+│   └── TiendaApi.Apis.csproj                 # Archivo de proyecto
+│
+├── TiendaApi.Core/                           # Capa de negocio: entidades, servicios e interfaces
+│   ├── Models/                               # Entidades de dominio (User, Producto, Pedido, etc.)
+│   ├── Dtos/                                 # Data Transfer Objects para la API
+│   │   ├── Common/                           # DTOs compartidos (PagedResult, etc.)
+│   │   ├── Auth/                             # DTOs de autenticación
+│   │   ├── Productos/                        # DTOs de productos
+│   │   ├── Pedidos/                          # DTOs de pedidos
+│   │   └── ...
+│   ├── Mappers/                              # Perfiles de AutoMapper
+│   ├── Services/                             # Servicios de negocio con lógica de dominio
+│   │   ├── Auth/                             # AuthService, JwtService, etc.
+│   │   ├── Productos/                        # ProductoService
+│   │   ├── Pedidos/                          # PedidosService
+│   │   └── ...
+│   ├── Repositories/                         # Implementaciones de repositorios
+│   │   ├── Productos/
+│   │   ├── Pedidos/
+│   │   └── ...
+│   ├── Interfaces/                           # Contratos (interfaces) para inyección de dependencias
+│   │   ├── IServices/
+│   │   ├── IRepositories/
+│   │   └── ...
+│   ├── Validators/                           # Validadores de FluentValidation
+│   ├── Errors/                               # Tipos de errores personalizados (DomainError, etc.)
+│   ├── Exceptions/                           # Excepciones personalizadas
+│   ├── Data/                                 # DbContext y configuración de datos
+│   │   ├── Seed/                             # Seeders de datos iniciales
+│   │   └── Interceptors/                     # Interceptors de EF Core
+│   └── TiendaApi.Core.csproj
+│
+└── TiendaApi.Tests/                          # Capa de pruebas: unitarias y de integración
+    ├── Unit/                                 # Tests unitarios
+    │   ├── Controllers/
+    │   ├── Services/
+    │   ├── Features/                         # Handlers CQRS (Command/Query/Notification)
+    │   ├── Validators/
+    │   ├── Repositories/
+    │   ├── Dtos/
+    │   ├── GraphQL/
+    │   ├── Infrastructures/
+    │   ├── Mappers/
+    │   ├── Middleware/
+    │   ├── Models/
+    │   ├── Realtime/
+    │   ├── SignalR/
+    │   └── WebSockets/
+    ├── Integration/                          # Tests de integración
+    │   ├── TestContainers/
+    │   │   ├── AssemblyContainerFixture.cs   # Fixtures de contenedores (PostgreSQL, MongoDB)
+    │   │   ├── TestContainerImages.cs
+    │   │   ├── ErrorShape/
+    │   │   ├── Categorias/
+    │   │   ├── Pedidos/
+    │   │   ├── Productos/
+    │   │   └── Usuarios/
+    │   └── Services/Storage/
+    ├── TestCategories.cs                     # Categorías y atributos NUnit (Unit, Integration, Docker...)
+    └── TiendaApi.Tests.csproj
 ```
 
 ### Flujo de datos entre capas
@@ -306,7 +327,7 @@ flowchart TB
 
 El archivo `appsettings.json` es el método principal de configuración en ASP.NET Core. Permite definir valores que pueden cambiar entre entornos (desarrollo, producción) sin modificar el código. La configuración se carga en orden jerárquico, donde los valores de entornos más específicos sobrescriben los generales.
 
-### Â¿Cómo funciona la configuración?
+### ¿Cómo funciona la configuración?
 
 Cuando inicias una aplicación ASP.NET Core, el framework lee automáticamente el archivo `appsettings.json` y lo fusiona con `appsettings.{Entorno}.json`. Luego añade las variables de entorno y otros orígenes, creando una jerarquía donde los valores más específicos tienen prioridad. Esto significa que puedes tener valores por defecto en el archivo general y sobrescribirlos específicamente para desarrollo o producción.
 
@@ -464,7 +485,7 @@ flowchart TB
 
 Las variables de entorno permiten configurar la aplicación sin modificar archivos de código, lo cual es esencial para el despliegue en producción donde no tienes acceso directo a los archivos de configuración. Los User Secrets son una forma segura de almacenar configuración sensible durante el desarrollo sin risk de accidentalmente commitearla al repositorio.
 
-### Â¿Cuándo usar cada método?
+### ¿Cuándo usar cada método?
 
 Las variables de entorno son ideales para configuración que cambia entre entornos: cadenas de conexión a bases de datos, URLs de servicios externos, y cualquier secreto que no quieras incluir en archivos de configuración versionados. Los User Secrets son específicos del desarrollo local y están diseñados para mantener la configuración sensible fuera del sistema de control de versiones.
 
@@ -786,7 +807,7 @@ public class MonitorService(IOptionsMonitor<JwtOptions> options)
 
 NUnit es un framework de testing unitario ampliamente utilizado en .NET. Permite escribir pruebas automatizadas que verifican el comportamiento de tu código. NUnit usa atributos como `[Test]` y `[SetUp]` para definir pruebas y lógica de preparación, proporcionando una sintaxis clara y expresiva para organizar tus tests.
 
-### Â¿Por qué hacer tests?
+### ¿Por qué hacer tests?
 
 Imagina que modificas el método de cálculo de precio total en un pedido. Sin tests, tendrías que probar manualmente todos los escenarios posibles: pedido vacío, un producto, múltiples productos, descuentos, impuestos. Con tests automatizados, puedes ejecutar cientos de pruebas en segundos cada vez que haces un cambio, garantizando que no has roto nada existente.
 
@@ -1003,7 +1024,7 @@ flowchart TB
 
 Hot Reload es una característica de .NET que permite ver los cambios en el código reflejados inmediatamente en la aplicación en ejecución, sin necesidad de detener y reiniciar el servidor. Esto acelera enormemente el ciclo de desarrollo, especialmente cuando estás ajustando la interfaz de usuario o depurando el comportamiento de un endpoint.
 
-### Â¿Cómo funciona Hot Reload?
+### ¿Cómo funciona Hot Reload?
 
 Cuando ejecutas `dotnet watch run`, el CLI monitoriza los archivos de tu proyecto. Cuando detecta un cambio en un archivo C#, Razor o configuración, recompila solo los archivos modificados y actualiza la aplicación en ejecución. Dependiendo del tipo de cambio, puede que la actualización sea instantánea o requiera un breve reinicio del servidor de desarrollo.
 
@@ -1092,7 +1113,7 @@ services:
 
 Hot Reload detecta cambios en los siguientes tipos de archivos:
 
-| Tipo de Archivo                    | Â¿Recarga Automática?      |
+| Tipo de Archivo                    | ¿Recarga Automática?      |
 | ---------------------------------- | ------------------------- |
 | Archivos `.cs` (código C#)         | Sí, la mayoría de cambios |
 | Archivos `.cshtml` (Razor)         | Sí, inmediato             |
@@ -1226,7 +1247,7 @@ La creación de soluciones y proyectos con la estructura adecuada es el primer p
 flowchart TB
     subgraph "Organización"
         A1["Separar proyectos por responsabilidad"]
-        A2["API â†’ Core â†’ Tests"]
+        A2["API → Core → Tests"]
     end
     
     subgraph "Configuración"

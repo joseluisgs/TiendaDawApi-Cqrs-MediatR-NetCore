@@ -123,7 +123,7 @@ El proyecto TiendaApi utiliza un stack tecnológico moderno y bien probado. ASP.
 
 El pipeline HTTP es el corazón de ASP.NET Core. Es una secuencia de componentes (middlewares) que procesan cada petición HTTP en orden. Cada middleware puede examinar la petición, modificarla, pasarla al siguiente middleware, o incluso generar una respuesta directamente sin llegar a los controladores. Entender este pipeline es esencial para implementar funcionalidades transversales como logging, autenticación, manejo de errores y CORS.
 
-### Â¿Qué es un middleware?
+### ¿Qué es un middleware?
 
 Un middleware es un componente que se ejecuta en cada petición HTTP. Piensa en él como una tubería por donde pasa la petición: cada middleware puede inspeccionarla, modificarla, o decidir que la petición no debe continuar y devolver una respuesta directamente. Los middlewares se ejecutan en el orden en que están configurados, y cada uno decide si pasar la petición al siguiente middleware o cortocircuitar la cadena.
 
@@ -447,7 +447,7 @@ Otro error común es no usar UseRouting antes de los endpoints. Si configuras en
 
 Kestrel es el servidor web integrado en ASP.NET Core. Es ligero, rápido y multiplataforma, funcionando tanto en Windows como en Linux y macOS. En producción, típicamente se coloca detrás de un reverse proxy como Nginx o Traefik, pero para desarrollo y contenedores, Kestrel puede ser usado directamente.
 
-### Â¿Qué es Kestrel?
+### ¿Qué es Kestrel?
 
 Kestrel es un servidor HTTP escrito en .NET que maneja las conexiones de red y traduce las peticiones HTTP en objetos que ASP.NET Core puede procesar. Es el equivalente a Node.js http server o Python WSGI, pero optimizado para .NET. Kestrel soporta HTTP/1.1 y HTTP/2, y puede servir millones de peticiones por segundo con los recursos adecuados.
 
@@ -581,7 +581,7 @@ Kestrel ofrece varias ventajas sobre otros servidores web. Su integración nativ
 
 ASP.NET Core ofrece dos estilos principales para crear APIs: Minimal APIs y Controller-based APIs. Minimal APIs son ideales para servicios pequeños y microservicios, mientras que Controller-based APIs proporcionan más características avanzadas como filtros, validación automática, y convenciones establecidas. El proyecto TiendaApi utiliza Controller-based APIs por su estructura y características avanzadas.
 
-### Â¿Qué es Minimal API?
+### ¿Qué es Minimal API?
 
 Minimal API es un enfoque simplificado introducido en .NET 6 que permite crear endpoints con código mínimo. En lugar de crear clases Controller con atributos, defines los endpoints directamente con lambdas o métodos:
 
@@ -605,7 +605,7 @@ app.MapPost("/api/productos", (ProductoDto dto) =>
 app.Run();
 ```
 
-### Â¿Qué es Controller-based API?
+### ¿Qué es Controller-based API?
 
 Controller-based API utiliza clases que heredan de ControllerBase o Controller. Este enfoque proporciona más estructura, características avanzadas, y es más familiar para desarrolladores que vienen de versiones anteriores de ASP.NET:
 
@@ -673,7 +673,7 @@ flowchart TB
     style B2 fill:#388E3C,color:#ffffff
 ```
 
-### Â¿Por qué TiendaApi usa Controladores?
+### ¿Por qué TiendaApi usa Controladores?
 
 El proyecto TiendaApi utiliza Controller-based API por varias razones importantes. Los controladores permiten usar filtros para lógica transversal como logging, validación de modelo, y manejo de errores en un solo lugar. El modelo de binding automático con `[FromBody]`, `[FromQuery]`, etc., reduce código repetitivo. La integración con Swagger/OpenAPI genera documentación automáticamente más completa. Las convenciones de enrutamiento y nombrado facilitan el mantenimiento cuando el equipo crece. Y características como versionado de API, OData, y GraphQL están más maduras para controladores.
 

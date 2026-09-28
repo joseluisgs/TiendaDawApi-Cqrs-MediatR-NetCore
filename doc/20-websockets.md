@@ -3,7 +3,7 @@
 ## Índice
 
 [20. WebSockets y Comunicación en Tiempo Real](#20-websockets-y-comunicacin-en-tiempo-real)
-  - [20.1. Â¿Qué es la Comunicación en Tiempo Real?](#201-qu-es-la-comunicacin-en-tiempo-real)
+  - [20.1. ¿Qué es la Comunicación en Tiempo Real?](#201-qu-es-la-comunicacin-en-tiempo-real)
   - [20.2. WebSocket vs SignalR - Comparación](#202-websocket-vs-signalr---comparacin)
   - [20.3. Conceptos Básicos](#203-conceptos-bsicos)
   - [20.4. WebSocket Nativo en ASP.NET Core](#204-websocket-nativo-en-aspnet-core)
@@ -22,7 +22,7 @@
 
 ---
 
-## 20.1. Â¿Qué es la Comunicación en Tiempo Real?
+## 20.1. ¿Qué es la Comunicación en Tiempo Real?
 
 La comunicación en tiempo real permite que el servidor envíe datos a los clientes sin que estos lo soliciten, eliminando el patrón tradicional de request-response.
 
@@ -42,16 +42,16 @@ flowchart LR
     end
 ```
 
-### Â¿Cuándo Usar WebSockets?
+### ¿Cuándo Usar WebSockets?
 
 | Caso de uso             | Ejemplo                     | Descripción       |
 | ----------------------- | --------------------------- | ----------------- |
-| **Notificaciones push** | "Tu pedido ha sido enviado" | âœ… WebSocket       |
-| **Chat en tiempo real** | Chat de soporte al cliente  | âœ… WebSocket       |
-| **Live updates**        | Dashboard de métricas       | âœ… WebSocket       |
-| **Colaboración**        | Editores colaborativos      | âœ… WebSocket       |
-| **Gaming**              | Multiplayer en tiempo real  | âœ… WebSocket (RAW) |
-| **API simple**          | Consultas esporádicas       | âŒ REST            |
+| **Notificaciones push** | "Tu pedido ha sido enviado" | ✅ WebSocket       |
+| **Chat en tiempo real** | Chat de soporte al cliente  | ✅ WebSocket       |
+| **Live updates**        | Dashboard de métricas       | ✅ WebSocket       |
+| **Colaboración**        | Editores colaborativos      | ✅ WebSocket       |
+| **Gaming**              | Multiplayer en tiempo real  | ✅ WebSocket (RAW) |
+| **API simple**          | Consultas esporádicas       | ❌ REST            |
 
 ---
 
@@ -89,8 +89,8 @@ flowchart TB
 | **Grupos**               | Implementar tú       | Integrado            |
 | **Reconexión**           | Manual               | Automática           |
 | **Serialización**        | JSON manual          | Automática           |
-| **Rendimiento**          | âœ… Mejor              | âšª Buena              |
-| **Simplicidad**          | âš ï¸ Más código         | âœ… Más fácil          |
+| **Rendimiento**          | ✅ Mejor              | ⚪ Buena              |
+| **Simplicidad**          | ⚠️ Más código         | ✅ Más fácil          |
 | **Escalabilidad**        | Redis Pub/Sub manual | Redis backplane      |
 | **Debugging**            | Más difícil          | Más fácil            |
 
@@ -143,7 +143,7 @@ Antes de implementar, entendamos los conceptos fundamentales:
 Un **Handler** es una clase que gestiona la conexión WebSocket y el intercambio de mensajes.
 
 ```csharp
-// Â¿Qué es un Handler?
+// ¿Qué es un Handler?
 // Es un componente que:
 // 1. Acepta conexiones WebSocket
 // 2. Recibe mensajes del cliente
@@ -194,7 +194,7 @@ public class EchoWebSocketHandler
 Un **Hub** es una abstracción de nivel superior que SignalR proporciona sobre WebSocket.
 
 ```csharp
-// Â¿Qué es un Hub?
+// ¿Qué es un Hub?
 // Es una clase que:
 // 1. Gestiona múltiples conexiones automáticamente
 // 2. Permite llamar métodos entre cliente y servidor
@@ -934,7 +934,7 @@ flowchart TB
     subgraph "Opción 1: Filtrar en el Servicio"
         A1["_hubContext.Clients.All"]
         A2["Recibir mensaje"]
-        A3["Â¿Es el destinatario?"]
+        A3["¿Es el destinatario?"]
         A4["Sí: Procesar"]
         A5["No: Descartar"]
         A6["Pros: Sin auth requerida"]
@@ -1002,7 +1002,7 @@ public class PedidoService
     {
         await _repository.SaveAsync(pedido);
 
-        // Â¡TRUCO! - Notificación selectiva sin que el cliente haga nada
+        // ¡TRUCO! - Notificación selectiva sin que el cliente haga nada
         await _hubContext.Clients
             .Group($"user-{pedido.UsuarioId}")  // Solo este usuario
             .SendAsync("PedidoCreado", new { ... });
@@ -1144,7 +1144,7 @@ public class PedidoService
     {
         var pedido = await _repository.SaveAsync(request.ToEntity());
 
-        // ðŸš€ TRUCO: Notificar SOLO al usuario (grupo: user-{id})
+        // 🚀 TRUCO: Notificar SOLO al usuario (grupo: user-{id})
         // El usuario ya está en este grupo gracias a OnConnectedAsync en el Hub
         await _hubContext.Clients
             .Group($"user-{request.UsuarioId}")
@@ -1156,7 +1156,7 @@ public class PedidoService
                 timestamp = DateTime.UtcNow
             });
 
-        // ðŸš€ TRUCO: Notificar a TODOS los administradores
+        // 🚀 TRUCO: Notificar a TODOS los administradores
         await _hubContext.Clients
             .Group("admins")
             .SendAsync("NuevoPedido", new
@@ -1200,7 +1200,7 @@ public class PedidoService
 
 ```csharp
 // Program.cs - SignalR registra automaticamente IHubContext<T>
-// Â¡No se necesita configuración adicional!
+// ¡No se necesita configuración adicional!
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -1516,7 +1516,7 @@ public class SignalRNotificationService
         _hubContext = hubContext;
     }
 
-    // ðŸš€ TRUCO: Notificar SOLO al usuario específico
+    // 🚀 TRUCO: Notificar SOLO al usuario específico
     public async Task NotifyUserAsync(long userId, object message)
     {
         await _hubContext.Clients
@@ -1524,7 +1524,7 @@ public class SignalRNotificationService
             .SendAsync("Notificacion", message);
     }
 
-    // ðŸš€ TRUCO: Notificar SOLO a administradores
+    // 🚀 TRUCO: Notificar SOLO a administradores
     public async Task NotifyAdminsAsync(object message)
     {
         await _hubContext.Clients
@@ -1585,7 +1585,7 @@ public class PedidoService
     {
         var pedido = await _repository.AddAsync(request);
 
-        // ðŸš€ Notificar SOLO al usuario que hizo el pedido
+        // 🚀 Notificar SOLO al usuario que hizo el pedido
         await _hubContext.Clients
             .Group($"user-{request.UsuarioId}")
             .SendAsync("PedidoCreado", new
@@ -1596,7 +1596,7 @@ public class PedidoService
                 timestamp = DateTime.UtcNow
             });
 
-        // ðŸš€ Notificar a TODOS los administradores
+        // 🚀 Notificar a TODOS los administradores
         await _hubContext.Clients
             .Group("admins")
             .SendAsync("NuevoPedido", new

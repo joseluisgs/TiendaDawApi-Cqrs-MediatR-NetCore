@@ -3,7 +3,7 @@
 ## Índice
 
 [29. Optimización de Rendimiento](#29-optimizacin-de-rendimiento)
-  - [29.1. Â¿Por qué Optimizar?](#291-por-qu-optimizar)
+  - [29.1. ¿Por qué Optimizar?](#291-por-qu-optimizar)
   - [29.2. Optimización de Endpoints](#292-optimizacin-de-endpoints)
   - [29.3. Optimización de Base de Datos](#293-optimizacin-de-base-de-datos)
   - [29.4. Caching Avanzado](#294-caching-avanzado)
@@ -14,7 +14,7 @@
 
 ---
 
-## 29.1. Â¿Por qué Optimizar?
+## 29.1. ¿Por qué Optimizar?
 
 El rendimiento de una API afecta directamente la experiencia del usuario y los costos de infraestructura.
 
@@ -139,7 +139,7 @@ Al superar el límite la respuesta es `429 Too Many Requests` con cuerpo JSON y 
 ### Select N+1 Prevention
 
 ```csharp
-// âŒ MAL: N+1 queries
+// ❌ MAL: N+1 queries
 public async Task<List<ProductoDto>> GetProductosConCategorias()
 {
     var productos = await _context.Productos.ToListAsync();
@@ -162,7 +162,7 @@ public async Task<List<ProductoDto>> GetProductosConCategorias()
     return dtos;
 }
 
-// âœ… BIEN: Eager loading
+// ✅ BIEN: Eager loading
 public async Task<List<ProductoDto>> GetProductosConCategorias()
 {
     return await _context.Productos
@@ -180,10 +180,10 @@ public async Task<List<ProductoDto>> GetProductosConCategorias()
 ### Proyección de Columnas
 
 ```csharp
-// âŒ Obtiene todas las columnas
+// ❌ Obtiene todas las columnas
 var productos = await _context.Productos.ToListAsync();
 
-// âœ… Solo las columnas necesarias
+// ✅ Solo las columnas necesarias
 var productos = await _context.Productos
     .Where(p => p.Stock > 0)
     .Select(p => new
@@ -194,7 +194,7 @@ var productos = await _context.Productos
     })
     .ToListAsync();
 
-// âœ… Usar AsNoTracking para solo lectura
+// ✅ Usar AsNoTracking para solo lectura
 var productos = await _context.Productos
     .AsNoTracking()
     .Where(p => p.IsActive)

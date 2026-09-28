@@ -263,29 +263,29 @@ La carpeta `Infrastructures/` (o `Infrastructure/`) es el lugar recomendado para
 
 ```
 TiendaApi.Apis/
-â”œâ”€â”€ Program.cs
-â”œâ”€â”€ Infrastructures/
-â”‚   â”œâ”€â”€ SerilogConfig.cs
-â”‚   â”œâ”€â”€ ControllersConfig.cs
-â”‚   â”œâ”€â”€ ApiVersioningConfig.cs
-â”‚   â”œâ”€â”€ SwaggerConfig.cs
-â”‚   â”œâ”€â”€ CorsConfig.cs
-â”‚   â”œâ”€â”€ DatabaseConfig.cs
-â”‚   â”œâ”€â”€ AuthenticationConfig.cs
-â”‚   â”œâ”€â”€ RepositoriesConfig.cs
-â”‚   â”œâ”€â”€ ServicesConfig.cs
-â”‚   â”œâ”€â”€ CacheConfig.cs
-â”‚   â”œâ”€â”€ EmailConfig.cs
-â”‚   â”œâ”€â”€ StorageConfig.cs
-â”‚   â”œâ”€â”€ WebSocketsConfig.cs
-â”‚   â”œâ”€â”€ GraphQLConfig.cs
-â”‚   â”œâ”€â”€ AutoMapperConfig.cs
-â”‚   â”œâ”€â”€ SwaggerExtensions.cs
-â”‚   â”œâ”€â”€ GraphQLExtensions.cs
-â”‚   â”œâ”€â”€ CorsExtensions.cs
-â”‚   â”œâ”€â”€ WebSocketExtensions.cs
-â”‚   â”œâ”€â”€ DatabaseInitializationExtensions.cs
-â”‚   â””â”€â”€ StorageInitializationExtensions.cs
+├── Program.cs
+├── Infrastructures/
+│   ├── SerilogConfig.cs
+│   ├── ControllersConfig.cs
+│   ├── ApiVersioningConfig.cs
+│   ├── SwaggerConfig.cs
+│   ├── CorsConfig.cs
+│   ├── DatabaseConfig.cs
+│   ├── AuthenticationConfig.cs
+│   ├── RepositoriesConfig.cs
+│   ├── ServicesConfig.cs
+│   ├── CacheConfig.cs
+│   ├── EmailConfig.cs
+│   ├── StorageConfig.cs
+│   ├── WebSocketsConfig.cs
+│   ├── GraphQLConfig.cs
+│   ├── AutoMapperConfig.cs
+│   ├── SwaggerExtensions.cs
+│   ├── GraphQLExtensions.cs
+│   ├── CorsExtensions.cs
+│   ├── WebSocketExtensions.cs
+│   ├── DatabaseInitializationExtensions.cs
+│   └── StorageInitializationExtensions.cs
 ```
 
 ### Convenciones de Nomenclatura
@@ -639,7 +639,7 @@ using TiendaApi.Apis.WebSockets.Productos;
 Log.Logger = SerilogConfig.Configure().CreateLogger();
 builder.Host.UseSerilog();
 
-Log.Information("ðŸš€ Inicializando TiendaApi...");
+Log.Information("🚀 Inicializando TiendaApi...");
 
 var services = builder.Services;
 var configuration = builder.Configuration;
@@ -671,7 +671,7 @@ services.AddAutoMapper();
 var app = builder.Build();
 var isDevelopment = app.Environment.IsDevelopment();
 
-Log.Information("âœ… Aplicación construida");
+Log.Information("✅ Aplicación construida");
 
 // === PIPELINE DE MIDDLEWARES ===
 app.UseSwaggerUI(isDevelopment);
@@ -700,7 +700,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "ðŸ’¥ La aplicación falló al iniciar");
+    Log.Fatal(ex, "💥 La aplicación falló al iniciar");
     throw;
 }
 finally
@@ -719,7 +719,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("Swagger: http://localhost:{Port}/", port);
     Log.Information("GraphiQL: http://localhost:{Port}/graphiql", port);
     Log.Information("========================================");
-    Log.Information("ðŸš€ Aplicación iniciada en {Mode}", 
+    Log.Information("🚀 Aplicación iniciada en {Mode}", 
         isDevelopment ? "DESARROLLO" : "PRODUCCIá“N");
 }
 ```
@@ -820,22 +820,22 @@ Esta opción organiza las configuraciones en subcarpetas dentro de `Configuratio
 
 ```
 Configuration/
-â”œâ”€â”€ Database/
-â”‚   â”œâ”€â”€ PostgreSQLConfig.cs
-â”‚   â”œâ”€â”€ MongoDBConfig.cs
-â”‚   â””â”€â”€ CacheConfig.cs
-â”œâ”€â”€ Security/
-â”‚   â”œâ”€â”€ AuthenticationConfig.cs
-â”‚   â”œâ”€â”€ AuthorizationConfig.cs
-â”‚   â””â”€â”€ CorsConfig.cs
-â”œâ”€â”€ Api/
-â”‚   â”œâ”€â”€ VersioningConfig.cs
-â”‚   â”œâ”€â”€ SwaggerConfig.cs
-â”‚   â””â”€â”€ RoutingConfig.cs
-â””â”€â”€ Infrastructure/
-    â”œâ”€â”€ LoggingConfig.cs
-    â”œâ”€â”€ HealthChecksConfig.cs
-    â””â”€â”€ TelemetryConfig.cs
+├── Database/
+│   ├── PostgreSQLConfig.cs
+│   ├── MongoDBConfig.cs
+│   └── CacheConfig.cs
+├── Security/
+│   ├── AuthenticationConfig.cs
+│   ├── AuthorizationConfig.cs
+│   └── CorsConfig.cs
+├── Api/
+│   ├── VersioningConfig.cs
+│   ├── SwaggerConfig.cs
+│   └── RoutingConfig.cs
+└── Infrastructure/
+    ├── LoggingConfig.cs
+    ├── HealthChecksConfig.cs
+    └── TelemetryConfig.cs
 ```
 
 ### Opción 4: Usando Minimal APIs con Registros

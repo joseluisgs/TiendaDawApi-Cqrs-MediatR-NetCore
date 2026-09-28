@@ -3,7 +3,7 @@
 ## Índice
 
 [25. Documentación y Versionado de APIs](#25-documentacin-y-versionado-de-apis)
-  - [25.1. Â¿Por qué Documentar y Versionar APIs?](#251-por-qu-documentar-y-versionar-apis)
+  - [25.1. ¿Por qué Documentar y Versionar APIs?](#251-por-qu-documentar-y-versionar-apis)
   - [25.2. Swagger/OpenAPI](#252-swaggeropenapi)
   - [25.3. Anotaciones Swagger](#253-anotaciones-swagger)
   - [25.4. Versionado de APIs](#254-versionado-de-apis)
@@ -12,14 +12,14 @@
 
 ---
 
-## 25.1. Â¿Por qué Documentar y Versionar APIs?
+## 25.1. ¿Por qué Documentar y Versionar APIs?
 
 ### Importancia de la Documentación
 
 ```mermaid
 flowchart LR
     subgraph "Sin documentación"
-        A1["Desarrollador"] --> A2["Â¿Cómo uso la API?"]
+        A1["Desarrollador"] --> A2["¿Cómo uso la API?"]
         A2 --> A3["Trial and error"]
         A3 --> A4["Frustración"]
     end
@@ -31,7 +31,7 @@ flowchart LR
     end
 ```
 
-### Â¿Cuándo Versionar?
+### ¿Cuándo Versionar?
 
 | Señal | Acción |
 |-------|--------|

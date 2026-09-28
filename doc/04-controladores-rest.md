@@ -81,7 +81,7 @@ La tercera parte son los métodos de acción marcados con atributos de verbo HTT
 ControllerBase es la clase base para APIs y proporciona todas las funcionalidades necesarias para responder a peticiones HTTP. Controller hereda de ControllerBase y añade soporte para Views (MVC), lo cual no necesitas para una API REST.
 
 ```csharp
-// âœ… CORRECTO para API REST
+// ✅ CORRECTO para API REST
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosController : ControllerBase
@@ -89,7 +89,7 @@ public class ProductosController : ControllerBase
     // Solo métodos relacionados con API
 }
 
-// âŒ NO NECESARIO para API REST (pero funciona)
+// ❌ NO NECESARIO para API REST (pero funciona)
 [ApiController]
 [Route("api/[controller]")]
 public class ProductosController : Controller
@@ -1122,9 +1122,9 @@ En los capítulos anteriores exploramos CQRS y cómo separa las operaciones de l
 
 Antes el controller inyectaba un service de negocio. Ahora inyecta `IMediator` y envía `Commands` o `Queries`. Esta simplicidad es revolucionaria para la arquitectura.
 
-### Â¿Por qué usar IMediator en el controlador?
+### ¿Por qué usar IMediator en el controlador?
 
-El controlador tradicional tenía múltiples responsabilidades: recibir la petición, validar inputs, llamar a servicios de negocio, mapear respuestas y manejar errores. Esto generaba controladores difíciles de mantener yæµ‹è¯•.
+El controlador tradicional tenía múltiples responsabilidades: recibir la petición, validar inputs, llamar a servicios de negocio, mapear respuestas y manejar errores. Esto generaba controladores difíciles de mantener y测试.
 
 ```mermaid
 flowchart TB
@@ -1153,7 +1153,7 @@ flowchart TB
     end
 ```
 
-### La Ð¼ÐµÑ‚Ð°fora del chef y el Camarero
+### La метаfora del chef y el Camarero
 
 Imagina un restaurante donde el chef (controlador) tiene que hablar directamente con el proveedor de ingredientes, el limpiador de mesas, el chef pastelero y el manager. Esto sería caótico y el chef no podría concentrar en cocinar (la lógica de negocio).
 
@@ -1242,7 +1242,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
 }
 ```
 
-### Â¿Qué hace el controlador ahora?
+### ¿Qué hace el controlador ahora?
 
 El controlador moderno tiene UNA sola responsabilidad: recibir la petición HTTP y retornar la respuesta HTTP apropiada.
 
@@ -1264,10 +1264,10 @@ flowchart TB
 ```
 
 El controlador ya no:
-- âŒ Valida reglas de negocio (el handler lo hace)
-- âŒ Accede a repositorios (el handler lo hace)
-- âŒ Envía emails (los notification handlers lo hacen)
-- âŒ Mapea entidades a DTOs (el handler lo hace)
+- ❌ Valida reglas de negocio (el handler lo hace)
+- ❌ Accede a repositorios (el handler lo hace)
+- ❌ Envía emails (los notification handlers lo hacen)
+- ❌ Mapea entidades a DTOs (el handler lo hace)
 
 El controlador solo traduce entre HTTP y MediatR.
 

@@ -3,7 +3,7 @@
 ## Índice
 
 [23. Email Services: Envío de Correos Electrónicos](#23-email-services-envo-de-correos-electrnicos)
-  - [23.1. Â¿Por Qué un Sistema de Emails Robusto?](#231-por-qu-un-sistema-de-emails-robusto)
+  - [23.1. ¿Por Qué un Sistema de Emails Robusto?](#231-por-qu-un-sistema-de-emails-robusto)
   - [23.2. Interfaz IEmailService](#232-interfaz-iemailservice)
   - [23.3. Implementación con MailKit](#233-implementacin-con-mailkit)
   - [23.4. Servicio de Desarrollo (MemoryEmailService)](#234-servicio-de-desarrollo-memoryemailservice)
@@ -17,7 +17,7 @@
 
 ---
 
-## 23.1. Â¿Por Qué un Sistema de Emails Robusto?
+## 23.1. ¿Por Qué un Sistema de Emails Robusto?
 
 El envío de emails es fundamental para la comunicación con usuarios: confirmaciones de pedidos, restablecimiento de contraseñas, notificaciones y marketing. Un sistema bien diseñado debe ser confiable, eficiente y fácil de probar.
 
@@ -529,19 +529,19 @@ public class TemplateService : ITemplateService
 
 ```
 Templates/Emails/
-â”œâ”€â”€ pedido-confirmado/
-â”‚   â”œâ”€â”€ subject.txt
-â”‚   â”œâ”€â”€ body.html
-â”‚   â””â”€â”€ body.txt
-â”œâ”€â”€ pedido-enviado/
-â”‚   â”œâ”€â”€ subject.txt
-â”‚   â””â”€â”€ body.html
-â”œâ”€â”€ password-reset/
-â”‚   â”œâ”€â”€ subject.txt
-â”‚   â””â”€â”€ body.html
-â””â”€â”€ bienvenido/
-    â”œâ”€â”€ subject.txt
-    â””â”€â”€ body.html
+├── pedido-confirmado/
+│   ├── subject.txt
+│   ├── body.html
+│   └── body.txt
+├── pedido-enviado/
+│   ├── subject.txt
+│   └── body.html
+├── password-reset/
+│   ├── subject.txt
+│   └── body.html
+└── bienvenido/
+    ├── subject.txt
+    └── body.html
 ```
 
 #### ejemplo: pedido-confirmado/body.html
@@ -564,20 +564,20 @@ Templates/Emails/
 <body>
     <div class="container">
         <div class="header">
-            <h1>âœ… Pedido Confirmado</h1>
+            <h1>✅ Pedido Confirmado</h1>
         </div>
         <div class="content">
             <p>Hola {{Nombre}},</p>
             <p>Tu pedido ha sido confirmado correctamente. Aquí están los detalles:</p>
             
             <div class="pedido-info">
-                <h3>ðŸ“¦ Pedido #{{PedidoId}}</h3>
+                <h3>📦 Pedido #{{PedidoId}}</h3>
                 <p><strong>Fecha:</strong> {{FechaPedido}}</p>
                 <p><strong>Total:</strong> {{Total}}</p>
                 <p><strong>Estado:</strong> {{Estado}}</p>
             </div>
             
-            <h4>ðŸ“‹ Productos:</h4>
+            <h4>📋 Productos:</h4>
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #007bff; color: white;">

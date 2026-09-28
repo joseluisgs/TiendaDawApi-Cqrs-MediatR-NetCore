@@ -131,7 +131,7 @@ flowchart TB
     style N2 fill:#fcc419,color:#000
 ```
 
-### Â¿Por qué usar CQRS para Pedidos?
+### ¿Por qué usar CQRS para Pedidos?
 
 | Aspecto | Con Service | Con CQRS |
 |---------|-------------|----------|
@@ -145,29 +145,29 @@ flowchart TB
 
 ```
 Features/Pedidos/
-â”œâ”€â”€ Commands/
-â”‚   â”œâ”€â”€ CreatePedidoCommand.cs
-â”‚   â”œâ”€â”€ CreatePedidoCommandHandler.cs
-â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommand.cs
-â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommandHandler.cs
-â”‚   â”œâ”€â”€ UpdatePedidoAdminCommand.cs
-â”‚   â”œâ”€â”€ UpdateMyPedidoCommand.cs
-â”‚   â”œâ”€â”€ DeletePedidoAdminCommand.cs
-â”‚   â””â”€â”€ DeleteMyPedidoCommand.cs
-â”œâ”€â”€ Queries/
-â”‚   â”œâ”€â”€ GetAllPedidosQuery.cs
-â”‚   â”œâ”€â”€ GetAllPedidosQueryHandler.cs
-â”‚   â”œâ”€â”€ GetAllPedidosListQuery.cs
-â”‚   â”œâ”€â”€ GetMyPedidosQuery.cs
-â”‚   â”œâ”€â”€ GetMyPedidosQueryHandler.cs
-â”‚   â”œâ”€â”€ GetPedidoByIdQuery.cs
-â”‚   â””â”€â”€ GetMyPedidoByIdQuery.cs
-â””â”€â”€ Notifications/
-    â”œâ”€â”€ PedidoCreadoNotification.cs
-    â”œâ”€â”€ PedidoCreadoEmailHandler.cs
-    â”œâ”€â”€ PedidoCreadoSignalRHandler.cs
-    â”œâ”€â”€ EstadoPedidoActualizadoNotification.cs
-    â””â”€â”€ PedidoCanceladoNotification.cs
+├── Commands/
+│   ├── CreatePedidoCommand.cs
+│   ├── CreatePedidoCommandHandler.cs
+│   ├── UpdatePedidoEstadoCommand.cs
+│   ├── UpdatePedidoEstadoCommandHandler.cs
+│   ├── UpdatePedidoAdminCommand.cs
+│   ├── UpdateMyPedidoCommand.cs
+│   ├── DeletePedidoAdminCommand.cs
+│   └── DeleteMyPedidoCommand.cs
+├── Queries/
+│   ├── GetAllPedidosQuery.cs
+│   ├── GetAllPedidosQueryHandler.cs
+│   ├── GetAllPedidosListQuery.cs
+│   ├── GetMyPedidosQuery.cs
+│   ├── GetMyPedidosQueryHandler.cs
+│   ├── GetPedidoByIdQuery.cs
+│   └── GetMyPedidoByIdQuery.cs
+└── Notifications/
+    ├── PedidoCreadoNotification.cs
+    ├── PedidoCreadoEmailHandler.cs
+    ├── PedidoCreadoSignalRHandler.cs
+    ├── EstadoPedidoActualizadoNotification.cs
+    └── PedidoCanceladoNotification.cs
 ```
 
 Cada archivo tiene UNA responsabilidad. El `CreatePedidoCommandHandler` solo sabe crear pedidos. No conoce emails, no conoce SignalR, solo la lógica de negocio de creación.
@@ -327,7 +327,7 @@ flowchart TD
     A["Transacción comienza"] --> B["Leer datos"]
     B --> C["Procesar lógica"]
     C --> D["Validar conflictos"]
-    D --> E{"Â¿Sin conflictos?"}
+    D --> E{"¿Sin conflictos?"}
     E -->|Sí| F["Escribir cambios"]
     E -->|No| G["Rechazar cambios"]
     F --> H["Transacción exitosa"]
@@ -617,7 +617,7 @@ flowchart TD
     F --> G["Transacción exitosa"]
     
     subgraph "Otras transacciones"
-        H["Intentan leer"] --> I{"Â¿Bloqueado?"}
+        H["Intentan leer"] --> I{"¿Bloqueado?"}
         I -->|Sí| J["Esperar"]
         I -->|No| K["Leer datos"]
     end
@@ -738,10 +738,10 @@ COMMIT;
 
 | Nivel                | Dirty Read  | Non-repeatable | Phantom     | Bloqueo |
 | -------------------- | ----------- | -------------- | ----------- | ------- |
-| **Read Uncommitted** | âŒ Permitido | âŒ Permitido    | âŒ Permitido | Ninguno |
-| **Read Committed**   | âœ… Protegido | âŒ Permitido    | âŒ Permitido | Filas   |
-| **Repeatable Read**  | âœ… Protegido | âœ… Protegido    | âŒ Permitido | Filas   |
-| **Serializable**     | âœ… Protegido | âœ… Protegido    | âœ… Protegido | Tabla   |
+| **Read Uncommitted** | ❌ Permitido | ❌ Permitido    | ❌ Permitido | Ninguno |
+| **Read Committed**   | ✅ Protegido | ❌ Permitido    | ❌ Permitido | Filas   |
+| **Repeatable Read**  | ✅ Protegido | ✅ Protegido    | ❌ Permitido | Filas   |
+| **Serializable**     | ✅ Protegido | ✅ Protegido    | ✅ Protegido | Tabla   |
 
 ### Serializable con EF Core
 
@@ -916,7 +916,7 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
-### Â¿Por qué este handler es mejor que un PedidoService tradicional?
+### ¿Por qué este handler es mejor que un PedidoService tradicional?
 
 | Aspecto | PedidoService tradicional | CreatePedidoCommandHandler |
 |---------|--------------------------|----------------------------|
@@ -1104,10 +1104,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["Â¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
+    A["¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
     A --> C["Lecturas frecuentes, pocas escrituras"]
     
-    B --> D{"Â¿Es inventario crítico?"}
+    B --> D{"¿Es inventario crítico?"}
     D -->|Sí, absolutamente crítico| E["Pesimista"]
     D -->|No, admite algunos reintentos| F["Mixto"]
     
@@ -1393,16 +1393,16 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 }
 ```
 
-### Â¿Qué hace el controlador ahora?
+### ¿Qué hace el controlador ahora?
 
 | Responsabilidad | Antes | Ahora |
 |-----------------|-------|-------|
-| Extraer userId del claim | âŒ En el servicio | âœ… En el controller |
-| Validar entrada | âŒ En el servicio | âœ… En el handler + FluentValidation |
-| Lógica de negocio | âŒ En el servicio | âœ… En el CommandHandler |
-| Transacciones | âŒ En el servicio | âœ… En el CommandHandler |
-| Efectos secundarios | âŒ En el servicio | âœ… En NotificationHandlers |
-| Mapear respuesta | âŒ En el servicio | âœ… En el handler |
+| Extraer userId del claim | ❌ En el servicio | ✅ En el controller |
+| Validar entrada | ❌ En el servicio | ✅ En el handler + FluentValidation |
+| Lógica de negocio | ❌ En el servicio | ✅ En el CommandHandler |
+| Transacciones | ❌ En el servicio | ✅ En el CommandHandler |
+| Efectos secundarios | ❌ En el servicio | ✅ En NotificationHandlers |
+| Mapear respuesta | ❌ En el servicio | ✅ En el handler |
 
 ---
 

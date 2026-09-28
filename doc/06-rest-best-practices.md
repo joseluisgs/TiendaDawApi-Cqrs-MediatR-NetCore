@@ -66,7 +66,7 @@ El versionado permite evolucionar la API sin romper clientes existentes. Existen
 
 ```mermaid
 flowchart TD
-    A["Â¿Cómo versionar?"] --> B["URL Path"]
+    A["¿Cómo versionar?"] --> B["URL Path"]
     A --> C["Query String"]
     A --> D["Header Custom"]
     A --> E["Accept Header"]
@@ -882,13 +882,13 @@ flowchart TD
 
 | Práctica | Implementado |
 |----------|--------------|
-| Versionado en URL | âœ… |
-| Paginación | âœ… |
-| HATEOAS links | âœ… |
-| Response envelope | âœ… |
-| Filtrado flexible | âœ… |
-| ETag cacheo | âœ… |
-| Documentación Swagger | â¬œ |
+| Versionado en URL | ✅ |
+| Paginación | ✅ |
+| HATEOAS links | ✅ |
+| Response envelope | ✅ |
+| Filtrado flexible | ✅ |
+| ETag cacheo | ✅ |
+| Documentación Swagger | ⬜ |
 
 ### Siguientes Pasos
 

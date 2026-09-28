@@ -19,14 +19,14 @@
 
 ```mermaid
 flowchart TD
-    subgraph "Authentication (Â¿Quién eres?)"
+    subgraph "Authentication (¿Quién eres?)"
         A1["Identificar al usuario"]
         A2["Verificar credenciales"]
         A3["Generar token JWT"]
         A4["Establecer identidad"]
     end
     
-    subgraph "Authorization (Â¿Qué puedes hacer?)"
+    subgraph "Authorization (¿Qué puedes hacer?)"
         B1["Verificar permisos"]
         B2["Evaluar roles/claims"]
         C3["Autorizar o denegar"]
@@ -40,7 +40,7 @@ flowchart TD
 
 | Aspecto | Autenticación | Autorización |
 |---------|---------------|--------------|
-| **Pregunta** | Â¿Quién eres? | Â¿Qué puedes hacer? |
+| **Pregunta** | ¿Quién eres? | ¿Qué puedes hacer? |
 | **Proceso** | Verificar identidad | Verificar permisos |
 | **Outcome** | ClaimsPrincipal | Allow/Deny |
 | **HTTP Header** | Authorization: Bearer | [Authorize] attribute |
@@ -82,7 +82,7 @@ sequenceDiagram
     C->>M: Request + Bearer Token
     M->>Auth: Extraer y validar token
     Auth-->>M: ClaimsPrincipal (identidad)
-    M->>Authz: Â¿Acceso permitido?
+    M->>Authz: ¿Acceso permitido?
     
     alt Autorizado
         Authz-->>M: Allow
@@ -135,11 +135,11 @@ flowchart TB
 
 | Funcionabilidad | Con Identity | Personalizado |
 |----------------|--------------|---------------|
-| `[Authorize]` | âœ… | âœ… |
-| `[Authorize(Roles="ADMIN")]` | âœ… | âœ… |
-| `User.IsInRole("ADMIN")` | âœ… | âœ… |
-| `User.Identity.Name` | âœ… | âœ… |
-| Politicas personalizadas | âœ… | âœ… |
+| `[Authorize]` | ✅ | ✅ |
+| `[Authorize(Roles="ADMIN")]` | ✅ | ✅ |
+| `User.IsInRole("ADMIN")` | ✅ | ✅ |
+| `User.Identity.Name` | ✅ | ✅ |
+| Politicas personalizadas | ✅ | ✅ |
 
 #### Conclusion
 

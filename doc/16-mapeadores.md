@@ -3,7 +3,7 @@
 ## Índice
 
 [16. Mapeadores: AutoMapper vs Funciones de Extensión](#16-mapeadores-automapper-vs-funciones-de-extensin)
-  - [16.1. Â¿Por Qué Usar Mapeadores?](#161-por-qu-usar-mapeadores)
+  - [16.1. ¿Por Qué Usar Mapeadores?](#161-por-qu-usar-mapeadores)
   - [16.2. AutoMapper](#162-automapper)
   - [16.3. Funciones de Extensión (Alternativa)](#163-funciones-de-extensin-alternativa)
   - [16.4. Comparación AutoMapper vs Extensiones](#164-comparacin-automapper-vs-extensiones)
@@ -15,7 +15,7 @@
 
 ---
 
-## 16.1. Â¿Por Qué Usar Mapeadores?
+## 16.1. ¿Por Qué Usar Mapeadores?
 
 En arquitecturas limpias, las **entidades** (modelos de dominio) y los **DTOs** (Data Transfer Objects) suelen tener estructuras diferentes. Los mapeadores facilitan la conversión entre ambos sin duplicar lógica.
 
@@ -47,7 +47,7 @@ flowchart LR
 
 | Beneficio | Descripción |
 |-----------|-------------|
-| **Separación de responsabilidades** | Entidades â‰  DTOs |
+| **Separación de responsabilidades** | Entidades ≠ DTOs |
 | **Reutilización** | Un mapeo, múltiples usos |
 | **Mantenibilidad** | Cambios centralizados |
 | **Tipado** | Errores en compilación |
@@ -73,7 +73,7 @@ Del archivo `Program.cs`:
 
 ```csharp
 // AutoMapper
-Log.Information("ðŸ”„ Configurando AutoMapper...");
+Log.Information("🔄 Configurando AutoMapper...");
 builder.Services.AddAutoMapper(
     typeof(MappingProfile), 
     typeof(PedidoProfile));
@@ -204,7 +204,7 @@ namespace TiendaApi.Apis.Extensions;
 // Clase de extensiones para Producto
 public static class ProductoExtensions
 {
-    // Entidad â†’ DTO
+    // Entidad → DTO
     public static ProductoDto ToDto(this Producto producto)
     {
         return new ProductoDto
@@ -219,7 +219,7 @@ public static class ProductoExtensions
         };
     }
 
-    // DTO â†’ Entidad
+    // DTO → Entidad
     public static Producto ToEntity(this ProductoRequestDto dto)
     {
         return new Producto
@@ -233,7 +233,7 @@ public static class ProductoExtensions
         };
     }
 
-    // Lista de entidades â†’ lista de DTOs
+    // Lista de entidades → lista de DTOs
     public static List<ProductoDto> ToDtoList(this IEnumerable<Producto> productos)
     {
         return productos.Select(p => p.ToDto()).ToList();
@@ -425,8 +425,8 @@ public class MappersBenchmarks
 
 ```mermaid
 flowchart TD
-    A["Â¿Complexidad del mapeo?"] --> B{"Â¿Mapeo simple?"}
-    B -->|Sí, nombres similares| C["Â¿Rendimiento crítico?"]
+    A["¿Complexidad del mapeo?"] --> B{"¿Mapeo simple?"}
+    B -->|Sí, nombres similares| C["¿Rendimiento crítico?"]
     B -->|No, lógica compleja| D["AutoMapper"]
     
     C -->|Sí| E["Extensiones"]
@@ -442,7 +442,7 @@ flowchart TD
 | Escenario | Recomendación | Razón |
 |-----------|---------------|-------|
 | **API simple, pocos mapeos** | Extensiones | Sin dependencia, rápido |
-| **Mapeos complejos con lógica** | AutoMapper | Configuración Ñ†ÐµÐ½Ñ‚Ñ€Ð°Ð»Ð¸Ð·Ð¾Ð²Ð°Ð½Ð½Ð°Ñ |
+| **Mapeos complejos con lógica** | AutoMapper | Configuración централизованная |
 | **Alto rendimiento crítico** | Extensiones | Código compilado, sin overhead |
 | **Equipo nuevo en .NET** | Extensiones | Curva más baja |
 | **Múltiples perfiles de dominio** | AutoMapper | Organización por Profile |
@@ -484,10 +484,10 @@ public static class ProductoExtensions
     {
         return producto.Estado switch
         {
-            PedidoEstado.Pendiente => "â³ Pendiente",
-            PedidoEstado.Confirmado => "âœ… Confirmado",
-            PedidoEstado.Entregado => "ðŸ“¦ Entregado",
-            PedidoEstado.Cancelado => "âŒ Cancelado",
+            PedidoEstado.Pendiente => "⏳ Pendiente",
+            PedidoEstado.Confirmado => "✅ Confirmado",
+            PedidoEstado.Entregado => "📦 Entregado",
+            PedidoEstado.Cancelado => "❌ Cancelado",
             _ => "Desconocido"
         };
     }
@@ -554,14 +554,14 @@ flowchart TD
 
 ### Checklist de Decisión
 
-| Pregunta | Si â†’ AutoMapper | Si â†’ Extensiones |
+| Pregunta | Si → AutoMapper | Si → Extensiones |
 |----------|-----------------|------------------|
-| Â¿Mapeos simples? | | âœ… |
-| Â¿Lógica compleja? | âœ… | |
-| Â¿Sin dependencias externas? | | âœ… |
-| Â¿Equipo experimentado? | âœ… | |
-| Â¿Alto rendimiento crítico? | | âœ… |
-| Â¿Múltiples perfiles? | âœ… | |
+| ¿Mapeos simples? | | ✅ |
+| ¿Lógica compleja? | ✅ | |
+| ¿Sin dependencias externas? | | ✅ |
+| ¿Equipo experimentado? | ✅ | |
+| ¿Alto rendimiento crítico? | | ✅ |
+| ¿Múltiples perfiles? | ✅ | |
 
 ### Siguientes Pasos
 

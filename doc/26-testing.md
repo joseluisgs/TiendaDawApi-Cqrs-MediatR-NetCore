@@ -3,7 +3,7 @@
 ## Índice
 
 [26. Testing con NUnit](#26-testing-con-nunit)
-  - [26.1. Â¿Qué es Testing?](#261-qu-es-testing)
+  - [26.1. ¿Qué es Testing?](#261-qu-es-testing)
   - [26.2. Tipos de Tests](#262-tipos-de-tests)
   - [26.3. Frameworks de Testing en .NET](#263-frameworks-de-testing-en-net)
   - [26.4. Estructura del Proyecto de Tests](#264-estructura-del-proyecto-de-tests)
@@ -21,11 +21,11 @@
 
 ---
 
-## 26.1. Â¿Qué es Testing?
+## 26.1. ¿Qué es Testing?
 
 **Testing** es el proceso de verificar que el código funciona correctamente. En lugar de esperar a que los usuarios encuentren errores, los tests automatizados detectan problemas antes de llegar a producción.
 
-### Â¿Por qué hacer Testing?
+### ¿Por qué hacer Testing?
 
 ```mermaid
 flowchart LR
@@ -89,7 +89,7 @@ flowchart TD
 | **Integration** | Múltiples componentes juntos | Medio (~s) | Medio | Medio |
 | **E2E** | Flujo completo de usuario | Lento (~min) | Bajo | Pocos |
 
-### Â¿Qué es un Test Unitario?
+### ¿Qué es un Test Unitario?
 
 Un test unitario verifica que una **única unidad** de código funciona correctamente. Esta unidad suele ser un método. Un buen test unitario:
 
@@ -188,34 +188,44 @@ TiendaApi.Tests/
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- HotChocolate 16 inyecta HotChocolate.Types.Composite (clase 'Is') que colisiona con NUnit.Framework.Is -->
+    <HotChocolateCompositeImplicitUsings>disable</HotChocolateCompositeImplicitUsings>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverageThreshold>0</CoverageThreshold>
+    <CoverletOutputFormat>json,lcov,opencover</CoverletOutputFormat>
+    <CoverletOutput>./coverage/</CoverletOutput>
   </PropertyGroup>
 
-  <!-- Paquetes de testing -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-    <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Include="FluentAssertions.Mvc" Version="6.0.0" />
-    <PackageReference Include="Moq" Version="4.20.70" />
-    <PackageReference Include="TestContainers" Version="3.8.0" />
-    <PackageReference Include="TestContainers.PostgreSql" Version="3.8.0" />
-    <PackageReference Include="TestContainers.Redis" Version="3.8.0" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+    <!-- Versiones centralizadas en Directory.Packages.props -->
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="coverlet.msbuild" />
+    <PackageReference Include="CSharpFunctionalExtensions" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="HotChocolate.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit.Analyzers" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Testcontainers.MongoDb" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="MongoDB.Driver" />
   </ItemGroup>
 
-  <!-- Referencia al proyecto principal -->
   <ItemGroup>
-    <ProjectReference Include="..\TiendaApi.Core\TiendaApi.Core.csproj" />
-    <ProjectReference Include="..\TiendaApi.Apis\TiendaApi.Apis.csproj" />
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TiendaApi.Api\TiendaApi.csproj" />
   </ItemGroup>
 
 </Project>
@@ -366,7 +376,7 @@ En este proyecto los contenedores se organizan **una sola vez por ensamblado**: 
 
 **TestContainers** es una librería que permite crear contenedores Docker durante los tests de integración. Esto proporciona bases de datos reales y otros servicios en entornos aislados.
 
-### Â¿Por qué usar TestContainers?
+### ¿Por qué usar TestContainers?
 
 ```mermaid
 flowchart LR
@@ -1734,11 +1744,11 @@ La combinación de verificación de estilo y auditoría de seguridad automatiza 
 
 Los tests **End-to-End (E2E)** verifican que la API completa funciona correctamente desde la perspectiva del cliente, incluyendo autenticación, validación y flujos de negocio completos.
 
-### Â¿Qué es Postman?
+### ¿Qué es Postman?
 
 **Postman** es una herramienta gráfica para probar APIs que permite crear colecciones de requests, organizarlos en carpetas, añadir scripts de pre-request y assertions.
 
-### Â¿Qué es Newman?
+### ¿Qué es Newman?
 
 **Newman** es el CLI de Postman que permite ejecutar colecciones de tests desde la línea de comandos, ideal para integración continua (CI/CD).
 
@@ -1788,30 +1798,30 @@ npm install -g newman-reporter-htmlextra
 
 ```
 TiendaApi Collection/
-â”œâ”€â”€ Auth/
-â”‚   â”œâ”€â”€ Signup POST /v1/auth/signup
-â”‚   â”œâ”€â”€ Signin POST /v1/auth/signin
-â”‚   â””â”€â”€ Refresh Token POST /v1/auth/refresh
-â”œâ”€â”€ Categorias/
-â”‚   â”œâ”€â”€ GET All GET /api/categorias
-â”‚   â”œâ”€â”€ GET by ID GET /api/categorias/{id}
-â”‚   â”œâ”€â”€ POST Create POST /api/categorias
-â”‚   â”œâ”€â”€ PUT Update PUT /api/categorias/{id}
-â”‚   â””â”€â”€ DELETE Delete DELETE /api/categorias/{id}
-â”œâ”€â”€ Productos/
-â”‚   â”œâ”€â”€ GET All GET /api/productos
-â”‚   â”œâ”€â”€ GET by ID GET /api/productos/{id}
-â”‚   â”œâ”€â”€ POST Create POST /api/productos
-â”‚   â”œâ”€â”€ PUT Update PUT /api/productos/{id}
-â”‚   â”œâ”€â”€ DELETE Delete DELETE /api/productos/{id}
-â”‚   â””â”€â”€ GET by Categoria GET /api/productos/categoria/{id}
-â”œâ”€â”€ Pedidos/
-â”‚   â”œâ”€â”€ GET All GET /api/pedidos
-â”‚   â”œâ”€â”€ GET by ID GET /api/pedidos/{id}
-â”‚   â”œâ”€â”€ POST Create POST /api/pedidos
-â”‚   â””â”€â”€ PUT Estado PUT /api/pedidos/{id}/estado
-â””â”€â”€ Health/
-    â””â”€â”€ GET Health GET /health
+├── Auth/
+│   ├── Signup POST /v1/auth/signup
+│   ├── Signin POST /v1/auth/signin
+│   └── Refresh Token POST /v1/auth/refresh
+├── Categorias/
+│   ├── GET All GET /api/categorias
+│   ├── GET by ID GET /api/categorias/{id}
+│   ├── POST Create POST /api/categorias
+│   ├── PUT Update PUT /api/categorias/{id}
+│   └── DELETE Delete DELETE /api/categorias/{id}
+├── Productos/
+│   ├── GET All GET /api/productos
+│   ├── GET by ID GET /api/productos/{id}
+│   ├── POST Create POST /api/productos
+│   ├── PUT Update PUT /api/productos/{id}
+│   ├── DELETE Delete DELETE /api/productos/{id}
+│   └── GET by Categoria GET /api/productos/categoria/{id}
+├── Pedidos/
+│   ├── GET All GET /api/pedidos
+│   ├── GET by ID GET /api/pedidos/{id}
+│   ├── POST Create POST /api/pedidos
+│   └── PUT Estado PUT /api/pedidos/{id}/estado
+└── Health/
+    └── GET Health GET /health
 ```
 
 ### Variables de Entorno en Postman
@@ -2317,7 +2327,7 @@ jobs:
       - name: Check Results
         if: failure()
         run: |
-          echo "âŒ E2E Tests failed!"
+          echo "❌ E2E Tests failed!"
           echo "Check the test results artifact for details."
           exit 1
 ```
@@ -2373,7 +2383,7 @@ newman run collection.json \
 
 **Bruno** es una alternativa open source a Postman que permite crear y ejecutar tests de API desde archivos de texto plano (`.bru`), ideal para control de versiones y CI/CD.
 
-### Â¿Qué es Bruno CLI?
+### ¿Qué es Bruno CLI?
 
 Bruno CLI es la versión de línea de comandos de Bruno que permite ejecutar colecciones de tests sin necesidad de la interfaz gráfica.
 
@@ -2420,27 +2430,27 @@ docker run --rm -it -v $(pwd):/app node:20-alpine sh
 
 ```
 Bruno/
-â”œâ”€â”€ 00-Setup/
-â”‚   â”œâ”€â”€ health-check.bru
-â”‚   â””â”€â”€ cleanup.bru
-â”œâ”€â”€ 01-Authentication/
-â”‚   â”œâ”€â”€ signup-usuario-nuevo.bru
-â”‚   â”œâ”€â”€ signin-admin.bru
-â”‚   â””â”€â”€ signin-usuario.bru
-â”œâ”€â”€ 02-Categorias/
-â”‚   â”œâ”€â”€ get-all.bru
-â”‚   â”œâ”€â”€ get-by-id.bru
-â”‚   â”œâ”€â”€ post-crear.bru
-â”‚   â”œâ”€â”€ put-actualizar.bru
-â”‚   â””â”€â”€ delete-eliminar.bru
-â”œâ”€â”€ 03-Productos/
-â”‚   â”œâ”€â”€ get-all.bru
-â”‚   â”œâ”€â”€ post-crear.bru
-â”‚   â””â”€â”€ ...
-â”œâ”€â”€ environments/
-â”‚   â””â”€â”€ local.bru
-â””â”€â”€ assets/
-    â””â”€â”€ test-image.png
+├── 00-Setup/
+│   ├── health-check.bru
+│   └── cleanup.bru
+├── 01-Authentication/
+│   ├── signup-usuario-nuevo.bru
+│   ├── signin-admin.bru
+│   └── signin-usuario.bru
+├── 02-Categorias/
+│   ├── get-all.bru
+│   ├── get-by-id.bru
+│   ├── post-crear.bru
+│   ├── put-actualizar.bru
+│   └── delete-eliminar.bru
+├── 03-Productos/
+│   ├── get-all.bru
+│   ├── post-crear.bru
+│   └── ...
+├── environments/
+│   └── local.bru
+└── assets/
+    └── test-image.png
 ```
 
 ### Formato de Archivo .bru
@@ -2712,7 +2722,7 @@ jobs:
 | **Interfaz** | GUI completa | CLI + archivos de texto |
 | **Variables** | GUI + scripts JS | bru.setVar() / bru.getVar() |
 | **Reportes** | HTML nativo | JSON (requiere conversión) |
-| **SignalR** | âœ… Soportado | âš ï¸ Bug abierto (#5969) |
+| **SignalR** | ✅ Soportado | ⚠️ Bug abierto (#5969) |
 | **Comunidad** | Muy grande | En crecimiento |
 
 ### Cuándo Usar Bruno vs Postman

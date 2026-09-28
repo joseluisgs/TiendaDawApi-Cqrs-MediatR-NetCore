@@ -23,7 +23,7 @@ Las excepciones están diseñadas para situaciones excepcionales e inesperadas: 
 Imagina un método que valida el login de un usuario. Hay múltiples formas en que puede fallar: email vacío, email no válido, contraseña incorrecta, cuenta bloqueada. Si usas excepciones para cada caso, terminas con un try-catch gigante que no dice nada sobre los posibles caminos del código, el rendimiento se ve afectado porque las excepciones tienen overhead, y es fácil olvidar capturar una excepción y que el error llegue al cliente en un formato inesperado.
 
 ```csharp
-// âŒ INCORRECTO: Excepciones para errores de negocio
+// ❌ INCORRECTO: Excepciones para errores de negocio
 public class AuthService
 {
     public User Login(string email, string password)
@@ -64,7 +64,7 @@ catch (ForbiddenException ex) { /* mostrar cuenta bloqueada */ }
 Con el patrón Result, cada método devuelve explícitamente si tuvo éxito o falló, junto con el valor o el error. Esto hace el código auto-documentado: puedes ver todos los posibles resultados leyendo la firma del método. No hay excepciones ocultas, el flujo de control es explícito, y el rendimiento es óptimo porque no hay overhead de stack trace.
 
 ```csharp
-// âœ… CORRECTO: Result Pattern
+// ✅ CORRECTO: Result Pattern
 public class AuthService
 {
     public Result<User, DomainError> Login(string email, string password)
@@ -374,7 +374,7 @@ classDiagram
     DomainError <|-- InternalError
 ```
 
-### Â¿Qué es un Factory Method? (Patrón Factory)
+### ¿Qué es un Factory Method? (Patrón Factory)
 
 Un **Factory Method** es un método estático que encapsula la creación de objetos. Su función es:
 - **Ocultar** la complejidad de creación
@@ -382,12 +382,12 @@ Un **Factory Method** es un método estático que encapsula la creación de obje
 - **Centralizar** la lógica de construcción
 
 ```csharp
-// âŒ Sin factory: formato inconsistente, repetitivo
+// ❌ Sin factory: formato inconsistente, repetitivo
 new NotFoundError("Recurso con ID 5 no encontrado")
 new NotFoundError("Usuario 10 no existe")
 new NotFoundError("El producto 7 no fue encontrado")
 
-// âœ… Con factory: mensaje estandarizado
+// ✅ Con factory: mensaje estandarizado
 NotFoundError.FromId(5, "Producto")     // "Recurso con ID 5 no encontrado"
 NotFoundError.FromId(10, "Usuario")     // "Recurso con ID 10 no encontrado"
 NotFoundError.FromId(7, "Producto")     // "Recurso con ID 7 no encontrado"
@@ -431,7 +431,7 @@ public sealed record ConflictError(string Message) : DomainError(Message)
 }
 ```
 
-### Â¿Qué es una Fachada? (Patrón Fachada)
+### ¿Qué es una Fachada? (Patrón Fachada)
 
 Una **Fachada** es una clase estática que actúa como punto de entrada único a un subsistema complejo. Su función es:
 - **Centralizar** todos los errores de un dominio
@@ -439,12 +439,12 @@ Una **Fachada** es una clase estática que actúa como punto de entrada único a
 - **Delegar** a los factories base
 
 ```csharp
-// âŒ Sinfachada: dispersión y duplicación
+// ❌ Sinfachada: dispersión y duplicación
 NotFoundError.FromId(5, "Producto")
 ConflictError.Duplicate("email", "user@test.com")
 new BusinessRuleError("No se puede eliminar el usuario 3")
 
-// âœ… Confachada: organización y semántica
+// ✅ Confachada: organización y semántica
 ProductoError.NotFound(5)                    // Delega a FromId()
 UsuarioError.EmailExistente("user@test.com")  // Delega a Duplicate()
 UsuarioError.NoSePuedeEliminarConPedidos(3)  // Crea BusinessRuleError con mensaje semántico
@@ -1015,8 +1015,8 @@ El código con Result es más fácil de leer porque todos los posibles caminos e
 flowchart TB
     subgraph "Con Excepciones"
         A1["Método con throw"]
-        A2["Â¿Dónde está el try-catch?"]
-        A3["Â¿Qué excepciones pueden saltar?"]
+        A2["¿Dónde está el try-catch?"]
+        A3["¿Qué excepciones pueden saltar?"]
         A4["Flow decontrol oculto"]
     end
     

@@ -4,7 +4,7 @@
 
 [14. MediatR + CQRS + Eventos de Dominio](#14-mediatr--cqrs--eventos-de-dominio)
   - [14.1. El Problema: Acoplamiento entre Efectos Secundarios](#141-el-problema-acoplamiento-entre-efectos-secundarios)
-  - [14.2. Â¿Qué son los Eventos de Dominio?](#142-qu-son-los-eventos-de-dominio)
+  - [14.2. ¿Qué son los Eventos de Dominio?](#142-qu-son-los-eventos-de-dominio)
   - [14.3. Notifications en MediatR: La Implementación del Patrón](#143-notifications-en-mediatr-la-implementacin-del-patrn)
   - [14.4. Anatomía de una Notification y sus Handlers](#144-anatoma-de-una-notification-y-sus-handlers)
   - [14.5. La metáfora del periódico](#145-la-metfora-del-peridico)
@@ -22,17 +22,17 @@
 
 Imaginemos que eres un chef en una cocina profesional. Acabas de terminar de preparar un plato principal y ahora necesitas:
 
-1. ðŸ“§ Enviar un email al cliente confirmando su orden
-2. ðŸ“± Enviar una notificación por SignalR al cliente
-3. ðŸ“Š Actualizar las métricas de ventas en tiempo real
-4. ðŸ”„ Invalidar la cache de productos
-5. ðŸ“ Escribir en el log de auditoría
-6. ðŸ“¦ Notificar al departamento de inventario
+1. 📧 Enviar un email al cliente confirmando su orden
+2. 📱 Enviar una notificación por SignalR al cliente
+3. 📊 Actualizar las métricas de ventas en tiempo real
+4. 🔄 Invalidar la cache de productos
+5. 📝 Escribir en el log de auditoría
+6. 📦 Notificar al departamento de inventario
 
 Si todo esto está en tu `CreateProductoCommandHandler`, tienes un problema de acoplamiento masivo:
 
 ```csharp
-// âŒ PROBLEMA: Handler con acoplamiento directo
+// ❌ PROBLEMA: Handler con acoplamiento directo
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand command)
@@ -51,7 +51,7 @@ public class CreateProductoCommandHandler
 }
 ```
 
-### Â¿Por qué esto es un problema?
+### ¿Por qué esto es un problema?
 
 ```mermaid
 flowchart TB
@@ -75,11 +75,11 @@ flowchart TB
 1. **Responsabilidad única violada**: El handler hace mucho más que crear un producto
 2. **Difícil de testear**: Necesitas mockear 6 servicios diferentes
 3. **Imposible de modificar**: Agregar/eliminar un efecto requiere cambiar el handler
-4. **No reutilizable**: Â¿Cómo usas esta lógica en un batch job?
+4. **No reutilizable**: ¿Cómo usas esta lógica en un batch job?
 
 ---
 
-## 14.2. Â¿Qué son los Eventos de Dominio?
+## 14.2. ¿Qué son los Eventos de Dominio?
 
 Un **Evento de Dominio** es un objeto que representa "algo que ocurrió" en el dominio y que puede ser interesante para otras partes del sistema.
 
@@ -296,13 +296,13 @@ public class UsuarioRegistradoBienvenidaEmailHandler
         
         await _emailService.SendAsync(
             to: notification.Usuario.Email,
-            subject: "Â¡Bienvenido a TiendaApi!",
+            subject: "¡Bienvenido a TiendaApi!",
             body: $"""
                 Hola {notification.Usuario.Username},
                 
                 Bienvenido a nuestra tienda. Tu cuenta ha sido creada exitosamente.
                 
-                Â¡Gracias por registrarte!
+                ¡Gracias por registrarte!
                 """
         );
     }
@@ -371,7 +371,7 @@ Para entender mejor cómo funcionan las notifications, usemos una metáfora que 
 
 ```mermaid
 flowchart TB
-    subgraph "EL PERIá“DICO"
+    subgraph "EL PERIÓDICO"
         P[Editor\n(Command Handler)]
         N[Periódico\n(INotification)]
         S1[Lector de Deportes]
@@ -396,7 +396,7 @@ flowchart TB
 2. **El Periódico (Notification)** se distribuye a todos los suscriptores
 3. **Los Lectores (Notification Handlers)** reciben el periódico y cada uno reacciona a lo que le interesa
 
-### Â¿Por qué es mejor así?
+### ¿Por qué es mejor así?
 
 | Aspecto | Sin Notification | Con Notification |
 |---------|------------------|-------------------|
@@ -498,14 +498,14 @@ sequenceDiagram
 
 Los **Pipeline Behaviors** son como "middleware" para MediatR. Permiten ejecutar código antes y después de cada handler, de forma transparente.
 
-### Â¿Para qué sirven?
+### ¿Para qué sirven?
 
 Imagina que quieres:
-- ðŸ“ Loggear todas las peticiones que entran
-- â±ï¸ Medir cuánto tiempo tarda cada handler
-- ðŸ”’ Verificar autorización en un solo lugar
-- ðŸ’± Manejar transacciones automáticamente
-- ðŸ“Š Registrar métricas
+- 📝 Loggear todas las peticiones que entran
+- ⏱️ Medir cuánto tiempo tarda cada handler
+- 🔒 Verificar autorización en un solo lugar
+- 💱 Manejar transacciones automáticamente
+- 📊 Registrar métricas
 
 Con behaviors, esto se hace una sola vez y aplica a TODOS los handlers.
 
@@ -531,7 +531,7 @@ public class LoggingBehavior<TRequest, TResponse>
         var requestName = typeof(TRequest).Name;
         
         // ANTES del handler
-        _logger.LogInformation("ðŸ“¥ Request {RequestName} iniciada", requestName);
+        _logger.LogInformation("📥 Request {RequestName} iniciada", requestName);
         var startTime = DateTime.UtcNow;
         
         try
@@ -542,7 +542,7 @@ public class LoggingBehavior<TRequest, TResponse>
             // DESPUá‰S del handler (success)
             var duration = DateTime.UtcNow - startTime;
             _logger.LogInformation(
-                "âœ… Request {RequestName} completada en {Duration}ms",
+                "✅ Request {RequestName} completada en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -554,7 +554,7 @@ public class LoggingBehavior<TRequest, TResponse>
             var duration = DateTime.UtcNow - startTime;
             _logger.LogError(
                 ex,
-                "âŒ Request {RequestName} falló en {Duration}ms",
+                "❌ Request {RequestName} falló en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -726,7 +726,7 @@ public class ProductoCreadoWhatsAppHandler
 }
 ```
 
-**Â¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
+**¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
 
 ---
 
@@ -767,7 +767,7 @@ public class CreatePedidoCommandHandler
 ```
 
 **Problemas**:
-- SiåŽ»æŽ‰ uno de estos servicios, hay que modificar el handler
+- Si去掉 uno de estos servicios, hay que modificar el handler
 - Testing requiere mockear 5 servicios
 - No hay forma de deshabilitar temporalmente un efecto secundario
 
@@ -831,28 +831,28 @@ public class PedidoCreadoCacheHandler : INotificationHandler<PedidoCreadoNotific
 
 ## 14.10. Consideraciones y Mejores Prácticas
 
-Ahora que conoces el poder de las Notifications, aquíæœ‰ä¸€äº› consideraciones importantes.
+Ahora que conoces el poder de las Notifications, aquí有一些 consideraciones importantes.
 
 ### Cuándo usar Notifications
 
-âœ… **Efectos secundarios que no afectan el resultado principal**
+✅ **Efectos secundarios que no afectan el resultado principal**
 Enviar emails, notificar por SignalR, logs, métricas
 
-âœ… **Operaciones que pueden fallar sin afectar el flujo principal**
+✅ **Operaciones que pueden fallar sin afectar el flujo principal**
 Si el email falla, el pedido igual debe crearse
 
-âœ… **Cuando múltiples sistemas deben reaccionar al mismo evento**
+✅ **Cuando múltiples sistemas deben reaccionar al mismo evento**
 Email + SignalR + Auditoría
 
 ### Cuándo NO usar Notifications
 
-âŒ **Cuando el resultado depende del efecto secundario**
+❌ **Cuando el resultado depende del efecto secundario**
 Si necesitas esperar a que termine el email para retornar, no uses notifications
 
-âŒ **Operaciones transaccionales**
+❌ **Operaciones transaccionales**
 Invalidar cache dentro de una transacción debe hacerse en el handler principal
 
-âŒ **Efectos secundarios que pueden bloquear**
+❌ **Efectos secundarios que pueden bloquear**
 No pongas operaciones largas en notification handlers
 
 ### Mejores prácticas
@@ -877,7 +877,7 @@ flowchart TB
 ### Error común: dependency circular
 
 ```csharp
-// âŒ NO HAGAS ESTO: Dependency circular
+// ❌ NO HAGAS ESTO: Dependency circular
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand cmd)
@@ -1097,7 +1097,7 @@ Para sistemas con más exigencia existen opciones mayores: **cola de mensajes** 
 
 1. **Los Eventos de Dominio representan "algo que ocurrió"**
    - Nombres en pasado: `ProductoCreado`, `PedidoEnviado`
-   - Notifican a múltiples interesados sinè€¦åˆ
+   - Notifican a múltiples interesados sin耦合
 
 2. **INotification de MediatR implementa el patrón Pub/Sub**
    - El handler principal publica una notificación

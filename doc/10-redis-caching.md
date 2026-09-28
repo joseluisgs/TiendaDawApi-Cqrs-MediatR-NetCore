@@ -19,7 +19,7 @@
 
 ## 10.1. Conceptos Fundamentales de Cache
 
-### Â¿Qué es un Cache?
+### ¿Qué es un Cache?
 
 Un cache es una capa de almacenamiento temporal que guarda copias de datos frecuentemente accedidos para reducir el tiempo de acceso. El principio fundamental se basa en la **localidad de referencia**: los datos recientemente accedidos tienen mayor probabilidad de ser accedidos de nuevo.
 
@@ -27,7 +27,7 @@ Un cache es una capa de almacenamiento temporal que guarda copias de datos frecu
 
 ```mermaid
 flowchart TD
-    A["Solicitud de dato"] --> B{"Â¿Existe en cache?"}
+    A["Solicitud de dato"] --> B{"¿Existe en cache?"}
     
     B -->|Sí - Cache Hit| C["Retornar dato cacheado"]
     C --> D["Tiempo: ~1ms"]
@@ -1066,7 +1066,7 @@ public class ProductoService(
 ```mermaid
 flowchart TD
     subgraph "Operación de Lectura"
-        A1["GetByCategoria(catId)"] --> A2{"Â¿En cache?"}
+        A1["GetByCategoria(catId)"] --> A2{"¿En cache?"}
         A2 -->|Sí| A3["Retornar datos cacheados"]
         A2 -->|No| A4["Consultar BD"]
         A4 --> A5["Guardar en cache"]

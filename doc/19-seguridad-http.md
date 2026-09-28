@@ -75,7 +75,7 @@ flowchart LR
 
 ## 19.2. HTTP Strict Transport Security (HSTS)
 
-### Â¿Qué es HSTS?
+### ¿Qué es HSTS?
 
 HSTS es un mecanismo de seguridad que indica al navegador que solo debe acceder al sitio web mediante HTTPS, rechazando todas las conexiones HTTP. Esto previene ataques de downgrade y cookie hijacking.
 
@@ -136,7 +136,7 @@ La redirección 301 indica al navegador que el recurso ha sido movido permanente
 
 ```mermaid
 flowchart TD
-    A["Request HTTP<br/>http://api.com"] --> B{"Â¿Esta en HSTS<br/>cache?"}
+    A["Request HTTP<br/>http://api.com"] --> B{"¿Esta en HSTS<br/>cache?"}
     B -->|Sí| C["Rechazar request"]
     B -->|No| D["301 Redirect<br/>https://api.com"]
     D --> E["Navegador guarda<br/>HSTS para dominio"]
@@ -170,7 +170,7 @@ builder.Services.AddHttpsRedirection(options =>
 
 ## 19.4. Security Headers
 
-### Â¿Por Qué Security Headers?
+### ¿Por Qué Security Headers?
 
 Los security headers añaden capas adicionales de protección contra ataques comunes web. Se envían en cada respuesta HTTP y son procesados por el navegador.
 
@@ -436,11 +436,11 @@ X-Content-Type-Options: nosniff
 
 | Vulnerabilidad | Antes (Sin Headers) | Después (Con Headers) |
 |----------------|---------------------|----------------------|
-| **HTTPâ†’HTTPS** | Manual, vulnerable a downgrade | Automático, 301 redirect |
-| **HSTS** | âŒ Navegador puede usar HTTP | âœ… 365 días, subdominios, preload |
-| **XSS** | âŒ Sin protección | âœ… X-XSS-Protection: 1; mode=block |
-| **Clickjacking** | âŒ Página puede iframearse | âœ… X-Frame-Options: DENY |
-| **MIME Sniffing** | âŒ Navegador adivina tipos | âœ… X-Content-Type-Options: nosniff |
+| **HTTP→HTTPS** | Manual, vulnerable a downgrade | Automático, 301 redirect |
+| **HSTS** | ❌ Navegador puede usar HTTP | ✅ 365 días, subdominios, preload |
+| **XSS** | ❌ Sin protección | ✅ X-XSS-Protection: 1; mode=block |
+| **Clickjacking** | ❌ Página puede iframearse | ✅ X-Frame-Options: DENY |
+| **MIME Sniffing** | ❌ Navegador adivina tipos | ✅ X-Content-Type-Options: nosniff |
 
 ### Explicación de Cada Header
 
@@ -463,8 +463,8 @@ graph TD
 
 ```mermaid
 flowchart TD
-    A["Â¿Entorno de desarrollo?"] -->|Sí| B["HTTP permitido<br/>Sin HSTS<br/>Sin redirect"]
-    A -->|No| C["HTTPS obligatorio<br/>HSTS activo (365 días)<br/>Redirect HTTPâ†’HTTPS"]
+    A["¿Entorno de desarrollo?"] -->|Sí| B["HTTP permitido<br/>Sin HSTS<br/>Sin redirect"]
+    A -->|No| C["HTTPS obligatorio<br/>HSTS activo (365 días)<br/>Redirect HTTP→HTTPS"]
     
     B --> D["Puerto 5000 (HTTP)"]
     C --> E["Puerto 443 (HTTPS)"]
@@ -496,7 +496,7 @@ if (!isDevelopment)
 else
 {
     // Log informativo para desarrollo
-    Log.Information("ðŸ”“ Modo desarrollo: HTTP permitido");
+    Log.Information("🔓 Modo desarrollo: HTTP permitido");
 }
 ```
 
@@ -505,9 +505,9 @@ else
 | Configuración | Desarrollo | Producción |
 |---------------|------------|------------|
 | **Puerto** | 5000 (HTTP) | 443 (HTTPS) |
-| **UseHsts()** | âŒ Desactivado | âœ… Activado |
-| **UseHttpsRedirection()** | âŒ Desactivado | âœ… Activado |
-| **Security Headers** | âœ… Activos | âœ… Activos |
+| **UseHsts()** | ❌ Desactivado | ✅ Activado |
+| **UseHttpsRedirection()** | ❌ Desactivado | ✅ Activado |
+| **Security Headers** | ✅ Activos | ✅ Activos |
 
 ---
 
@@ -529,7 +529,7 @@ Log.Logger = SerilogConfig.Configure().CreateLogger();
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
-Log.Information("ðŸš€ Inicializando TiendaApi...");
+Log.Information("🚀 Inicializando TiendaApi...");
 
 // Servicios
 var services = builder.Services;
@@ -558,7 +558,7 @@ services.AddAutoMapper();
 var app = builder.Build();
 var isDevelopment = app.Environment.IsDevelopment();
 
-Log.Information("âœ… Aplicación construida");
+Log.Information("✅ Aplicación construida");
 
 // Pipeline de middlewares
 app.UseSwaggerUI(isDevelopment);
@@ -576,7 +576,7 @@ if (!isDevelopment)
 }
 else
 {
-    Log.Information("ðŸ”“ Modo desarrollo: HTTP permitido (sin redirección HTTPS)");
+    Log.Information("🔓 Modo desarrollo: HTTP permitido (sin redirección HTTPS)");
 }
 
 app.UseCorsPolicy();
@@ -602,7 +602,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "ðŸ’¥ La aplicación falló al iniciar");
+    Log.Fatal(ex, "💥 La aplicación falló al iniciar");
     throw;
 }
 finally
@@ -637,7 +637,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("Documentacion Swagger:  {BaseUrl}/", baseUrl);
     Log.Information("GraphiQL UI:            {BaseUrl}/graphiql", baseUrl);
     Log.Information("=================================================================");
-    Log.Information("ðŸš€ Aplicacion iniciada correctamente en {BaseUrl} ({Mode})",
+    Log.Information("🚀 Aplicacion iniciada correctamente en {BaseUrl} ({Mode})",
         baseUrl, mode);
     Log.Information("=================================================================");
 }
@@ -685,12 +685,12 @@ curl -I https://tu-dominio.com/api/categorias
 
 ```mermaid
 graph TD
-    A["Verificación de Seguridad"] --> B["âœ… HTTPS activo"]
-    A --> C["âœ… HSTS configurado"]
-    A --> D["âœ… Redirect HTTPâ†’HTTPS"]
-    A --> E["âœ… Security headers presentes"]
-    A --> F["âœ… Certificados válidos"]
-    A --> G["âœ… No hay información sensible en headers"]
+    A["Verificación de Seguridad"] --> B["✅ HTTPS activo"]
+    A --> C["✅ HSTS configurado"]
+    A --> D["✅ Redirect HTTP→HTTPS"]
+    A --> E["✅ Security headers presentes"]
+    A --> F["✅ Certificados válidos"]
+    A --> G["✅ No hay información sensible en headers"]
     
     style A fill:#3498db,color:#fff
     style B fill:#27ae60,color:#fff
@@ -734,13 +734,13 @@ app.UseSecurityHeaders();
 
 | Práctica | Descripción | Prioridad |
 |----------|-------------|-----------|
-| **Usar HTTPS siempre** | En producción, HTTPS es obligatorio | ðŸ”´ Alta |
-| **HSTS con max-age largo** | 31536000 segundos (1 año) mínimo | ðŸ”´ Alta |
-| **Incluir subdominios** | Proteger todos los subdominios | ðŸŸ¡ Media |
-| **Security Headers** | Implementar todos los headers básicos | ðŸ”´ Alta |
-| **Preload HSTS** | Agregar a listas de preload | ðŸŸ¡ Media |
-| **Certificados válidos** | Usar Let's Encrypt o CA comercial | ðŸ”´ Alta |
-| **TLS 1.3** | Usar versión más reciente de TLS | ðŸ”´ Alta |
+| **Usar HTTPS siempre** | En producción, HTTPS es obligatorio | 🔴 Alta |
+| **HSTS con max-age largo** | 31536000 segundos (1 año) mínimo | 🔴 Alta |
+| **Incluir subdominios** | Proteger todos los subdominios | 🟡 Media |
+| **Security Headers** | Implementar todos los headers básicos | 🔴 Alta |
+| **Preload HSTS** | Agregar a listas de preload | 🟡 Media |
+| **Certificados válidos** | Usar Let's Encrypt o CA comercial | 🔴 Alta |
+| **TLS 1.3** | Usar versión más reciente de TLS | 🔴 Alta |
 
 ### Resumen de Headers de Seguridad
 
@@ -766,7 +766,7 @@ graph LR
 
 ## 19.9. Rate Limiting (Protección contra Abuso)
 
-### Â¿Qué es Rate Limiting?
+### ¿Qué es Rate Limiting?
 
 Rate Limiting es una técnica de seguridad que limita el número de solicitudes que un cliente puede hacer a una API en un período de tiempo específico. Protege contra ataques de denegación de servicio (DDoS), fuerza bruta y abuso de la API.
 

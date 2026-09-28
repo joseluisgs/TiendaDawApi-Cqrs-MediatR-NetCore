@@ -22,7 +22,7 @@
 
 ## 17.1. Concepto de Autenticación Stateless
 
-### Â¿Qué significa Stateless (Sin Estado)?
+### ¿Qué significa Stateless (Sin Estado)?
 
 En una arquitectura **stateful** (con estado), el servidor mantiene información de sesión del usuario. Esto requiere:
 - Almacenamiento de sesión en servidor (memoria, base de datos)
@@ -41,7 +41,7 @@ flowchart LR
         A1["Cliente"] -->|1. Login| A2["Servidor"]
         A2 -->|2. Session ID| A1
         A1 -->|3. Request + Session| A3["Servidor A"]
-        A3 -->|4. Â¿Quién?| A2
+        A3 -->|4. ¿Quién?| A2
         A2 --> A3
         A3 -->|5. Datos| A1
     end
@@ -57,7 +57,7 @@ flowchart LR
     end
 ```
 
-### Â¿Por qué Stateless para APIs?
+### ¿Por qué Stateless para APIs?
 
 | Aspecto | Stateful | Stateless |
 |---------|----------|-----------|
@@ -177,7 +177,7 @@ var token = new JwtSecurityToken(
 
 ## 17.3. ASP.NET Core Identity
 
-### Â¿Qué es ASP.NET Core Identity?
+### ¿Qué es ASP.NET Core Identity?
 
 ASP.NET Core Identity es un sistema de membership que permite:
 - Registrar/iniciar sesión de usuarios
@@ -1539,11 +1539,11 @@ flowchart LR
 
 | Algoritmo | Velocidad | Resistencia | Recomendado |
 |-----------|-----------|-------------|-------------|
-| **MD5** | Muy rapido | Baja | âŒ No usar |
-| **SHA-256** | Rapido | Media | âŒ No para passwords |
-| **PBKDF2** | Lento | Buena | âœ… Aceptable |
-| **BCrypt** | Muy lento | Excelente | âœ… Recomendado |
-| **Argon2** | Muy lento | Excelente | âœ… El mejor |
+| **MD5** | Muy rapido | Baja | ❌ No usar |
+| **SHA-256** | Rapido | Media | ❌ No para passwords |
+| **PBKDF2** | Lento | Buena | ✅ Aceptable |
+| **BCrypt** | Muy lento | Excelente | ✅ Recomendado |
+| **Argon2** | Muy lento | Excelente | ✅ El mejor |
 
 ### Flujo de Registro (Signup)
 
@@ -1584,8 +1584,8 @@ sequenceDiagram
 **Pasos del registro:**
 1. Usuario envia email, password y username
 2. Buscar si el email ya existe en la BD
-3. Si existe â†’ error 409
-4. Si no existe â†’ hashear password con BCrypt
+3. Si existe → error 409
+4. Si no existe → hashear password con BCrypt
 5. Guardar usuario en la BD
 6. Retornar 201 con usuario creado
 
@@ -1635,10 +1635,10 @@ sequenceDiagram
 **Pasos del login:**
 1. Usuario envia email y password
 2. Buscar usuario por email en la BD
-3. Si no existe o esta eliminado â†’ error 401
+3. Si no existe o esta eliminado → error 401
 4. Verificar password con BCrypt.Verify()
-5. Si es incorrecto â†’ error 401
-6. Si es correcto â†’ generar JWT
+5. Si es incorrecto → error 401
+6. Si es correcto → generar JWT
 7. Retornar 200 con token y usuario
 
 ### Flujo de Peticion Autorizada
@@ -1673,8 +1673,8 @@ sequenceDiagram
 **Pasos de peticion autorizada:**
 1. Cliente envia peticion con header Authorization: Bearer token
 2. Middleware de JWT extrae y valida el token
-3. Si el token es invalido o expirado â†’ 401
-4. Si el token es valido â†’ continuar al controller
+3. Si el token es invalido o expirado → 401
+4. Si el token es valido → continuar al controller
 5. Controller ejecuta la logica y consulta BD
 6. Retornar respuesta al cliente
 
@@ -1953,21 +1953,21 @@ Aunque la implementación es diferente, **conseguimos los mismos objetivos de se
 
 | Objetivo | Con Identity | Con Nuestro Método |
 |----------|-------------|-------------------|
-| **Contraseñas seguras** | âœ… PBKDF2 con salt | âœ… BCrypt con salt |
-| **JWT válido** | âœ… Generado por Identity | âœ… Generado manualmente |
-| **Roles controlados** | âœ… IdentityRole<T> | âœ… String simple |
-| **Protección SQL Injection** | âœ… EF Core parametrizes | âœ… EF Core parametrizes |
-| **Soft-delete** | âœ… Configurable | âœ… Implementado manualmente |
+| **Contraseñas seguras** | ✅ PBKDF2 con salt | ✅ BCrypt con salt |
+| **JWT válido** | ✅ Generado por Identity | ✅ Generado manualmente |
+| **Roles controlados** | ✅ IdentityRole<T> | ✅ String simple |
+| **Protección SQL Injection** | ✅ EF Core parametrizes | ✅ EF Core parametrizes |
+| **Soft-delete** | ✅ Configurable | ✅ Implementado manualmente |
 
 ### Cuándo Usar Cada Enfoque
 
 ```mermaid
 flowchart TD
-    A[Â¿Qué tipo de aplicación?] --> B{Â¿Tiene UI de login?}
-    B -->|Sí - Web Forms/Razor| C[Identity âœ…]
-    B -->|No - Solo API| D[Â¿External Logins?]
-    D -->|Sí - Google, Facebook| E[Identity âœ…]
-    D -->|No - Solo email/pass| F[Personalizado âœ…]
+    A[¿Qué tipo de aplicación?] --> B{¿Tiene UI de login?}
+    B -->|Sí - Web Forms/Razor| C[Identity ✅]
+    B -->|No - Solo API| D[¿External Logins?]
+    D -->|Sí - Google, Facebook| E[Identity ✅]
+    D -->|No - Solo email/pass| F[Personalizado ✅]
     
     C --> G["UI completa + Cookies"]
     F --> H["JWT Bearer + BCrypt"]
@@ -1980,12 +1980,12 @@ flowchart TD
 
 | Escenario | Recomendación | Razón |
 |-----------|---------------|-------|
-| **API REST simple** | Personalizado âœ… | Ligero, control total |
-| **Razor Pages** | Identity âœ… | Cookies + UI login |
-| **Blazor Server** | Identity âœ… | Integración completa |
-| **SPA + API Backend** | Personalizado en API âœ… | JWT es natural para SPAs |
-| **Google/Facebook Login** | Identity âœ… | External logins incluidos |
-| **2FA obligatorio** | Identity âœ… | Integrado |
+| **API REST simple** | Personalizado ✅ | Ligero, control total |
+| **Razor Pages** | Identity ✅ | Cookies + UI login |
+| **Blazor Server** | Identity ✅ | Integración completa |
+| **SPA + API Backend** | Personalizado en API ✅ | JWT es natural para SPAs |
+| **Google/Facebook Login** | Identity ✅ | External logins incluidos |
+| **2FA obligatorio** | Identity ✅ | Integrado |
 
 ### Conclusión
 
@@ -2027,10 +2027,10 @@ flowchart TB
 |---------|-------------|---------------|
 | **Authentication Middleware** | `AddIdentityCookies()` | `AddJwtBearer()` |
 | **Authorization Middleware** | `AddAuthorization()` | `AddAuthorization()` (igual) |
-| **[Authorize] attribute** | âœ… | âœ… |
-| **[Authorize(Roles="Admin")]** | âœ… | âœ… |
-| **User.Identity.Name** | âœ… | âœ… |
-| **User.IsInRole("ADMIN")** | âœ… | âœ… |
+| **[Authorize] attribute** | ✅ | ✅ |
+| **[Authorize(Roles="Admin")]** | ✅ | ✅ |
+| **User.Identity.Name** | ✅ | ✅ |
+| **User.IsInRole("ADMIN")** | ✅ | ✅ |
 
 #### Codigo del Middleware (Igual en Ambos Casos)
 
@@ -2054,10 +2054,10 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 services.AddAuthorization();  // EXACTAMENTE IGUAL
 
-[Authorize]  // âœ… Funciona igual
+[Authorize]  // ✅ Funciona igual
 public IActionResult GetAll() { }
 
-[Authorize(Roles = "ADMIN")]  // âœ… Funciona igual
+[Authorize(Roles = "ADMIN")]  // ✅ Funciona igual
 public IActionResult Create(ProductoRequest request) { }
 ```
 
@@ -2065,11 +2065,11 @@ public IActionResult Create(ProductoRequest request) { }
 
 | Funcionabilidad | Identity | Personalizado |
 |----------------|----------|---------------|
-| `[Authorize]` | âœ… | âœ… |
-| `[Authorize(Roles="ADMIN")]` | âœ… | âœ… |
-| `User.Identity.IsAuthenticated` | âœ… | âœ… |
-| `User.Identity.Name` | âœ… | âœ… |
-| `User.IsInRole("ADMIN")` | âœ… | âœ… |
+| `[Authorize]` | ✅ | ✅ |
+| `[Authorize(Roles="ADMIN")]` | ✅ | ✅ |
+| `User.Identity.IsAuthenticated` | ✅ | ✅ |
+| `User.Identity.Name` | ✅ | ✅ |
+| `User.IsInRole("ADMIN")` | ✅ | ✅ |
 
 #### Conclusion: El Middleware No Sabe Como Generamos el Token
 
