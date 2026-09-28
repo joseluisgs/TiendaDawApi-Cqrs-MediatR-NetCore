@@ -10,6 +10,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoCreadoWebSocketHandler(ProductosWebSocketHandler webSocketHandler)
     : INotificationHandler<ProductoCreadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoCreado y notifica el alta por WebSocket.
+    /// </summary>
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
     {
         Log.Information("📡 [WEBSOCKET] Recibida notificación ProductoCreado para ID: {ProductoId}", notification.Producto.Id);

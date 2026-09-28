@@ -16,6 +16,10 @@ public class EmailBackgroundService(
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<EmailBackgroundService> _logger = logger;
 
+    /// <summary>
+    /// Consume la cola de emails y envía cada mensaje de forma secuencial.
+    /// </summary>
+    /// <param name="stoppingToken">Token de cancelación del servicio.</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Servicio de email en segundo plano iniciado");

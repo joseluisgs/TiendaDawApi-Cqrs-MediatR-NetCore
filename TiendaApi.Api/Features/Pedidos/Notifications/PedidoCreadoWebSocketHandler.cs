@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 public class PedidoCreadoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
     : INotificationHandler<PedidoCreadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento PedidoCreado y notifica por WebSocket al usuario y a los administradores.
+    /// </summary>
     public async Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken)
     {
         var pedido = notification.Pedido;

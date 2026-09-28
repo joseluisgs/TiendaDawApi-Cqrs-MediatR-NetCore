@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
@@ -49,7 +50,10 @@ public class UpdatePedidoEstadoCommandHandler(
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
                 await cacheService.RemoveAsync($"pedidos:user:{pedido.UserId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);

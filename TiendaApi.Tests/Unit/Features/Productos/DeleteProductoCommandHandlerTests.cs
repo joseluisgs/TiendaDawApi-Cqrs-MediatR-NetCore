@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
@@ -8,8 +9,8 @@ using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Productos;
-using TiendaApi.Api.Services.Storage;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
@@ -22,11 +23,12 @@ public class DeleteProductoCommandHandlerTests
         var storageService = new Mock<IStorageService>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Imagen = "img.jpg" });
         repository.Setup(r => r.DeleteAsync(1)).Returns(Task.CompletedTask);
-        
-        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
+
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new DeleteProductoCommand(1), CancellationToken.None);
 
@@ -41,10 +43,11 @@ public class DeleteProductoCommandHandlerTests
         var storageService = new Mock<IStorageService>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
-        
-        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object);
+
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new DeleteProductoCommand(999), CancellationToken.None);
 

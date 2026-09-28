@@ -263,29 +263,29 @@ La carpeta `Infrastructures/` (o `Infrastructure/`) es el lugar recomendado para
 
 ```
 TiendaApi.Apis/
-â”œâ”€â”€ Program.cs
-â”œâ”€â”€ Infrastructures/
-â”‚   â”œâ”€â”€ SerilogConfig.cs
-â”‚   â”œâ”€â”€ ControllersConfig.cs
-â”‚   â”œâ”€â”€ ApiVersioningConfig.cs
-â”‚   â”œâ”€â”€ SwaggerConfig.cs
-â”‚   â”œâ”€â”€ CorsConfig.cs
-â”‚   â”œâ”€â”€ DatabaseConfig.cs
-â”‚   â”œâ”€â”€ AuthenticationConfig.cs
-â”‚   â”œâ”€â”€ RepositoriesConfig.cs
-â”‚   â”œâ”€â”€ ServicesConfig.cs
-â”‚   â”œâ”€â”€ CacheConfig.cs
-â”‚   â”œâ”€â”€ EmailConfig.cs
-â”‚   â”œâ”€â”€ StorageConfig.cs
-â”‚   â”œâ”€â”€ WebSocketsConfig.cs
-â”‚   â”œâ”€â”€ GraphQLConfig.cs
-â”‚   â”œâ”€â”€ AutoMapperConfig.cs
-â”‚   â”œâ”€â”€ SwaggerExtensions.cs
-â”‚   â”œâ”€â”€ GraphQLExtensions.cs
-â”‚   â”œâ”€â”€ CorsExtensions.cs
-â”‚   â”œâ”€â”€ WebSocketExtensions.cs
-â”‚   â”œâ”€â”€ DatabaseInitializationExtensions.cs
-â”‚   â””â”€â”€ StorageInitializationExtensions.cs
+├── Program.cs
+├── Infrastructures/
+│   ├── SerilogConfig.cs
+│   ├── ControllersConfig.cs
+│   ├── ApiVersioningConfig.cs
+│   ├── SwaggerConfig.cs
+│   ├── CorsConfig.cs
+│   ├── DatabaseConfig.cs
+│   ├── AuthenticationConfig.cs
+│   ├── RepositoriesConfig.cs
+│   ├── ServicesConfig.cs
+│   ├── CacheConfig.cs
+│   ├── EmailConfig.cs
+│   ├── StorageConfig.cs
+│   ├── WebSocketsConfig.cs
+│   ├── GraphQLConfig.cs
+│   ├── AutoMapperConfig.cs
+│   ├── SwaggerExtensions.cs
+│   ├── GraphQLExtensions.cs
+│   ├── CorsExtensions.cs
+│   ├── WebSocketExtensions.cs
+│   ├── DatabaseInitializationExtensions.cs
+│   └── StorageInitializationExtensions.cs
 ```
 
 ### Convenciones de Nomenclatura
@@ -639,7 +639,7 @@ using TiendaApi.Apis.WebSockets.Productos;
 Log.Logger = SerilogConfig.Configure().CreateLogger();
 builder.Host.UseSerilog();
 
-Log.Information("ðŸš€ Inicializando TiendaApi...");
+Log.Information("🚀 Inicializando TiendaApi...");
 
 var services = builder.Services;
 var configuration = builder.Configuration;
@@ -671,7 +671,7 @@ services.AddAutoMapper();
 var app = builder.Build();
 var isDevelopment = app.Environment.IsDevelopment();
 
-Log.Information("âœ… Aplicación construida");
+Log.Information("✅ Aplicación construida");
 
 // === PIPELINE DE MIDDLEWARES ===
 app.UseSwaggerUI(isDevelopment);
@@ -700,7 +700,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "ðŸ’¥ La aplicación falló al iniciar");
+    Log.Fatal(ex, "💥 La aplicación falló al iniciar");
     throw;
 }
 finally
@@ -719,7 +719,7 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("Swagger: http://localhost:{Port}/", port);
     Log.Information("GraphiQL: http://localhost:{Port}/graphiql", port);
     Log.Information("========================================");
-    Log.Information("ðŸš€ Aplicación iniciada en {Mode}", 
+    Log.Information("🚀 Aplicación iniciada en {Mode}", 
         isDevelopment ? "DESARROLLO" : "PRODUCCIá“N");
 }
 ```
@@ -820,22 +820,22 @@ Esta opción organiza las configuraciones en subcarpetas dentro de `Configuratio
 
 ```
 Configuration/
-â”œâ”€â”€ Database/
-â”‚   â”œâ”€â”€ PostgreSQLConfig.cs
-â”‚   â”œâ”€â”€ MongoDBConfig.cs
-â”‚   â””â”€â”€ CacheConfig.cs
-â”œâ”€â”€ Security/
-â”‚   â”œâ”€â”€ AuthenticationConfig.cs
-â”‚   â”œâ”€â”€ AuthorizationConfig.cs
-â”‚   â””â”€â”€ CorsConfig.cs
-â”œâ”€â”€ Api/
-â”‚   â”œâ”€â”€ VersioningConfig.cs
-â”‚   â”œâ”€â”€ SwaggerConfig.cs
-â”‚   â””â”€â”€ RoutingConfig.cs
-â””â”€â”€ Infrastructure/
-    â”œâ”€â”€ LoggingConfig.cs
-    â”œâ”€â”€ HealthChecksConfig.cs
-    â””â”€â”€ TelemetryConfig.cs
+├── Database/
+│   ├── PostgreSQLConfig.cs
+│   ├── MongoDBConfig.cs
+│   └── CacheConfig.cs
+├── Security/
+│   ├── AuthenticationConfig.cs
+│   ├── AuthorizationConfig.cs
+│   └── CorsConfig.cs
+├── Api/
+│   ├── VersioningConfig.cs
+│   ├── SwaggerConfig.cs
+│   └── RoutingConfig.cs
+└── Infrastructure/
+    ├── LoggingConfig.cs
+    ├── HealthChecksConfig.cs
+    └── TelemetryConfig.cs
 ```
 
 ### Opción 4: Usando Minimal APIs con Registros
@@ -999,3 +999,145 @@ services.AddMediatRHandlers(); // Registra todos los IRequestHandler e INotifica
 ```
 
 La idea es *Convention over Configuration*: no hay que registrar handler por handler. `RegisterServicesFromAssemblyContaining<Program>()` escanea el ensamblado y descubre automáticamente commands, queries y notifications.
+
+---
+
+## 32.9. Compresión HTTP (ResponseCompression)
+
+La compresión HTTP reduce el tamaño de las respuestas (JSON, HTML, CSS, JS) enviadas al cliente, mejorando tiempos de carga y reduciendo ancho de banda consumido. Los algoritmos **Brotli** y **Gzip** son los estándar más extendidos y soportados por todos los navegadores modernos.
+
+### Configuración en Program.cs
+
+La compresión se configura añadiendo `AddResponseCompression()` en los servicios y `UseResponseCompression()` en el pipeline de middlewares:
+
+```csharp
+// Registro de servicios
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;  // Compresión también en conexiones seguras
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes;
+});
+
+// En el pipeline de middlewares (debe ir antes de middlewares que generen contenido)
+app.UseResponseCompression();
+```
+
+### Orden en el pipeline
+
+El orden de `UseResponseCompression()` es importante: debe ir antes de middlewares que generen contenido, como `UseStaticFiles()` o `MapControllers()`, para que la compresión se aplique a las respuestas que ya han sido generadas por los middlewares posteriores.
+
+```csharp
+// Orden correcto en Program.cs
+app.UseResponseCompression();   // Primero: preparar compresión
+app.UseStaticFiles();            // Después: contenido estático (CSS, JS, imágenes)
+app.UseRouting();                // Después: routing
+app.UseCors();                   // Después: CORS
+app.UseAuthentication();         // Después: autenticación
+app.UseAuthorization();          // Después: autorización
+app.MapControllers();            // Finalmente: mapear endpoints
+```
+
+---
+
+## 32.10. Health Checks — Liveness y Readiness Probes
+
+En arquitecturas de microservicios o despliegues en contenedores, es fundamental distinguir entre diferentes tipos de verificación de salud:
+
+- **Liveness** (`/health/live`): verifica si el proceso está vivo. Si falla, el orquestador (Kubernetes, Docker Swarm) reinicia el contenedor. No verifica dependencias externas, solo que la aplicación no está colgada.
+- **Readiness** (`/health/ready`): verifica si el servicio está listo para recibir tráfico. Comprueba que las dependencias (PostgreSQL, MongoDB, Redis) estén accesibles. Solo cuando responde correctamente, el orquestador envía peticiones al contenedor.
+- **Health** (`/health`): endpoint general que ejecuta todos los checks registrados.
+
+### Implementación con IHealthCheck
+
+```csharp
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
+public class DatabaseHealthCheck : IHealthCheck
+{
+    private readonly TiendaDbContext _context;
+
+    public DatabaseHealthCheck(TiendaDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
+            return HealthCheckResult.Healthy("PostgreSQL accesible");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("PostgreSQL no accesible", ex);
+        }
+    }
+}
+```
+
+### Registro y exposición con tags
+
+```csharp
+// En Program.cs (servicios)
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" })
+    .AddRedis(redisConnection, name: "redis", tags: new[] { "ready" })
+    .AddMongoDb(mongoClient, name: "mongodb", tags: new[] { "ready" });
+
+// En Program.cs (endpoints)
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false  // No ejecuta checks, solo indica que el proceso está vivo
+});
+```
+
+Los **tags** permiten agrupar checks por tipo. El endpoint `/health/ready` solo ejecuta los checks marcados con el tag `"ready"`, mientras que `/health/live` no ejecuta ningún check y simplemente devuelve 200 OK indicando que el proceso está activo.
+
+---
+
+## 32.11. Endpoint de Versión (/version)
+
+Exponer la versión de la API en un endpoint público (`GET /version`) permite al cliente y a herramientas de monitoreo saber qué versión está desplegada en cada momento. Esto es fundamental para debugging en producción, compatibilidad entre versiones, y auditoría de despliegues.
+
+### Implementación
+
+La versión se obtiene de los atributos de ensamblado (`AssemblyInformationalVersionAttribute`) y se devuelve como JSON con la versión, el runtime y el framework:
+
+```csharp
+app.MapGet("/version", () =>
+{
+    var assembly = Assembly.GetExecutingAssembly();
+    var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+        ?.InformationalVersion ?? "unknown";
+    var runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+    return Results.Ok(new
+    {
+        Version = version,
+        Runtime = runtime,
+        Framework = runtime
+    });
+});
+```
+
+### Respuesta de ejemplo
+
+```json
+{
+  "Version": "1.0.0+abc123def",
+  "Runtime": ".NET 8.0.11",
+  "Framework": ".NET 8.0.11"
+}
+```
+
+Este endpoint no requiere autenticación y es ligero, por lo que puede ser usado por Load Balancers o herramientas de monitoreo para verificar que el despliegue correcto está activo.

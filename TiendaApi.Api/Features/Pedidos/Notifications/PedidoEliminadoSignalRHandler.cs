@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 public class PedidoEliminadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<PedidoEliminadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento PedidoEliminado y difunde la eliminación por SignalR.
+    /// </summary>
     public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken)
     {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoEliminado para ID: {PedidoId}", notification.PedidoId);

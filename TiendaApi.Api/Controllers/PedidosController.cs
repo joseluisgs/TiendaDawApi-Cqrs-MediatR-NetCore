@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -22,6 +23,9 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Obtiene el listado completo de todos los pedidos (solo administradores).
+    /// </summary>
     [HttpGet]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
@@ -35,6 +39,13 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
+    /// <summary>
+    /// Obtiene los pedidos paginados (solo administradores).
+    /// </summary>
+    /// <param name="page">Número de página (base 1).</param>
+    /// <param name="size">Tamaño de página.</param>
+    /// <param name="sortBy">Campo de ordenación.</param>
+    /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet("paged")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
@@ -57,6 +68,10 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
+    /// <summary>
+    /// Obtiene un pedido por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
     [HttpGet("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -68,13 +83,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new GetPedidoByIdQuery(id));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza un pedido existente (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
+    /// <param name="dto">Datos actualizados del pedido.</param>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -87,15 +103,13 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina un pedido (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -106,15 +120,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     {
         var resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 
+    /// <summary>
+    /// Cambia el estado de un pedido (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
+    /// <param name="dto">Nuevo estado del pedido.</param>
     [HttpPut("{id}/estado")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -127,16 +140,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                BusinessRuleError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Obtiene todos los pedidos del usuario autenticado.
+    /// </summary>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
@@ -158,6 +167,13 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
+    /// <summary>
+    /// Obtiene los pedidos del usuario autenticado de forma paginada.
+    /// </summary>
+    /// <param name="page">Número de página (base 1).</param>
+    /// <param name="size">Tamaño de página.</param>
+    /// <param name="sortBy">Campo de ordenación.</param>
+    /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet("me/paged")]
     [Authorize]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
@@ -185,6 +201,10 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             onFailure: error => StatusCode(500, new { message = error.Message }));
     }
 
+    /// <summary>
+    /// Crea un nuevo pedido para el usuario autenticado.
+    /// </summary>
+    /// <param name="dto">Datos del pedido a crear.</param>
     [HttpPost("me")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status201Created)]
@@ -207,17 +227,13 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         }
 
         var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-            BusinessRuleError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            ConflictError => Conflict(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return error.ToHttpResult();
     }
 
+    /// <summary>
+    /// Obtiene uno de los pedidos del usuario autenticado por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
     [HttpGet("me/{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -235,14 +251,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza uno de los pedidos del usuario autenticado.
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
+    /// <param name="dto">Datos actualizados del pedido.</param>
     [HttpPut("me/{id}")]
     [Authorize]
     [ProducesResponseType(typeof(PedidoDto), StatusCodes.Status200OK)]
@@ -261,16 +277,13 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
         return resultado.Match(
             onSuccess: pedido => Ok(pedido),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                BusinessRuleError => BadRequest(new { message = error.Message }),
-                ForbiddenError => StatusCode(403, new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina uno de los pedidos del usuario autenticado.
+    /// </summary>
+    /// <param name="id">Identificador del pedido.</param>
     [HttpDelete("me/{id}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -288,13 +301,6 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
         var resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(403, new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 }

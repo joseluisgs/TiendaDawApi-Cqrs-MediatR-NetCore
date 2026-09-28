@@ -2,9 +2,11 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Extensions;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Features.Categorias.Queries;
 using TiendaApi.Api.Helpers.Pagination;
@@ -28,7 +30,17 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class CategoriasController(IMediator mediator) : ControllerBase
 {
+    /// <summary>
+    /// Obtiene el listado paginado de categorías con filtros y ordenación.
+    /// </summary>
+    /// <param name="nombre">Filtro por nombre (búsqueda parcial).</param>
+    /// <param name="isDeleted">Filtra por estado de eliminación lógica.</param>
+    /// <param name="page">Índice de página (base 0).</param>
+    /// <param name="size">Tamaño de página.</param>
+    /// <param name="sortBy">Campo de ordenación.</param>
+    /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet]
+    [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(PagedResult<CategoriaDto>), StatusCodes.Status200OK)]
     [AllowAnonymous]
     public async Task<IActionResult> GetAll(
@@ -53,20 +65,20 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: categorias =>
             {
+                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(categorias);
             },
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Obtiene una categoría por su identificador.
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
     [HttpGet("{id}")]
+    [OutputCache(Duration = 60, Tags = new[] { "categorias" })]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
@@ -74,14 +86,18 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     {
         var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
-            onSuccess: categoria => Ok(categoria),
-            onFailure: error => error switch
+            onSuccess: categoria =>
             {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                return Ok(categoria);
+            },
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Crea una nueva categoría (solo administradores).
+    /// </summary>
+    /// <param name="dto">Datos de la categoría a crear.</param>
     [HttpPost]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status201Created)]
@@ -94,14 +110,14 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new CreateCategoriaCommand(dto));
         return resultado.Match(
             onSuccess: categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
-            onFailure: error => error switch
-            {
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Actualiza una categoría existente (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
+    /// <param name="dto">Datos actualizados de la categoría.</param>
     [HttpPut("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
@@ -115,15 +131,13 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         var resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
         return resultado.Match(
             onSuccess: categoria => Ok(categoria),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                ValidationError => BadRequest(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            });
+            onFailure: error => error.ToHttpResult());
     }
 
+    /// <summary>
+    /// Elimina una categoría por su identificador (solo administradores).
+    /// </summary>
+    /// <param name="id">Identificador de la categoría.</param>
     [HttpDelete("{id}")]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -134,12 +148,6 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     {
         var resultado = await mediator.Send(new DeleteCategoriaCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError => BadRequest(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult();
     }
 }

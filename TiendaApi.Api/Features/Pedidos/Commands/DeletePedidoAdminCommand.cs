@@ -43,7 +43,10 @@ public class DeletePedidoAdminCommandHandler(
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
                 await cacheService.RemoveAsync($"pedidos:user:{userId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         await mediator.Publish(new PedidoEliminadoNotification(

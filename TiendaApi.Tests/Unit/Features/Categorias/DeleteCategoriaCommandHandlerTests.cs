@@ -1,5 +1,6 @@
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
@@ -19,7 +20,8 @@ public class DeleteCategoriaCommandHandlerTests
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
         repository.Setup(r => r.DeleteAsync(1)).ReturnsAsync(true);
-        var handler = new DeleteCategoriaCommandHandler(repository.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteCategoriaCommandHandler(repository.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new DeleteCategoriaCommand(1), CancellationToken.None);
 
@@ -32,7 +34,8 @@ public class DeleteCategoriaCommandHandlerTests
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
-        var handler = new DeleteCategoriaCommandHandler(repository.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteCategoriaCommandHandler(repository.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new DeleteCategoriaCommand(999), CancellationToken.None);
 

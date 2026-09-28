@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TiendaApi.Api.Services;
 using TiendaApi.Api.Services.Auth;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Infrastructures;
 
@@ -11,14 +12,15 @@ namespace TiendaApi.Api.Infrastructures;
 public static class ServicesConfig
 {
     /// <summary>
-    /// Registra JWT y autenticación para la aplicación.
+    /// Registra JWT y autenticaci��n para la aplicaci��n.
     /// </summary>
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
-        Log.Information("⚙️ Registrando servicios...");
+        Log.Information("�sT��? Registrando servicios...");
         return services
             .AddScoped<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
-            .AddScoped<IAuthService, AuthService>();
+            .AddScoped<IAuthService, AuthService>()
+            .AddScoped<IProductoService, ProductoService>();
     }
 }

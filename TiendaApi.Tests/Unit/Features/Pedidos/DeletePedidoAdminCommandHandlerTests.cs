@@ -19,11 +19,11 @@ public class DeletePedidoAdminCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = new Pedido { Id = ObjectId.GenerateNewId() };
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        
+
         var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new DeletePedidoAdminCommand("PED-2024-0001"), CancellationToken.None);
@@ -37,9 +37,9 @@ public class DeletePedidoAdminCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
-        
+
         var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new DeletePedidoAdminCommand("PED-9999-9999"), CancellationToken.None);

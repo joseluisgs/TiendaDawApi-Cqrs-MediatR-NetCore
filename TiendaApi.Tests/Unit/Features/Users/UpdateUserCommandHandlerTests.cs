@@ -1,6 +1,6 @@
+using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
-using FluentAssertions;
 using MediatR;
 using Moq;
 using TiendaApi.Api.Dtos.Usuarios;

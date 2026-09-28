@@ -23,7 +23,7 @@
 
 ## 12.1. El Problema: Un Servicio que Hace de Todo
 
-Imaginemos que eres el gerente de un restaurante y contratas a un chef que hace absolutely todo: preparar los platos, limpiar la cocina, hacer la compra, atender a los clientes, cobrar las cuentas y gestionar la nómina. Parece absurdo, Â¿verdad? Sin embargo, esto es exactamente lo que ocurre en muchos proyectos de software cuando tenemos un `ProductoService` gigante que hace de todo.
+Imaginemos que eres el gerente de un restaurante y contratas a un chef que hace absolutely todo: preparar los platos, limpiar la cocina, hacer la compra, atender a los clientes, cobrar las cuentas y gestionar la nómina. Parece absurdo, ¿verdad? Sin embargo, esto es exactamente lo que ocurre en muchos proyectos de software cuando tenemos un `ProductoService` gigante que hace de todo.
 
 ### El típico Service Layer que crece sin control
 
@@ -64,7 +64,7 @@ public class ProductoService
 flowchart TB
     subgraph "Problemas del Service Gigante"
         A["SRP Violado\nUna clase con 50 responsabilidades"] --> B["Difícil de testear\nNecesitas muchos mocks"]
-        B --> C["Miedo a modificar\nÂ¿romperé algo que funciona?"]
+        B --> C["Miedo a modificar\n¿romperé algo que funciona?"]
         C --> D["Acoplamiento fuerte\nTodo depende de todo"]
         D --> E["Curva de aprendizaje alta\nNuevos desarrolladores perdidos"]
         E --> F[" git blame constante\n\xWho made this method?"]
@@ -78,11 +78,11 @@ flowchart TB
     style F fill:#ff6b6b,color:#fff
 ```
 
-**Problema 1**: Cada método tiene diferentes dependencias. Para testear `GetById` necesitas solo el repositorio, pero para `CreateAsync` necesitas repositorio, validador, mapper, cache, signalR, email... Â¡30 mocks para un solo test!
+**Problema 1**: Cada método tiene diferentes dependencias. Para testear `GetById` necesitas solo el repositorio, pero para `CreateAsync` necesitas repositorio, validador, mapper, cache, signalR, email... ¡30 mocks para un solo test!
 
-**Problema 2**: Cuando modificas `UpdateStockAsync` para Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ el rendimiento, Â¿cómo sabes que no estás rompiendo algo en `CreateAsync` que usa el mismo método internamente?
+**Problema 2**: Cuando modificas `UpdateStockAsync` para оптимизировать el rendimiento, ¿cómo sabes que no estás rompiendo algo en `CreateAsync` que usa el mismo método internamente?
 
-**Problema 3**: Un nuevo desarrollador tiene que entender los 50 métodos antes de hacer su primer cambio. "Â¿Qué hace este método? Â¿Por qué tiene esta dependencia? Â¿Puedo cambiarlo?"
+**Problema 3**: Un nuevo desarrollador tiene que entender los 50 métodos antes de hacer su primer cambio. "¿Qué hace este método? ¿Por qué tiene esta dependencia? ¿Puedo cambiarlo?"
 
 ### El antipatrón del "Methioditis"
 
@@ -124,22 +124,22 @@ flowchart LR
     style CH fill:#fcc419,color:#fff
 ```
 
-### Â¿Por qué funciona? El principio de única responsabilidad
+### ¿Por qué funciona? El principio de única responsabilidad
 
 Cada handler hace **exactamente una cosa**. El `GetProductoByIdQueryHandler` solo sabe cómo obtener un producto por su ID. No le importa validar, no le importa enviar emails, no le importa actualizar el stock. Solo eso.
 
-Cuando algo falla o necesita modificación, sabes exactamente dónde buscar. Â¿El problema está en obtener productos? Vas a `GetProductoByIdQueryHandler`. Â¿El problema está en crear productos? Vas a `CreateProductoCommandHandler`.
+Cuando algo falla o necesita modificación, sabes exactamente dónde buscar. ¿El problema está en obtener productos? Vas a `GetProductoByIdQueryHandler`. ¿El problema está en crear productos? Vas a `CreateProductoCommandHandler`.
 
 ### La regla de oro: Commands no pueden devolver datos
 
 Un command puede ejecutarse correctamente o fallar, pero **nunca** debe devolver datos de lectura. Esta regla parece restrictiva, pero tiene una razón profunda: si necesitas datos después de un command, probablemente sea porque deberías haber hecho primero una query.
 
 ```csharp
-// âŒ INCORRECTO: Command que devuelve datos
+// ❌ INCORRECTO: Command que devuelve datos
 public record CreateProductoCommand(ProductoDto Dto)
     : IRequest<ProductoDto>;  // NO HACER ESTO
 
-// âœ… CORRECTO: Command sin retorno (o con ID mínimo)
+// ✅ CORRECTO: Command sin retorno (o con ID mínimo)
 public record CreateProductoCommand(ProductoDto Dto)
     : IRequest<Result<ProductoDto, DomainError>>;  // Devuelve el DTO creado
     
@@ -197,7 +197,7 @@ sequenceDiagram
     Camarero-->>Cliente: Gracias, buen provecho
 ```
 
-### Â¿Por qué es mejor así?
+### ¿Por qué es mejor así?
 
 1. **Si el chef está enfermo**: Los camareros siguen atendiendo. Los clientes pueden ver el menú y hacer pedidos (que se guardan para después). Tu aplicación sigue funcionando.
 
@@ -219,10 +219,10 @@ Vamos a formalizar la diferencia entre Commands y Queries, porque es el corazón
 flowchart TB
     subgraph "COMMANDS (ESCRITURA)"
         direction TB
-        C1["CreateProductoCommand\nâ†’ Crear nuevo recurso"]
-        C2["UpdateProductoCommand\nâ†’ Modificar recurso existente"]
-        C3["DeleteProductoCommand\nâ†’ Eliminar recurso"]
-        C4["UpdateEstadoPedidoCommand\nâ†’ Cambiar estado de un pedido"]
+        C1["CreateProductoCommand\n→ Crear nuevo recurso"]
+        C2["UpdateProductoCommand\n→ Modificar recurso existente"]
+        C3["DeleteProductoCommand\n→ Eliminar recurso"]
+        C4["UpdateEstadoPedidoCommand\n→ Cambiar estado de un pedido"]
     end
     
     subgraph "CARACTERÍSTICAS"
@@ -254,10 +254,10 @@ flowchart TB
 flowchart TB
     subgraph "QUERIES (LECTURA)"
         direction TB
-        Q1["GetAllProductosQuery\nâ†’ Obtener todos los productos"]
-        Q2["GetProductoByIdQuery\nâ†’ Obtener un producto específico"]
-        Q3["GetProductosByCategoriaQuery\nâ†’ Filtrar por categoría"]
-        Q4["GetMyPedidosQuery\nâ†’ Obtener pedidos del usuario"]
+        Q1["GetAllProductosQuery\n→ Obtener todos los productos"]
+        Q2["GetProductoByIdQuery\n→ Obtener un producto específico"]
+        Q3["GetProductosByCategoriaQuery\n→ Filtrar por categoría"]
+        Q4["GetMyPedidosQuery\n→ Obtener pedidos del usuario"]
     end
     
     subgraph "CARACTERÍSTICAS"
@@ -483,9 +483,9 @@ return Result.Success<ProductoDto, DomainError>(saved.ToDto());
 
 La magia de CQRS está en separar los efectos secundarios usando **Notifications** (también llamados **Eventos de Dominio**).
 
-### âš ï¸ Antes de continuar: Â¿Notifications o Eventos?
+### ⚠️ Antes de continuar: ¿Notifications o Eventos?
 
-Esta es una pregunta común: "Â¿Son lo mismo Notifications y Eventos?"
+Esta es una pregunta común: "¿Son lo mismo Notifications y Eventos?"
 
 **La respuesta corta**: Sí, son fundamentalmente lo mismo. La diferencia es solo de terminología:
 
@@ -515,7 +515,7 @@ Así que cuando veas "Notification" en este documento, piensa: "es un Evento de 
 
 ---
 
-### Â¿Qué es una Notification / Evento de Dominio?
+### ¿Qué es una Notification / Evento de Dominio?
 
 Una **Notification** (o Evento de Dominio) representa **"algo que ocurrió"** en el sistema que puede ser interesante para otras partes del código.
 
@@ -538,7 +538,7 @@ flowchart TB
 
 **Ejemplos concretos**:
 
-| Notification | Representa | Â¿Quién la crea? |
+| Notification | Representa | ¿Quién la crea? |
 |-------------|-------------|------------------|
 | `UsuarioRegistradoNotification` | "El usuario se registró" | CreateUserCommandHandler |
 | `ProductoCreadoNotification` | "El producto fue creado" | CreateProductoCommandHandler |
@@ -547,23 +547,23 @@ flowchart TB
 **Nombre correcto**: Los eventos siempre se nombran en **pasado** (ya que representan algo que ocurrió).
 
 ```csharp
-// âœ… CORRECTO: Nombre en pasado
+// ✅ CORRECTO: Nombre en pasado
 public record ProductoCreadoNotification
 public record PedidoCanceladoNotification
 
-// âŒ INCORRECTO: Nombre en presente/futuro (parece un comando)
+// ❌ INCORRECTO: Nombre en presente/futuro (parece un comando)
 public record ProductoCreateNotification
 public record CancelPedidoNotification
 ```
 
 ---
 
-### Â¿Por qué existen? El problema que resuelven
+### ¿Por qué existen? El problema que resuelven
 
 Imagina que al crear un producto quieres hacer varias cosas:
 
 ```csharp
-// âŒ PROBLEMA: Handler con efectos secundarios acoplados
+// ❌ PROBLEMA: Handler con efectos secundarios acoplados
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand cmd)
@@ -587,15 +587,15 @@ public class CreateProductoCommandHandler
 ```
 
 **Problemas de este enfoque**:
-- El handler conoce 5 servicios diferentes âœ…
-- Si agregas WhatsApp, tienes que modificar este handler âŒ
-- Para testear, necesitas mockear 5 servicios âŒ
-- Si el email falla, falla todo el comando âŒ
+- El handler conoce 5 servicios diferentes ✅
+- Si agregas WhatsApp, tienes que modificar este handler ❌
+- Para testear, necesitas mockear 5 servicios ❌
+- Si el email falla, falla todo el comando ❌
 
 **La solución con Notifications**:
 
 ```csharp
-// âœ… SOLUCIá“N: Handler solo hace lo principal
+// ✅ SOLUCIá“N: Handler solo hace lo principal
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand cmd, CancellationToken ct)
@@ -638,7 +638,7 @@ public class ProductoCreadoWhatsAppHandler : INotificationHandler<ProductoCreado
 
 ---
 
-### Â¿Cuándo usar Notifications?
+### ¿Cuándo usar Notifications?
 
 Usa una notification cuando:
 
@@ -662,10 +662,10 @@ flowchart TB
     subgraph "1. ANTES: Acoplamiento directo (PROBLEMA)"
         direction TB
         A1["Command Handler"]
-        A2["ðŸ’¥ Conoce muchos servicios"]
-        A3["ðŸ“ Difícil de testear"]
-        A4["ðŸ”’ Cambios riesgosos"]
-        A5["âŒ Agregar función = modificar handler"]
+        A2["💥 Conoce muchos servicios"]
+        A3["📝 Difícil de testear"]
+        A4["🔒 Cambios riesgosos"]
+        A5["❌ Agregar función = modificar handler"]
         
         A1 --> A2 --> A3 --> A4 --> A5
         
@@ -681,9 +681,9 @@ flowchart TB
         B1["Command Handler\nSolo lógica principal"]
         B2["mediator.Publish()\n(Event)"]
         B3["Notification Handlers\n(Email, SignalR, Cache...)"]
-        B4["âœ… Desacoplado"]
-        B5["âœ… Testeable"]
-        B6["âœ… Extensible\n(agregar sin modificar)"]
+        B4["✅ Desacoplado"]
+        B5["✅ Testeable"]
+        B6["✅ Extensible\n(agregar sin modificar)"]
         
         B1 -->|"1 Publish"| B2 -->|"N Handlers"| B3
         B3 --> B4
@@ -842,10 +842,10 @@ flowchart LR
     end
     
     subgraph "Cada evento tiene HANDLERS"
-        H1A["ðŸ“§ Email al cliente"]
-        H1B["ðŸ“± SignalR al admin"]
-        H2A["ðŸ“Š Metrics++"]
-        H2B["ðŸ”„ Cache invalidada"]
+        H1A["📧 Email al cliente"]
+        H1B["📱 SignalR al admin"]
+        H2A["📊 Metrics++"]
+        H2B["🔄 Cache invalidada"]
     end
     
     CMD -->|"Publish()"| E1
@@ -882,10 +882,10 @@ flowchart TB
     end
     
     subgraph "NOTIFICATION HANDLERS"
-        C["3. EmailHandler\nâ†’ Envia email"]
-        D["4. SignalRHandler\nâ†’ Notifica web"]
-        E["5. CacheHandler\nâ†’ Actualiza cache"]
-        F["6. MetricsHandler\nâ†’ Registra métricas"]
+        C["3. EmailHandler\n→ Envia email"]
+        D["4. SignalRHandler\n→ Notifica web"]
+        E["5. CacheHandler\n→ Actualiza cache"]
+        F["6. MetricsHandler\n→ Registra métricas"]
     end
     
     A --> B --> C
@@ -958,7 +958,7 @@ sequenceDiagram
 
 Ahora entiendes por qué existe el patrón mediador: es el "camarero" que recibe pedidos de los clientes y los lleva a los cocineros sin que el cliente necesite saber quién cocina qué.
 
-### Â¿Qué es el patrón Mediador?
+### ¿Qué es el patrón Mediador?
 
 ```mermaid
 flowchart TB
@@ -1002,7 +1002,7 @@ flowchart TB
 
 El controlador **no conoce** a los handlers. Solo conoce al mediador. El mediador sabe qué handler debe recibir cada tipo de mensaje.
 
-### Â¿Por qué es útil el mediador?
+### ¿Por qué es útil el mediador?
 
 **Beneficio 1**: Desacoplamiento total
 
@@ -1128,26 +1128,26 @@ var app = builder.Build();
 
 ```
 Features/
-â”œâ”€â”€ Productos/
-â”‚   â”œâ”€â”€ Commands/
-â”‚   â”‚   â”œâ”€â”€ CreateProductoCommand.cs
-â”‚   â”‚   â”œâ”€â”€ UpdateProductoCommand.cs
-â”‚   â”‚   â””â”€â”€ DeleteProductoCommand.cs
-â”‚   â”œâ”€â”€ Queries/
-â”‚   â”‚   â”œâ”€â”€ GetAllProductosQuery.cs
-â”‚   â”‚   â”œâ”€â”€ GetProductoByIdQuery.cs
-â”‚   â”‚   â””â”€â”€ GetProductosByCategoriaQuery.cs
-â”‚   â””â”€â”€ Notifications/
-â”‚       â”œâ”€â”€ ProductoCreadoNotification.cs
-â”‚       â””â”€â”€ ProductoEliminadoNotification.cs
-â”œâ”€â”€ Pedidos/
-â”‚   â”œâ”€â”€ Commands/
-â”‚   â”œâ”€â”€ Queries/
-â”‚   â””â”€â”€ Notifications/
-â””â”€â”€ Usuarios/
-    â”œâ”€â”€ Commands/
-    â”œâ”€â”€ Queries/
-    â””â”€â”€ Notifications/
+├── Productos/
+│   ├── Commands/
+│   │   ├── CreateProductoCommand.cs
+│   │   ├── UpdateProductoCommand.cs
+│   │   └── DeleteProductoCommand.cs
+│   ├── Queries/
+│   │   ├── GetAllProductosQuery.cs
+│   │   ├── GetProductoByIdQuery.cs
+│   │   └── GetProductosByCategoriaQuery.cs
+│   └── Notifications/
+│       ├── ProductoCreadoNotification.cs
+│       └── ProductoEliminadoNotification.cs
+├── Pedidos/
+│   ├── Commands/
+│   ├── Queries/
+│   └── Notifications/
+└── Usuarios/
+    ├── Commands/
+    ├── Queries/
+    └── Notifications/
 ```
 
 ### Convención de nombres
@@ -1219,10 +1219,10 @@ public class ProductosController(IMediator mediator) : ControllerBase
 ```mermaid
 flowchart TB
     subgraph "Tipos de retorno posibles"
-        A["Query Handler\nâ†’ Result<T, DomainError>"] 
-        B["Command Handler (con retorno)\nâ†’ Result<T, DomainError>"]
-        C["Command Handler (sin retorno)\nâ†’ UnitResult<DomainError>"]
-        D["Handler simple\nâ†’ Unit (void)"]
+        A["Query Handler\n→ Result<T, DomainError>"] 
+        B["Command Handler (con retorno)\n→ Result<T, DomainError>"]
+        C["Command Handler (sin retorno)\n→ UnitResult<DomainError>"]
+        D["Handler simple\n→ Unit (void)"]
     end
     
     style A fill:#339af0,color:#fff
@@ -1317,7 +1317,7 @@ flowchart LR
 | Aspecto | Validación en Servicio | Validación en Handler |
 |---------|------------------------|----------------------|
 | **Ubicación** | Lejos del command | Junto al command |
-| **Descubrimiento** | Â¿Dónde está la validación de esta operación? | Todo en el mismo archivo |
+| **Descubrimiento** | ¿Dónde está la validación de esta operación? | Todo en el mismo archivo |
 | **Reutilización** | Diferentes servicios pueden tener diferentes reglas | Cada command tiene sus reglas |
 | **Testing** | Necesitas testear el servicio completo | Solo testear el handler |
 
@@ -1329,34 +1329,34 @@ CQRS no es la solución perfecta para todo. Vamos a ser honestos sobre cuándo u
 
 ### Cuándo SÍ usar CQRS
 
-âœ… **Sistema con múltiples operaciones complejas**
+✅ **Sistema con múltiples operaciones complejas**
 Si tienes operaciones que incluyen validación, reglas de negocio, y efectos secundarios, CQRS ayuda a organizarlo.
 
-âœ… **Equipo grande trabajando en el mismo código**
+✅ **Equipo grande trabajando en el mismo código**
 Cuando 10 desarrolladores modifican el mismo código, la separación clara de responsabilidades reduce conflictos.
 
-âœ… **Necesidad de escalar lecturas y escrituras independientemente**
+✅ **Necesidad de escalar lecturas y escrituras independientemente**
 Si tu aplicación tiene 90% lecturas y 10% escrituras, puedes optimizar cada parte por separado.
 
-âœ… **Sistema con múltiples efectos secundarios**
+✅ **Sistema con múltiples efectos secundarios**
 Cuando una operación necesita enviar emails, notifications, actualizar cache, logs, etc.
 
-âœ… **Necesidad de auditoría**
+✅ **Necesidad de auditoría**
 Cada command es una operación atómica que se puede rastrear fácilmente.
 
 ### Cuándo NO usar CQRS
 
-âŒ **CRUD simple**
+❌ **CRUD simple**
 Si tu aplicación es básica Create/Read/Update/Delete sin lógica compleja, CQRS añade complejidad innecesaria.
 
-âŒ **Prototipo o proyecto pequeño**
+❌ **Prototipo o proyecto pequeño**
 Para una prueba de concepto o proyecto con 3-4 endpoints, el overhead de CQRS no vale la pena.
 
-âŒ **Equipo sin experiencia en patrones**
+❌ **Equipo sin experiencia en patrones**
 Si el equipo no está familiarizado con CQRS, la curva de aprendizaje puede ser un problema.
 
-âŒ **Sistema con requisitos simples**
- "Â¿Para qué necesito mediador si mi endpoint hace un simple INSERT?"
+❌ **Sistema con requisitos simples**
+ "¿Para qué necesito mediador si mi endpoint hace un simple INSERT?"
 
 ### La regla del pulgar
 
@@ -1491,17 +1491,41 @@ Con CQRS dominado, el siguiente paso es aprender sobre **Notificaciones y Evento
 En teoría, CQRS propone tener **bases de datos separadas** para Commands y Queries:
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚   Write DB      â”‚     â”‚   Read DB       â”‚
-â”‚  (PostgreSQL)   â”‚     â”‚   (MongoDB)     â”‚
-â”‚                 â”‚     â”‚                 â”‚
-â”‚ - Entidades     â”‚     â”‚ - Vistas        â”‚
-â”‚ - Relaciones    â”‚     â”‚ - Proyecciones  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜     â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚ sincronización        â”‚
-         â–¼                       â–¼
+┌─────────────────┐     ┌─────────────────┐
+│   Write DB      │     │   Read DB       │
+│  (PostgreSQL)   │     │   (MongoDB)     │
+│                 │     │                 │
+│ - Entidades     │     │ - Vistas        │
+│ - Relaciones    │     │ - Proyecciones  │
+└────────┬────────┘     └────────┬────────┘
+         │ sincronización        │
+         ▼                       ▼
     (Eventos/CDC)          (Proyecciones)
 ```
+
+### El flujo real en este proyecto
+
+```mermaid
+flowchart LR
+    subgraph W["Escritura — Commands"]
+        CMD["Create / Update / Delete"] -->|EF Core| PG[("PostgreSQL<br/>fuente de verdad")]
+    end
+    PG -->|"Publish(Notification)"| SYNC["ProductoReadSyncHandler"]
+    SYNC -->|UpsertAsync| M[("MongoDB<br/>productos_read")]
+    subgraph R["Lectura — Queries"]
+        Q["REST / GraphQL"] --> CACHE{"Caché"}
+        CACHE -->|hit| REDIS[("Redis / memoria<br/>TTL 10 min · OutputCache 60 s")]
+        CACHE -->|miss| M
+    end
+    CMD -.->|invalida claves y tag| CACHE
+```
+
+En este repositorio la separación write/read **existe para productos** (Fase 13):
+
+1. El **command** escribe en PostgreSQL y publica su notification (sección 12.7).
+2. `ProductoReadSyncHandler` replica el cambio en MongoDB `productos_read` (categoría embebida incluida).
+3. La **query** responde desde la caché o, en caso de miss, desde el read model de MongoDB.
+4. Cada escritura invalida además la caché (`EvictByTagAsync` de OutputCache + `RemoveAsync` de las claves afectadas).
 
 ### Patrones de Sincronización
 
@@ -1510,17 +1534,23 @@ En teoría, CQRS propone tener **bases de datos separadas** para Commands y Quer
 | **Event Sourcing** | Guardar eventos, reconstruir estado | Trazabilidad completa | Complejo |
 | **Dual Write** | Escribir en ambas BD simultáneamente | Simple | Riesgo de inconsistencia |
 | **CDC (Change Data Capture)** | Debezium lee el WAL de PostgreSQL | Sin cambios en app | Requiere infraestructura extra |
-| **Message Queue** | Publicar eventos â†’ Consumidor actualiza Read DB | Escalable | Consistencia eventual |
+| **Message Queue** | Publicar eventos → Consumidor actualiza Read DB | Escalable | Consistencia eventual |
 
 ### Nuestro Proyecto: Enfoque Práctico
 
 Este proyecto utiliza un **enfoque híbrido**:
 
-- PostgreSQL para datos relacionales (Users, Categorías, Productos)
-- MongoDB para documentos transaccionales (Pedidos con items embebidos)
-- Redis para caché
+- **PostgreSQL**: fuente de verdad de Users, Categorías y Productos (escrituras vía commands, EF Core).
+- **MongoDB**: Pedidos con items embebidos y el read model `productos_read`, la réplica de productos que alimenta las lecturas.
+- **Redis / memoria**: caché de fachada (TTL 10 min) y OutputCache HTTP (60 s con tags).
 
-Esto **no es CQRS puro** (tenemos una sola fuente de verdad), pero es un patrón válido y más simple para proyectos educativos. La separaciónCQRS se aplica a nivel de código (Commands/Queries), no a nivel de base de datos.
+La separación CQRS se aplica **a nivel de código** en todos los módulos (Commands/Queries) y **a nivel de datos en productos**: desde la Fase 13 las lecturas de productos responden desde MongoDB mientras la escritura ocurre en PostgreSQL. No hay Event Sourcing ni CDC: la réplica la sostienen los propios eventos de MediatR (`ProductoReadSyncHandler`) y un seeder de arranque (`ProductoReadSeeder`).
+
+### La contrapartida: consistencia eventual
+
+Separar el camino de lectura del de escritura tiene un precio: entre que el command confirma en PostgreSQL y la réplica de MongoDB recibe el cambio, una lectura concurrente puede ver el estado anterior. Esa **ventana de inconsistencia** dura milisegundos aquí (el `Publish` se espera antes de devolver el 201), pero con caché de por medio puede alargarse hasta el TTL. Es el intercambio clásico de CQRS: más disponibilidad y escalabilidad de lecturas a cambio de gestionar la consistencia eventual.
+
+> El tema completo —diagramas con marcas de tiempo, polling frente a domain events, manejo de errores de la sincronización y estrategias— está en `doc/14-mediatr-cqrs-eventos.md`, sección **14.11**.
 
 ### Cuándo merecía la pena ir a CQRS puro
 

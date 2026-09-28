@@ -17,7 +17,7 @@
 
 La validación en cascada significa que los datos pasan por múltiples capas de validación, cada una con un propósito específico. La primera capa (Data Annotations) valida el formato básico del JSON. La segunda capa (FluentValidation) valida reglas de negocio específicas. La tercera capa (servicio) verifica invariantes de negocio que requieren acceso a datos. Cada capa captura diferentes tipos de errores y proporciona mensajes apropiados.
 
-### Â¿Por qué múltiples capas de validación?
+### ¿Por qué múltiples capas de validación?
 
 Cada capa de validación tiene responsabilidades diferentes. Data Annotations verifica que los campos requeridos estén presentes y que los tipos sean correctos. Esta validación es automática gracias a ASP.NET Core y no requiere código adicional. FluentValidation te permite escribir reglas complejas y personalizadas que no puedes expresar con atributos. Finalmente, el servicio verifica reglas que requieren acceso a la base de datos, como verificar si un email ya existe o si una categoría está activa.
 
@@ -387,14 +387,14 @@ public class ProductoCreateDtoValidator : AbstractValidator<ProductoCreateDto>
 Para que FluentValidation se ejecute automáticamente en cada petición, debes configurarlo en Program.cs usando `AddFluentValidationAutoValidation()`. Esto registra los validadores y activa la validación automática en el pipeline.
 
 > **NOTA PARA EL ALUMNO**: La configuración de FluentValidation tiene dos partes:
-> - `AddValidatorsFromAssemblyContaining<Program>()` â†’ Registra los validadores en el contenedor DI (necesario)
-> - `AddFluentValidationAutoValidation()` â†’ Activa la validación automática en el pipeline
+> - `AddValidatorsFromAssemblyContaining<Program>()` → Registra los validadores en el contenedor DI (necesario)
+> - `AddFluentValidationAutoValidation()` → Activa la validación automática en el pipeline
 >
 > Si solo usas la primera parte, la validación debe llamarse manualmente desde los servicios. Si usas ambas, la validación se ejecuta automáticamente antes de llegar al controller y devuelve 400 Bad Request si falla. Esta es la configuración recomendada para APIs REST.
 
 > **NOTA PARA EL ALUMNO**: Data Annotations y FluentValidation son complementarios:
-> - **Data Annotations** â†’ Valida formato básico (requerido, rango, email, formato). Se define en el propio DTO.
-> - **FluentValidation** â†’ Valida reglas de negocio complejas (condicionales, múltiples campos, mensajes personalizados). Se define en clases separadas.
+> - **Data Annotations** → Valida formato básico (requerido, rango, email, formato). Se define en el propio DTO.
+> - **FluentValidation** → Valida reglas de negocio complejas (condicionales, múltiples campos, mensajes personalizados). Se define en clases separadas.
 > - Ambos se ejecutan **antes** del controller. Si las reglas son simples (solo formato), no es necesario añadir FluentValidation; si hay reglas de negocio complejas, es muy recomendable.
 
 ### Configuración básica
@@ -614,7 +614,7 @@ Cada capa de validación tiene responsabilidades específicas. Usar la capa corr
 Data Annotations son perfectos para verificar el formato básico de los datos. Esto incluye campos requeridos, longitud de strings, rangos numéricos simples, formatos de email y URL, y expresiones regulares básicas. Data Annotations no deben contener lógica de negocio, solo verificación de formato.
 
 ```csharp
-// âœ… CORRECTO: Validación de formato
+// ✅ CORRECTO: Validación de formato
 public class ProductoCreateDto
 {
     [Required]
@@ -629,7 +629,7 @@ public class ProductoCreateDto
     public long CategoriaId { get; set; }
 }
 
-// âŒ INCORRECTO: Lógica de negocio en Data Annotations
+// ❌ INCORRECTO: Lógica de negocio en Data Annotations
 public class ProductoCreateDto
 {
     [Required]
@@ -645,7 +645,7 @@ FluentValidation es ideal para reglas que dependen de múltiples campos, validac
 ```csharp
 public class PedidoCreateDtoValidator : AbstractValidator<PedidoCreateDto>
 {
-    // âœ… CORRECTO: Reglas de negocio
+    // ✅ CORRECTO: Reglas de negocio
     
     // Dependencia de múltiples campos
     RuleFor(x => x.FechaEntrega)
@@ -687,7 +687,7 @@ public class ProductoService
 
     public async Task<Result<ProductoDto, DomainError>> CreateAsync(ProductoCreateDto dto)
     {
-        // âœ… CORRECTO: Validación que requiere acceso a datos
+        // ✅ CORRECTO: Validación que requiere acceso a datos
         
         // Verificar que la categoría existe
         var categoria = await _categoriaRepository.FindByIdAsync(dto.CategoriaId);
@@ -729,7 +729,7 @@ public class ProductoService
 
 ## 5.6. Respuestas de Error Estandarizadas
 
-Una API profesional devuelve errores en un formato consistente que los clientes pueden parsear fácilmente. Esto incluye un mensaje legible por humanos, un código de error específico para Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ, detalles de validación cuando aplica, y correlation ID para debugging.
+Una API profesional devuelve errores en un formato consistente que los clientes pueden parsear fácilmente. Esto incluye un mensaje legible por humanos, un código de error específico para программирование, detalles de validación cuando aplica, y correlation ID para debugging.
 
 ### Formato de error estándar
 

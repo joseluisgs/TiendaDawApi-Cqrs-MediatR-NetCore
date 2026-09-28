@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -27,7 +28,8 @@ public class CreateProductoCommandHandler(
     ICategoriaRepository categoriaRepository,
     IValidator<ProductoRequestDto> validator,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -63,8 +65,12 @@ public class CreateProductoCommandHandler(
             {
                 await cacheService.RemoveAsync("productos:all");
                 await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         Log.Information("📣 Publicando ProductoCreadoNotification para producto ID: {ProductoId}", dto.Id);

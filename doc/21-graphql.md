@@ -3,7 +3,7 @@
 ## Índice
 
 [21. GraphQL con HotChocolate](#21-graphql-con-hotchocolate)
-  - [21.1. Â¿Qué es GraphQL?](#211-qu-es-graphql)
+  - [21.1. ¿Qué es GraphQL?](#211-qu-es-graphql)
   - [21.2. Instalación de HotChocolate](#212-instalacin-de-hotchocolate)
   - [21.3. Configuración en Program.cs](#213-configuracin-en-programcs)
   - [21.3.1. Autenticación y Autorización con HotChocolate](#21-autenticación-y-autorización-con-hotchocolate)
@@ -26,7 +26,7 @@
 
 ---
 
-## 21.1. Â¿Qué es GraphQL?
+## 21.1. ¿Qué es GraphQL?
 
 **GraphQL** es un lenguaje de consulta para APIs desarrollado por Facebook. A diferencia de REST, GraphQL permite al cliente especificar exactamente qué datos necesita, evitando el over-fetching y under-fetching.
 
@@ -77,7 +77,7 @@ Del archivo `Program.cs`:
 
 ```csharp
 // GraphQL
-Log.Information("ðŸ” Configurando GraphQL con HotChocolate...");
+Log.Information("🔍 Configurando GraphQL con HotChocolate...");
 builder.Services
     .AddGraphQLServer()
     .AddQueryType<TiendaQuery>()
@@ -90,7 +90,7 @@ builder.Services
 
 ```csharp
 // GraphQL Endpoint
-Log.Information("ðŸ” Configurando endpoint GraphQL: /graphql");
+Log.Information("🔍 Configurando endpoint GraphQL: /graphql");
 app.MapGraphQL();
 ```
 
@@ -175,7 +175,7 @@ builder.Services
 // HotChocolate lee automáticamente el contexto de autenticación
 builder.Services
     .AddGraphQLServer()
-    .AddAuthorization()  // â† Habilita soporte para [Authorize]
+    .AddAuthorization()  // ← Habilita soporte para [Authorize]
     .AddQueryType<TiendaQuery>();
 ```
 
@@ -194,7 +194,7 @@ public class TiendaQuery
     }
 
     // Query protegida - solo usuarios autenticados
-    [Authorize]  // â† Requiere JWT válido
+    [Authorize]  // ← Requiere JWT válido
     [UseFirstOrDefault]
     public async Task<Producto?> GetProducto(
         long id,
@@ -211,7 +211,7 @@ public class TiendaQuery
 public class ProductoMutation
 {
     // Solo administradores pueden crear productos
-    [Authorize(policy: "AdminOnly")]  // â† Policy que requiere rol Admin
+    [Authorize(policy: "AdminOnly")]  // ← Policy que requiere rol Admin
     public async Task<Result<Producto, DomainError>> CreateProducto(
         CreateProductoInput input,
         [Service] IProductoService productoService)
@@ -256,7 +256,7 @@ public class ProductoType : ObjectType<Producto>
         // Campo solo visible para administradores
         descriptor.Field(p => p.CostoProveedor)
             .Type<DecimalType>()
-            .Authorize(new[] { "Admin" });  // â† Solo Admin puede ver este campo
+            .Authorize(new[] { "Admin" });  // ← Solo Admin puede ver este campo
 
         descriptor.Field(p => p.Categoria)
             .Type<CategoriaType>();
@@ -322,7 +322,7 @@ public class TiendaQuery
 {
     public async Task<List<Producto>> GetMisProductos(
         [Service] IProductoRepository productoRepository,
-        [GlobalState("userId")] long userId)  // â† Injectado automáticamente
+        [GlobalState("userId")] long userId)  // ← Injectado automáticamente
     {
         // Obtener productos del usuario actual
         return await productoRepository.GetByUserIdAsync(userId);
@@ -480,7 +480,7 @@ query NombreQuery($id: Long!) {
     id          # Campo solicitado
     nombre      # Campo solicitado
     precio      # Campo solicitado
-    # descripcion no se incluye â†’ no se envía
+    # descripcion no se incluye → no se envía
   }
 }
 ```
@@ -1290,21 +1290,21 @@ flowchart TD
 
 | Escenario | Recomendación |
 |-----------|---------------|
-| **Clientes móviles** | âœ… GraphQL (menos datos, mejor rendimiento) |
-| **Dashboards complejos** | âœ… GraphQL (una sola query) |
-| **API pública** | âœ… GraphQL (flexibilidad para clientes) |
-| **CRUD simple** | âšª REST (más simple) |
-| **Arquitectura de microservicios** | âœ… GraphQL (stitching) |
-| **Streaming en tiempo real** | âœ… GraphQL + Subscriptions |
+| **Clientes móviles** | ✅ GraphQL (menos datos, mejor rendimiento) |
+| **Dashboards complejos** | ✅ GraphQL (una sola query) |
+| **API pública** | ✅ GraphQL (flexibilidad para clientes) |
+| **CRUD simple** | ⚪ REST (más simple) |
+| **Arquitectura de microservicios** | ✅ GraphQL (stitching) |
+| **Streaming en tiempo real** | ✅ GraphQL + Subscriptions |
 
 ### Cuándo Usar REST
 
 | Escenario | Recomendación |
 |-----------|---------------|
-| **Endpoints simples** | âœ… REST (más directo) |
-| **Documentación con Swagger** | âœ… REST (integración nativa) |
-| **Cacheo con CDNs** | âœ… REST (URLs únicas) |
-| **Equipo nuevo** | âœ… REST (mayor familiaridad) |
+| **Endpoints simples** | ✅ REST (más directo) |
+| **Documentación con Swagger** | ✅ REST (integración nativa) |
+| **Cacheo con CDNs** | ✅ REST (URLs únicas) |
+| **Equipo nuevo** | ✅ REST (mayor familiaridad) |
 
 ---
 
@@ -1525,7 +1525,7 @@ public class ProductoService(
                 NotificarWebSocketProductoCreado(dto);
                 EnviarEmailProductoCreado(saved);
                 
-                // ðŸš€ Publicar evento para GraphQL Subscription
+                // 🚀 Publicar evento para GraphQL Subscription
                 EventoSuscripcionProductoCreado(dto);
             });
     }
@@ -1562,7 +1562,7 @@ builder.Services
     .AddQueryType<TiendaQuery>()
     .AddMutationType<ProductoMutation>()
     .AddSubscriptionType<ProductoSubscription>()
-    .AddInMemorySubscriptions()  // â† Necesario para Pub/Sub
+    .AddInMemorySubscriptions()  // ← Necesario para Pub/Sub
     .AddType<ProductoType>()
     .AddType<CategoriaType>();
 ```
@@ -1573,29 +1573,29 @@ builder.Services
 
 ```
 GraphQL/
-â”œâ”€â”€ Queries/
-â”‚   â””â”€â”€ TiendaQuery.cs              # Queries de productos y categorías
-â”‚
-â”œâ”€â”€ Mutations/
-â”‚   â””â”€â”€ ProductoMutation.cs          # Mutations de productos
-â”‚
-â”œâ”€â”€ Subscriptions/
-â”‚   â””â”€â”€ ProductoSubscription.cs      # Suscripciones en tiempo real
-â”‚
-â”œâ”€â”€ Events/
-â”‚   â””â”€â”€ ProductoEvent.cs            # Payloads de eventos
-â”‚
-â”œâ”€â”€ Inputs/
-â”‚   â”œâ”€â”€ CategoriaInput.cs           # Input types de categorías
-â”‚   â””â”€â”€ ProductoInput.cs            # Input types de productos
-â”‚
-â”œâ”€â”€ Publishers/
-â”‚   â”œâ”€â”€ IEventPublisher.cs          # Interfaz del publisher
-â”‚   â””â”€â”€ EventPublisher.cs           # Implementación Pub/Sub
-â”‚
-â””â”€â”€ Types/
-    â”œâ”€â”€ CategoriaType.cs            # Tipo GraphQL de categoría
-    â””â”€â”€ ProductoType.cs              # Tipo GraphQL de producto
+├── Queries/
+│   └── TiendaQuery.cs              # Queries de productos y categorías
+│
+├── Mutations/
+│   └── ProductoMutation.cs          # Mutations de productos
+│
+├── Subscriptions/
+│   └── ProductoSubscription.cs      # Suscripciones en tiempo real
+│
+├── Events/
+│   └── ProductoEvent.cs            # Payloads de eventos
+│
+├── Inputs/
+│   ├── CategoriaInput.cs           # Input types de categorías
+│   └── ProductoInput.cs            # Input types de productos
+│
+├── Publishers/
+│   ├── IEventPublisher.cs          # Interfaz del publisher
+│   └── EventPublisher.cs           # Implementación Pub/Sub
+│
+└── Types/
+    ├── CategoriaType.cs            # Tipo GraphQL de categoría
+    └── ProductoType.cs              # Tipo GraphQL de producto
 ```
 
 ### Responsabilidades por Carpeta
@@ -1663,7 +1663,7 @@ HotChocolate resuelve automáticamente dependencias con `[Service]`:
 ```csharp
 public async Task<Producto?> GetProducto(
     long id,
-    [Service] IProductoRepository repository)  // â† Inyectado automáticamente
+    [Service] IProductoRepository repository)  // ← Inyectado automáticamente
 {
     return await repository.FindByIdAsync(id);
 }
@@ -1671,9 +1671,9 @@ public async Task<Producto?> GetProducto(
 
 ---
 
-## 21.18. Estado Actual del Proyecto âœ…
+## 21.18. Estado Actual del Proyecto ✅
 
-### Queries Implementadas âœ…
+### Queries Implementadas ✅
 
 | Query | Descripción | Auth |
 |-------|-------------|------|
@@ -1684,7 +1684,7 @@ public async Task<Producto?> GetProducto(
 | `categoria(id: Long!)` | Categoría por ID | No |
 | `categorias(first: Int)` | Categorías paginadas | No |
 
-### Mutations Implementadas âœ…
+### Mutations Implementadas ✅
 
 | Mutation | Descripción | Auth |
 |----------|-------------|------|
@@ -1692,7 +1692,7 @@ public async Task<Producto?> GetProducto(
 | `updateProducto(id: Long!, input: UpdateProductoInput!)` | Actualizar producto | ADMIN |
 | `deleteProducto(id: Long!)` | Eliminar producto | ADMIN |
 
-### Subscriptions Implementadas âœ…
+### Subscriptions Implementadas ✅
 
 | Subscription | Descripción | Auth |
 |--------------|-------------|------|
@@ -1809,9 +1809,9 @@ flowchart TD
 
 | Tipo | HTTP | WebSocket | Descripción |
 |------|------|-----------|-------------|
-| **Query** | âœ… POST /graphql | âŒ | Request-Response |
-| **Mutation** | âœ… POST /graphql | âŒ | Request-Response |
-| **Subscription** | âŒ | âœ… WS /graphql | Push en tiempo real |
+| **Query** | ✅ POST /graphql | ❌ | Request-Response |
+| **Mutation** | ✅ POST /graphql | ❌ | Request-Response |
+| **Subscription** | ❌ | ✅ WS /graphql | Push en tiempo real |
 
 ### Códigos de Error
 

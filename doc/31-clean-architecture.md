@@ -3,7 +3,7 @@
 ## Índice
 
 [31. Clean Architecture y CQRS](#31-clean-architecture-y-cqrs)
-  - [31.1. Â¿Qué es Clean Architecture?](#311-qu-es-clean-architecture)
+  - [31.1. ¿Qué es Clean Architecture?](#311-qu-es-clean-architecture)
   - [31.2. Estructura del Proyecto](#312-estructura-del-proyecto)
   - [31.3. Entities (Domain Layer)](#313-entities-domain-layer)
   - [31.4. CQRS](#314-cqrs)
@@ -12,7 +12,7 @@
 
 ---
 
-## 31.1. Â¿Qué es Clean Architecture?
+## 31.1. ¿Qué es Clean Architecture?
 
 **Clean Architecture** es un patrón de diseño que separa las preocupaciones en capas, manteniendo el núcleo de negocio independiente de detalles de implementación como frameworks, bases de datos o UI.
 
@@ -64,54 +64,54 @@ flowchart BT
 
 ```
 TiendaApi/
-â”œâ”€â”€ src/
-â”‚   â”œâ”€â”€ TiendaApi.Core/           # Domain + Application
-â”‚   â”‚   â”œâ”€â”€ Domain/               # Entidades y reglas de negocio
-â”‚   â”‚   â”‚   â”œâ”€â”€ Entities/
-â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ Producto.cs
-â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ Pedido.cs
-â”‚   â”‚   â”‚   â”‚   â””â”€â”€ Categoria.cs
-â”‚   â”‚   â”‚   â”œâ”€â”€ Interfaces/
-â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ IRepository.cs
-â”‚   â”‚   â”‚   â”‚   â””â”€â”€ ICacheService.cs
-â”‚   â”‚   â”‚   â”œâ”€â”€ Services/
-â”‚   â”‚   â”‚   â”‚   â””â”€â”€ IDomainService.cs
-â”‚   â”‚   â”‚   â””â”€â”€ Events/
-â”‚   â”‚   â”œâ”€â”€ Application/          # Casos de uso
-â”‚   â”‚   â”‚   â”œâ”€â”€ DTOs/
-â”‚   â”‚   â”‚   â”œâ”€â”€ UseCases/
-â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ Productos/
-â”‚   â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ GetProductoQuery.cs
-â”‚   â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ CreateProductoCommand.cs
-â”‚   â”‚   â”‚   â”‚   â”‚   â””â”€â”€ ProductoValidator.cs
-â”‚   â”‚   â”‚   â”‚   â””â”€â”€ Pedidos/
-â”‚   â”‚   â”‚   â”œâ”€â”€ Interfaces/
-â”‚   â”‚   â”‚   â”‚   â”œâ”€â”€ IProductoRepository.cs
-â”‚   â”‚   â”‚   â”‚   â””â”€â”€ ICacheService.cs
-â”‚   â”‚   â”‚   â””â”€â”€ DependencyInjection.cs
-â”‚   â”‚   â””â”€â”€ TiendaApi.Core.csproj
-â”‚   â”‚
-â”‚   â”œâ”€â”€ TiendaApi.Infrastructure/ # Acceso a datos
-â”‚   â”‚   â”œâ”€â”€ Data/
-â”‚   â”‚   â”‚   â”œâ”€â”€ TiendaDbContext.cs
-â”‚   â”‚   â”‚   â”œâ”€â”€ Configurations/
-â”‚   â”‚   â”‚   â””â”€â”€ Repositories/
-â”‚   â”‚   â”œâ”€â”€ Cache/
-â”‚   â”‚   â”‚   â””â”€â”€ RedisCacheService.cs
-â”‚   â”‚   â”œâ”€â”€ External/
-â”‚   â”‚   â”‚   â””â”€â”€ HttpClientService.cs
-â”‚   â”‚   â””â”€â”€ TiendaApi.Infrastructure.csproj
-â”‚   â”‚
-â”‚   â””â”€â”€ TiendaApi.Apis/           # Presentación
-â”‚       â”œâ”€â”€ Controllers/
-â”‚       â”‚   â””â”€â”€ V1/
-â”‚       â”œâ”€â”€ Middleware/
-â”‚       â”œâ”€â”€ Program.cs
-â”‚       â””â”€â”€ TiendaApi.Apis.csproj
-â”‚
-â””â”€â”€ tests/
-    â”œâ”€â”€ TiendaApi.Core.Tests/
-    â””â”€â”€ TiendaApi.Integration.Tests/
+├── src/
+│   ├── TiendaApi.Core/           # Domain + Application
+│   │   ├── Domain/               # Entidades y reglas de negocio
+│   │   │   ├── Entities/
+│   │   │   │   ├── Producto.cs
+│   │   │   │   ├── Pedido.cs
+│   │   │   │   └── Categoria.cs
+│   │   │   ├── Interfaces/
+│   │   │   │   ├── IRepository.cs
+│   │   │   │   └── ICacheService.cs
+│   │   │   ├── Services/
+│   │   │   │   └── IDomainService.cs
+│   │   │   └── Events/
+│   │   ├── Application/          # Casos de uso
+│   │   │   ├── DTOs/
+│   │   │   ├── UseCases/
+│   │   │   │   ├── Productos/
+│   │   │   │   │   ├── GetProductoQuery.cs
+│   │   │   │   │   ├── CreateProductoCommand.cs
+│   │   │   │   │   └── ProductoValidator.cs
+│   │   │   │   └── Pedidos/
+│   │   │   ├── Interfaces/
+│   │   │   │   ├── IProductoRepository.cs
+│   │   │   │   └── ICacheService.cs
+│   │   │   └── DependencyInjection.cs
+│   │   └── TiendaApi.Core.csproj
+│   │
+│   ├── TiendaApi.Infrastructure/ # Acceso a datos
+│   │   ├── Data/
+│   │   │   ├── TiendaDbContext.cs
+│   │   │   ├── Configurations/
+│   │   │   └── Repositories/
+│   │   ├── Cache/
+│   │   │   └── RedisCacheService.cs
+│   │   ├── External/
+│   │   │   └── HttpClientService.cs
+│   │   └── TiendaApi.Infrastructure.csproj
+│   │
+│   └── TiendaApi.Apis/           # Presentación
+│       ├── Controllers/
+│       │   └── V1/
+│       ├── Middleware/
+│       ├── Program.cs
+│       └── TiendaApi.Apis.csproj
+│
+└── tests/
+    ├── TiendaApi.Core.Tests/
+    └── TiendaApi.Integration.Tests/
 ```
 
 ---

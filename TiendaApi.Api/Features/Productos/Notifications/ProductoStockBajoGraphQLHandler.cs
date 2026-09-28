@@ -11,6 +11,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoStockBajoGraphQLHandler(IEventPublisher eventPublisher)
     : INotificationHandler<ProductoStockBajoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoStockBajo y publica la suscripción GraphQL onStockBajo.
+    /// </summary>
     public async Task Handle(ProductoStockBajoNotification notification, CancellationToken cancellationToken)
     {
         await eventPublisher.PublishAsync("onStockBajo", new ProductoStockBajoEvent
@@ -21,7 +24,7 @@ public class ProductoStockBajoGraphQLHandler(IEventPublisher eventPublisher)
             UmbralStock = notification.UmbralStock,
             DetectedAt = DateTime.UtcNow
         });
-        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Stock bajo ID={ProductoId}, Stock={Stock}", 
+        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Stock bajo ID={ProductoId}, Stock={Stock}",
             notification.Producto.Id, notification.Producto.Stock);
     }
 }

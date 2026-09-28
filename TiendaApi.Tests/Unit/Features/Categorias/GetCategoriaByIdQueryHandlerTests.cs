@@ -1,7 +1,7 @@
 using FluentAssertions;
 using MediatR;
-using Moq;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
