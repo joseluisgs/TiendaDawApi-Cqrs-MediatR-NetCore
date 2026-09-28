@@ -48,7 +48,6 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
       - [Automation (Node)](#automation-node)
       - [Postman (Newman)](#postman-newman)
       - [Bruno (CLI)](#bruno-cli)
-    - [Verificación de consistencia (scripts)](#verificación-de-consistencia-scripts)
   - [📚 Documentación](#-documentación)
     - [Fundamentos y Configuración](#fundamentos-y-configuración)
     - [API y Controllers](#api-y-controllers)
@@ -62,8 +61,6 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
     - [Testing y Calidad](#testing-y-calidad)
     - [DevOps y Producción](#devops-y-producción)
     - [Arquitectura](#arquitectura)
-    - [Decisiones de Arquitectura (ADR)](#decisiones-de-arquitectura-adr)
-    - [Peticiones HTTP (REST Client)](#peticiones-http-rest-client)
   - [⚒️ Diagrama de Clases del Dominio](#️-diagrama-de-clases-del-dominio)
   - [🗄️ Entidades por Base de Datos](#️-entidades-por-base-de-datos)
     - [🐘 PostgreSQL (Escritura: datos maestros)](#-postgresql-escritura-datos-maestros)
@@ -85,7 +82,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
   - [🎯 Arquitectura CQRS con MediatR](#-arquitectura-cqrs-con-mediatr)
     - [¿Por qué CQRS?](#por-qué-cqrs)
     - [Flujo CQRS con MediatR](#flujo-cqrs-con-mediatr)
-    - [Estructura de Features](#estructura-de-features)
+    - [Estructura de Funcionalidades](#estructura-de-funcionalidades)
     - [Componentes CQRS](#componentes-cqrs)
     - [Notificaciones (Domain Events)](#notificaciones-domain-events)
     - [Beneficios de MediatR](#beneficios-de-mediatr)
@@ -113,7 +110,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 ## ✨ Características
 
 - 🏪 **CRUD Completo**: Productos, Categorías, Pedidos y Usuarios
-- 🧩 **CQRS con MediatR**: Commands/Queries/Notifications por feature (escritura y lectura desacopladas)
+- 🧩 **CQRS con MediatR**: Commands/Queries/Notifications por funcionalidad (escritura y lectura desacopladas)
 - 🔄 **Read model CQRS**: PostgreSQL → MongoDB (`productos_read`) sincronizado por eventos de dominio
 - 🔐 **Autenticación JWT**: Token-based con roles y claims
 - 🔒 **HTTPS + HSTS**: Redirección HTTP→HTTPS, HSTS 365 días, Security Headers
@@ -152,7 +149,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - **CSharpFunctionalExtensions** - Railway Oriented Programming
 - **Testcontainers** - Tests de integración con bases de datos reales
 - **Bruno CLI** - Pruebas E2E de API
-- **Newman / Bruno / Node** - Corridas E2E (colecciones + Automation runner)
+- **Newman / Bruno / Node** - Ejecuciones E2E (colecciones + Automation runner)
 - **Swashbuckle/Swagger** - Documentación automática de API
 - **Coverlet** - Métricas de coverage
 - **Docker** - Containerización
@@ -319,7 +316,7 @@ newman run TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_collection.
   --reporter-junit-export junit-report.xml
 ```
 
-**La colección completa** en una sola corrida. Si el rate limit corta la corrida (429), ejecútala por
+**La colección completa** en una sola ejecución. Si el rate limit corta la ejecución (429), ejecútala por
 carpetas con `--folder` (así se validó en desarrollo: 4 tandas, exit 0).
 
 **Colección disponible en:** `TiendaApi.Tests.E2E/Postman-Cli/`
@@ -337,14 +334,14 @@ cd TiendaApi.Tests.E2E/Bruno-Cli
 docker compose up --build
 start reports/report.html
 
-# Opción 2: Con Bruno CLI local — corrida única (los tokens NO sobreviven entre tandas)
+# Opción 2: Con Bruno CLI local — ejecución única (los tokens NO sobreviven entre tandas)
 npm install -g @usebruno/cli
 cd TiendaApi.Tests.E2E/Bruno-Local
 bru run "0 - SETUP" "1 - AUTHENTICATION" "2 - CATEGORÍAS" "3 - PRODUCTOS" \
   "4 - PEDIDOS (Usuario)" "5 - PEDIDOS (Admin)" "6 - USUARIOS" "7 - STORAGE" \
   "10 - GRAPHQL CATEGORÍAS" "11 - GRAPHQL PRODUCTOS" "90 - TEARDOWN" \
   --env-file "environments/TiendaApi__NET_-_Environment.json" --delay 3200
-# Corrida completa sin fallos. Fuera del run: "12 - WEBSOCKETS" (la CLI no
+# Ejecución completa sin fallos. Fuera de esta ejecución: "12 - WEBSOCKETS" (la CLI no
 # soporta WS y la variable basews no existe en el env → ENOTFOUND preexistentes)
 ```
 
@@ -354,20 +351,6 @@ bru run "0 - SETUP" "1 - AUTHENTICATION" "2 - CATEGORÍAS" "3 - PRODUCTOS" \
 - `report.html` - Informe visual
 - `report.json` - Datos estructurados
 - `junit-report.xml` - Para CI/CD
-
-### Verificación de consistencia (scripts)
-
-Comprobaciones automáticas que sostienen la calidad del repo (Node 18+; `check-style` vía PowerShell):
-
-| Script | Comando | Qué valida |
-| --- | --- | --- |
-| `check-parity.mjs` | `node scripts/check-parity.mjs` | Rutas de API y colecciones E2E idénticas respecto al origen `TiendaDawApi-NetCore` |
-| `check-openapi.mjs` | `node scripts/check-openapi.mjs` | Contrato `swagger.json` idéntico entre ambos repos (arranca las dos APIs) |
-| `check-style.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\check-style.ps1` | Formato con `dotnet format` (whitespace + style) |
-| `check-audit.mjs` | `node scripts/check-audit.mjs` | Sin vulnerabilidades NuGet Critical/High (API + cliente) |
-| `check-docs.mjs` | `node scripts/check-docs.mjs` | Solo en el origen: bitácora, hashes y TOC del README |
-
-Las corridas E2E se ejecutan con **BD nueva antes de cada herramienta** (`reset-seeds*.ps1`): cada colección parte de semillas frescas y así no hereda el estado de la anterior.
 
 ## 📚 Documentación
 
@@ -452,34 +435,6 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | --- | --------------------------------------------------------- | --------------------------------- |
 | 31  | [Clean Architecture](doc/31-clean-architecture.md)        | Capas, estructura                 |
 | 32  | [Organización Program.cs](doc/32-organizacion-program.md) | Extension Methods, modularización |
-
-### Decisiones de Arquitectura (ADR)
-
-| #   | Documento                                                                            | Descripción                            |
-| --- | ------------------------------------------------------------------------------------ | -------------------------------------- |
-| 00  | [Plantilla ADR](doc/adr/00-plantilla.md)                                             | Plantilla para nuevos ADR              |
-| 01  | [Patrón Result (ADR-0001)](doc/adr/01-errores-dominio-patron-result.md)              | Errores de dominio como valores        |
-| 02  | [Arquitectura en capas (ADR-0002)](doc/adr/02-arquitectura-en-capas.md)              | Capas y nota de la variante CQRS       |
-| 03  | [Repositorios EF Core (ADR-0003)](doc/adr/03-repositorios-ef-core-postgresql.md)     | Repositorios y PostgreSQL              |
-| 04  | [Pedidos en MongoDB (ADR-0004)](doc/adr/04-mongodb-para-pedidos.md)                  | Documentos y read model                |
-| 05  | [JWT y roles (ADR-0005)](doc/adr/05-jwt-roles-y-autorizacion.md)                     | Autenticación y autorización           |
-| 06  | [Validación en cascada (ADR-0006)](doc/adr/06-validacion-en-cascada.md)              | DataAnnotations y FluentValidation     |
-| 07  | [Rate limiting nativo (ADR-0007)](doc/adr/07-rate-limiting-nativo.md)                | Middleware propio sin librerías        |
-| 08  | [Caché multinivel (ADR-0008)](doc/adr/08-cache-multinivel.md)                        | Cache-Aside + OutputCache + ETag       |
-| 09  | [Testcontainers (ADR-0009)](doc/adr/09-testcontainers-para-integracion.md)           | Integración con contenedores efímeros  |
-| 10  | [Contrato OpenAPI (ADR-0010)](doc/adr/10-contrato-openapi-verificado.md)             | Esquema verificado y Swagger           |
-
-### Peticiones HTTP (REST Client)
-
-| #   | Documento                                                        | Descripción                  |
-| --- | ---------------------------------------------------------------- | ---------------------------- |
-| 00  | [00-base.http](doc/http/00-base.http)                            | Variables, salud, version y tokens |
-| 01  | [01-auth.http](doc/http/01-auth.http)                            | Registro y login             |
-| 02  | [02-categorias.http](doc/http/02-categorias.http)                | CRUD de categorías           |
-| 03  | [03-productos.http](doc/http/03-productos.http)                  | CRUD de productos e imagen   |
-| 04  | [04-pedidos.http](doc/http/04-pedidos.http)                      | Pedidos de usuario y admin   |
-| 05  | [05-users.http](doc/http/05-users.http)                          | Usuarios y perfil propio     |
-| 06  | [06-infraestructura.http](doc/http/06-infraestructura.http)      | Storage y GraphQL            |
 
 ## ⚒️ Diagrama de Clases del Dominio
 
@@ -923,8 +878,8 @@ graph TB
     end
 
     subgraph "💾 Data Stores"
-        PG[(🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos)]
-        MONGO_DB[(🍃 MongoDB<br/>LECTURA (queries CQRS)<br/>productos_read + Pedidos)]
+        PG[("🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos")]
+        MONGO_DB[("🍃 MongoDB<br/>LECTURA (queries CQRS)<br/>productos_read + Pedidos")]
         REDIS_DB[(🔴 Redis<br/>Caché de lectura<br/>Cache-Aside)]
     end
 
@@ -1184,7 +1139,7 @@ sequenceDiagram
     participant Mongo as 🍃 MongoDB<br/>productos_read (lectura)
     participant Cache as 🔴 Caché<br/>Memory / Redis
 
-    rect rgb(230, 244, 255)
+    rect rgba(59, 130, 246, 0.10)
     Note over Client, Cache: COMMAND (Escritura) — fuente de verdad: PostgreSQL
     Client->>Controller: POST /productos (CreateProductoCommand)
     Controller->>MediatR: Send(command)
@@ -1201,7 +1156,7 @@ sequenceDiagram
     Controller-->>Client: 201 Created
     end
 
-    rect rgb(232, 255, 236)
+    rect rgba(34, 197, 94, 0.10)
     Note over Client, Cache: QUERY (Lectura) — productos desde MongoDB
     Client->>Controller: GET /productos/{id} (GetProductoByIdQuery)
     Controller->>MediatR: Send(query)
@@ -1221,7 +1176,7 @@ sequenceDiagram
     Note over Controller, PG: Queries de USUARIOS y CATEGORÍAS leen PostgreSQL (sin read model)
 ```
 
-### Estructura de Features
+### Estructura de Funcionalidades
 
 ```
 Features/
@@ -1263,7 +1218,7 @@ Features/
 | Componente          | Propósito                                    | Ejemplo                                |
 | ------------------- | -------------------------------------------- | -------------------------------------- |
 | **Command**         | Solicitud de cambio de estado                | `CreateProductoCommand`               |
-| **Query**          | Solicitud de datos (sin副作用)              | `GetProductoByIdQuery`                |
+| **Query**          | Solicitud de datos (sin efectos secundarios) | `GetProductoByIdQuery`                |
 | **Notification**   | Evento que se publica sin respuesta esperada| `ProductoCreadoNotification`          |
 | **IRequest**       | Interfaz base para Commands/Queries         | `IRequest<TResponse>`                 |
 | **IRequestHandler**| Interfaz para procesar Requests            | `IRequestHandler<TRequest, TResponse>`|
