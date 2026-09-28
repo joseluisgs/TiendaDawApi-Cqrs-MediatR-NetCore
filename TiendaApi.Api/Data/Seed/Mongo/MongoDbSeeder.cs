@@ -5,17 +5,28 @@ using TiendaApi.Api.Models;
 
 namespace TiendaApi.Api.Data.Seed.Mongo;
 
+/// <summary>
+/// Seeder que inserta pedidos de ejemplo directamente en MongoDB.
+/// </summary>
 public class MongoDbSeeder
 {
     private readonly IMongoCollection<Pedido> _pedidosCollection;
     private readonly ILogger<MongoDbSeeder> _logger;
 
+    /// <summary>
+    /// Crea una instancia del seeder de pedidos de MongoDB.
+    /// </summary>
+    /// <param name="pedidosCollection">Colección de pedidos de MongoDB.</param>
+    /// <param name="logger">Logger de la aplicación.</param>
     public MongoDbSeeder(IMongoCollection<Pedido> pedidosCollection, ILogger<MongoDbSeeder> logger)
     {
         _pedidosCollection = pedidosCollection;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
+    /// </summary>
     public async Task SeedAsync()
     {
         try
@@ -126,17 +137,28 @@ public class MongoDbSeeder
     }
 }
 
+/// <summary>
+/// Seeder que inserta pedidos de ejemplo en MongoDB usando EF Core.
+/// </summary>
 public class MongoDbEfCoreSeeder
 {
     private readonly TiendaMongoContext _context;
     private readonly ILogger<MongoDbEfCoreSeeder> _logger;
 
+    /// <summary>
+    /// Crea una instancia del seeder de pedidos con EF Core sobre MongoDB.
+    /// </summary>
+    /// <param name="context">Contexto de MongoDB.</param>
+    /// <param name="logger">Logger de la aplicación.</param>
     public MongoDbEfCoreSeeder(TiendaMongoContext context, ILogger<MongoDbEfCoreSeeder> logger)
     {
         _context = context;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
+    /// </summary>
     public async Task SeedAsync()
     {
         try

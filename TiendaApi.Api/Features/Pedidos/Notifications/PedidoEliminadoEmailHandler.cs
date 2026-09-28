@@ -13,6 +13,9 @@ public class PedidoEliminadoEmailHandler(
     IConfiguration configuration)
     : INotificationHandler<PedidoEliminadoNotification>
 {
+    /// <summary>
+    /// Procesa la eliminación de un pedido y envía el email de aviso al administrador.
+    /// </summary>
     public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken)
     {
         var adminEmail = configuration["Smtp:AdminEmail"];

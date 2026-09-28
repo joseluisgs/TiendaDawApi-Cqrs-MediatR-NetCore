@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
@@ -47,7 +48,10 @@ public class UpdateMyPedidoCommandHandler(
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
                 await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return Result.Success<PedidoDto, DomainError>(dto);

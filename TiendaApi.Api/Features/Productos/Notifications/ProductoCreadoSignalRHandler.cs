@@ -18,7 +18,7 @@ public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
     {
         Log.Information("📡 SignalR: Recibida notificación ProductoCreado para ID: {ProductoId}", notification.Producto.Id);
-        
+
         await hubContext.Clients.All.SendAsync("ProductoCreado", new
         {
             productoId = notification.Producto.Id,
@@ -31,7 +31,7 @@ public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
             tipo = "PRODUCTO_CREADO",
             timestamp = DateTime.UtcNow
         }, cancellationToken);
-        
+
         Log.Information("📡 SignalR: Evento enviado a todos los clientes");
     }
 }

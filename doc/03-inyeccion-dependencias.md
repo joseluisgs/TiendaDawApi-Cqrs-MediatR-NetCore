@@ -129,7 +129,7 @@ En ASP.NET Core, cada servicio registrado en el contenedor DI tiene un tiempo de
 
 ### Los tres tiempos de vida
 
-**Transient** crea una nueva instancia cada vez que el servicio es solicitado. Es ideal para servicios ligeros, sin estado, que deben ser independientes entre peticiones. Si solicitas el servicio dos veces en la misma petición, Ð¿Ð¾Ð»ÑƒÑ‡Ð¸ÑˆÑŒ dos instancias diferentes.
+**Transient** crea una nueva instancia cada vez que el servicio es solicitado. Es ideal para servicios ligeros, sin estado, que deben ser independientes entre peticiones. Si solicitas el servicio dos veces en la misma petición, получишь dos instancias diferentes.
 
 **Scoped** crea una nueva instancia una vez por petición HTTP. Todos los servicios Scoped dentro de la misma petición comparten la misma instancia. Es el tiempo de vida más común para servicios de negocio, DbContext, y cualquier cosa que deba ser específica de la petición actual.
 
@@ -248,10 +248,10 @@ public class ProductoService
 Si registras DbContext como Singleton, múltiples peticiones compartirán la misma instancia, causando condiciones de carrera y errores de concurrencia:
 
 ```csharp
-// âŒ INCORRECTO - DbContext no es thread-safe
+// ❌ INCORRECTO - DbContext no es thread-safe
 builder.Services.AddSingleton<TiendaDbContext>();
 
-// âœ… CORRECTO - DbContext debe ser Scoped
+// ✅ CORRECTO - DbContext debe ser Scoped
 builder.Services.AddScoped<TiendaDbContext>();
 ```
 
@@ -260,7 +260,7 @@ builder.Services.AddScoped<TiendaDbContext>();
 Un servicio Singleton no debe inyectar servicios Scoped porque vivirían más tiempo que el scope que los creó:
 
 ```csharp
-// âŒ INCORRECTO - Scoped dentro de Singleton
+// ❌ INCORRECTO - Scoped dentro de Singleton
 public class SingletonService
 {
     private readonly TiendaDbContext _context;
@@ -274,7 +274,7 @@ public class SingletonService
 builder.Services.AddSingleton<SingletonService>();
 builder.Services.AddScoped<TiendaDbContext>();
 
-// âœ… CORRECTO - Usar IServiceScopeFactory
+// ✅ CORRECTO - Usar IServiceScopeFactory
 public class SingletonService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -671,42 +671,42 @@ Una arquitectura bien organizada separa las responsabilidades en capas clarament
 
 ```
 TiendaApi.Core/
-â”œâ”€â”€ Interfaces/
-â”‚   â”œâ”€â”€ IServices/
-â”‚   â”‚   â”œâ”€â”€ IAuthService.cs
-â”‚   â”‚   â”œâ”€â”€ IProductoService.cs
-â”‚   â”‚   â””â”€â”€ IPedidosService.cs
-â”‚   â”œâ”€â”€ IRepositories/
-â”‚   â”‚   â”œâ”€â”€ IProductoRepository.cs
-â”‚   â”‚   â””â”€â”€ IUserRepository.cs
-â”‚   â””â”€â”€ IInfrastructure/
-â”‚       â”œâ”€â”€ IEmailService.cs
-â”‚       â””â”€â”€ IStorageService.cs
-â”‚
-â”œâ”€â”€ Services/
-â”‚   â”œâ”€â”€ Auth/
-â”‚   â”‚   â”œâ”€â”€ AuthService.cs
-â”‚   â”‚   â”œâ”€â”€ JwtService.cs
-â”‚   â”‚   â””â”€â”€ JwtTokenExtractor.cs
-â”‚   â”œâ”€â”€ Productos/
-â”‚   â”‚   â”œâ”€â”€ ProductoService.cs
-â”‚   â”‚   â””â”€â”€ IProductoService.cs
-â”‚   â””â”€â”€ Pedidos/
-â”‚       â”œâ”€â”€ PedidosService.cs
-â”‚       â””â”€â”€ IPedidosService.cs
-â”‚
-â”œâ”€â”€ Repositories/
-â”‚   â”œâ”€â”€ ProductoRepository.cs
-â”‚   â””â”€â”€ UserRepository.cs
-â”‚
-â”œâ”€â”€ Models/
-â”‚   â”œâ”€â”€ User.cs
-â”‚   â”œâ”€â”€ Producto.cs
-â”‚   â””â”€â”€ Pedido.cs
-â”‚
-â””â”€â”€ Dtos/
-    â”œâ”€â”€ ProductoDto.cs
-    â””â”€â”€ PedidoDto.cs
+├── Interfaces/
+│   ├── IServices/
+│   │   ├── IAuthService.cs
+│   │   ├── IProductoService.cs
+│   │   └── IPedidosService.cs
+│   ├── IRepositories/
+│   │   ├── IProductoRepository.cs
+│   │   └── IUserRepository.cs
+│   └── IInfrastructure/
+│       ├── IEmailService.cs
+│       └── IStorageService.cs
+│
+├── Services/
+│   ├── Auth/
+│   │   ├── AuthService.cs
+│   │   ├── JwtService.cs
+│   │   └── JwtTokenExtractor.cs
+│   ├── Productos/
+│   │   ├── ProductoService.cs
+│   │   └── IProductoService.cs
+│   └── Pedidos/
+│       ├── PedidosService.cs
+│       └── IPedidosService.cs
+│
+├── Repositories/
+│   ├── ProductoRepository.cs
+│   └── UserRepository.cs
+│
+├── Models/
+│   ├── User.cs
+│   ├── Producto.cs
+│   └── Pedido.cs
+│
+└── Dtos/
+    ├── ProductoDto.cs
+    └── PedidoDto.cs
 ```
 
 ### Flujo de dependencias entre capas
@@ -891,10 +891,10 @@ La inyección de dependencias desacopla el código y facilita el testing. Los tr
 ```mermaid
 flowchart TB
     subgraph "Tiempos de vida"
-        A1["DbContext â†’ Scoped"]
-        A2["Servicios de negocio â†’ Scoped"]
-        A3["Logger â†’ Transient"]
-        A4["Cache/Config â†’ Singleton"]
+        A1["DbContext → Scoped"]
+        A2["Servicios de negocio → Scoped"]
+        A3["Logger → Transient"]
+        A4["Cache/Config → Singleton"]
     end
     
     subgraph "Constructores"
@@ -934,3 +934,89 @@ Con la comprensión de la inyección de dependencias, el siguiente paso es apren
 - Documentación de DI en ASP.NET Core: https://docs.microsoft.com/aspnet/core/fundamentals/dependency-injection
 - Tiempos de vida: https://docs.microsoft.com/aspnet/core/fundamentals/dependency-injection#service-lifetimes
 - Constructores primarios: https://docs.microsoft.com/dotnet/csharp/whats-new/csharp-14#primary-constructors
+
+---
+
+## 3.8. TimeProvider — Abstracción del Tiempo para Testabilidad
+
+En .NET 8+, `TimeProvider` es una abstracción del sistema de tiempo que permite inyectar un proveedor de tiempo en los servicios. Esto permite testear lógica que depende del tiempo (expiración de tokens JWT, timeouts, cálculos con fechas) sin depender del reloj del sistema.
+
+### El problema sin TimeProvider
+
+Cuando un servicio usa `DateTime.UtcNow` directamente, es imposible testear comportamientos que dependen del tiempo. Por ejemplo, un servicio que verifica si un token JWT ha expirado no puede testearse porque el tiempo real siempre avanza.
+
+```csharp
+// PROBLEMA: Tiempo acoplado al reloj del sistema
+public class TokenService
+{
+    public bool IsTokenExpired(DateTime expiresAt)
+    {
+        return DateTime.UtcNow > expiresAt; // Imposible de testear
+    }
+}
+```
+
+### La solución con TimeProvider
+
+`TimeProvider.System` devuelve el tiempo real en producción, pero en tests se puede inyectar un `FakeTimeProvider` con tiempo controlado. El servicio recibe `TimeProvider` como parámetro opcional con valor por defecto `TimeProvider.System`.
+
+```csharp
+using Microsoft.Extensions.Time.Testing;
+
+public class TokenService(TimeProvider? timeProvider = null)
+{
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+
+    public bool IsTokenExpired(DateTime expiresAt)
+    {
+        return _timeProvider.GetUtcNow() > new DateTimeOffset(expiresAt, TimeSpan.Zero);
+    }
+}
+```
+
+### Registro en DI y uso en tests
+
+```csharp
+// En Program.cs (producción)
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+
+// En un test unitario
+[Fact]
+public void IsTokenExpired_FutureDate_ReturnsFalse()
+{
+    // Arrange
+    var fakeTime = new FakeTimeProvider();
+    var service = new TokenService(fakeTime);
+
+    // Avanzar el tiempo controladamente
+    fakeTime.SetUtcNow(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+    // Act
+    var result = service.IsTokenExpired(new DateTime(2025, 12, 31));
+
+    // Assert
+    result.Should().BeFalse();
+}
+
+[Fact]
+public void IsTokenExpired_PastDate_ReturnsTrue()
+{
+    // Arrange
+    var fakeTime = new FakeTimeProvider();
+    var service = new TokenService(fakeTime);
+
+    fakeTime.SetUtcNow(new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+    // Act
+    var result = service.IsTokenExpired(new DateTime(2025, 12, 31));
+
+    // Assert
+    result.Should().BeTrue();
+}
+```
+
+### Ventajas
+
+- **Testabilidad**: se puede simular cualquier instante del tiempo para verificar expiraciones, timeouts y cálculos temporales.
+- **Separación de concerns**: el servicio no conoce la implementación del tiempo, solo la abstracción.
+- **Producción transparente**: el valor por defecto `TimeProvider.System` hace que el código funcione igual en producción sin configuración adicional.

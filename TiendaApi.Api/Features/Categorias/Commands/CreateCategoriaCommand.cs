@@ -1,6 +1,8 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
+using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
@@ -22,7 +24,8 @@ public record CreateCategoriaCommand(CategoriaRequestDto Dto)
 public class CreateCategoriaCommandHandler(
     ICategoriaRepository repository,
     IValidator<CategoriaRequestDto> validator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<CreateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -46,8 +49,15 @@ public class CreateCategoriaCommandHandler(
 
         _ = Task.Run(async () =>
         {
-            try { await cacheService.RemoveAsync("categorias:all"); }
-            catch { }
+            try
+            {
+                await cacheService.RemoveAsync("categorias:all");
+                await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return Result.Success<CategoriaDto, DomainError>(dto);

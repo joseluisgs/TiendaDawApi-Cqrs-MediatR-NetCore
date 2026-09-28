@@ -202,7 +202,7 @@ Los constructores primarios de C# 14 simplifican enormemente la declaración de 
 ### Constructor primario básico
 
 ```csharp
-// âœ… CONSTRUCTOR PRIMARIO (C# 14)
+// ✅ CONSTRUCTOR PRIMARIO (C# 14)
 public class ProductoService(
     IProductoRepository repository,
     ICategoriaRepository categoriaRepository,
@@ -281,18 +281,18 @@ public class ProductoService(
 
 Es crucial entender qué código pertenece al servicio y qué código pertenece al repositorio. El servicio contiene reglas de negocio, coordinación de múltiples operaciones, validaciones que requieren datos, y decisiones sobre qué hacer. El repositorio contiene queries, operaciones CRUD básicas, y acceso a la base de datos.
 
-### Â¿Qué va en el servicio?
+### ¿Qué va en el servicio?
 
 La lógica de negocio incluye validación de reglas que dependen de múltiples entidades, coordinación de operaciones que involucran varios repositorios, decisiones sobre qué hacer cuando algo falla, caché y optimización de performance, y notificaciones a otros sistemas.
 
-### Â¿Qué va en el repositorio?
+### ¿Qué va en el repositorio?
 
 El acceso a datos incluye operaciones CRUD básicas (Find, Save, Update, Delete), queries específicos de la entidad, acceso a la base de datos, y nada de lógica de negocio.
 
 ### Ejemplo de separación
 
 ```csharp
-// âŒ INCORRECTO: Lógica de negocio en el repositorio
+// ❌ INCORRECTO: Lógica de negocio en el repositorio
 public class ProductoRepository
 {
     public async Task<Producto> CreateAsync(Producto producto)
@@ -310,7 +310,7 @@ public class ProductoRepository
     }
 }
 
-// âœ… CORRECTO: Lógica de negocio en el servicio
+// ✅ CORRECTO: Lógica de negocio en el servicio
 public class ProductoService
 {
     public async Task<Result<ProductoDto, DomainError>> CreateAsync(ProductoCreateDto dto)

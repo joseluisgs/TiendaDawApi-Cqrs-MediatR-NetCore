@@ -47,12 +47,12 @@ public class UpdatePedidoEstadoCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = CreateTestPedido(PedidoEstado.PENDIENTE);
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        
+
         var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-2024-0001", PedidoEstado.ENVIADO), CancellationToken.None);
@@ -66,7 +66,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-2024-0001", "EstadoInvalido"), CancellationToken.None);
@@ -80,9 +80,9 @@ public class UpdatePedidoEstadoCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
-        
+
         var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-9999-9999", PedidoEstado.ENVIADO), CancellationToken.None);

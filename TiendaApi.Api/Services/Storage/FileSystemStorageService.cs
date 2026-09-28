@@ -1,8 +1,8 @@
+using System.IO;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.IO;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.StorageErrors;
 using TiendaApi.Api.Models;
@@ -23,6 +23,13 @@ public class FileSystemStorageService : IStorageService
     private readonly string[] _allowedContentTypes;
     private readonly ILogger<FileSystemStorageService> _logger;
 
+    /// <summary>
+    /// Crea una instancia del servicio de almacenamiento en disco local.
+    /// Inicializa la configuración de rutas y límites y asegura que el directorio de subidas exista.
+    /// </summary>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="logger">Logger de la aplicación.</param>
+    /// <param name="env">Entorno web (provee la ruta de wwwroot).</param>
     public FileSystemStorageService(IConfiguration configuration, ILogger<FileSystemStorageService> logger, IWebHostEnvironment env)
     {
         _logger = logger;
@@ -100,6 +107,11 @@ public class FileSystemStorageService : IStorageService
         return UnitResult.Success<DomainError>();
     }
 
+    /// <summary>
+    /// Valida y guarda un fichero subido en la carpeta indicada, devolviendo su ruta relativa.
+    /// </summary>
+    /// <param name="file">Fichero subido por el cliente.</param>
+    /// <param name="folder">Carpeta de destino dentro del almacén.</param>
     public Task<Result<string, DomainError>> SaveFileAsync(IFormFile file, string folder)
     {
         var validation = ValidateFile(file);
@@ -136,6 +148,10 @@ public class FileSystemStorageService : IStorageService
         }
     }
 
+    /// <summary>
+    /// Elimina del disco el fichero indicado si existe.
+    /// </summary>
+    /// <param name="filename">Ruta relativa o nombre del fichero a eliminar.</param>
     public Task<Result<bool, DomainError>> DeleteFileAsync(string filename)
     {
         if (string.IsNullOrEmpty(filename))
@@ -163,6 +179,10 @@ public class FileSystemStorageService : IStorageService
         }
     }
 
+    /// <summary>
+    /// Indica si el fichero existe en el almacén.
+    /// </summary>
+    /// <param name="filename">Ruta relativa o nombre del fichero.</param>
     public bool FileExists(string filename)
     {
         if (string.IsNullOrEmpty(filename))
@@ -172,6 +192,10 @@ public class FileSystemStorageService : IStorageService
         return File.Exists(fullPath);
     }
 
+    /// <summary>
+    /// Resuelve la ruta absoluta en disco de un fichero del almacén.
+    /// </summary>
+    /// <param name="filename">Ruta relativa o nombre del fichero.</param>
     public string GetFullPath(string filename)
     {
         if (System.IO.Path.IsPathRooted(filename))
@@ -190,6 +214,11 @@ public class FileSystemStorageService : IStorageService
         return System.IO.Path.Combine(_rootPath, cleanFilename);
     }
 
+    /// <summary>
+    /// Construye la ruta relativa (URL) de un fichero dentro del almacén.
+    /// </summary>
+    /// <param name="filename">Nombre del fichero.</param>
+    /// <param name="folder">Carpeta de destino (por defecto, productos).</param>
     public string GetRelativePath(string filename, string folder = "productos")
     {
         return $"/{_uploadPath}/{folder}/{filename}";

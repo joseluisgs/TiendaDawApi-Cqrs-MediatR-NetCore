@@ -1,5 +1,6 @@
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
@@ -21,9 +22,10 @@ public class UpdateProductoPartialCommandHandlerTests
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Nombre = "Old", Precio = 100m, Stock = 5 });
         repository.Setup(r => r.UpdateAsync(It.IsAny<Producto>())).ReturnsAsync((Producto p) => p);
-        
+
         var dto = new ProductoPatchDto { Nombre = "New Name" };
-        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoPartialCommand(1, dto), CancellationToken.None);
 
@@ -38,9 +40,10 @@ public class UpdateProductoPartialCommandHandlerTests
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
-        
+
         var dto = new ProductoPatchDto { Nombre = "New Name" };
-        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new UpdateProductoPartialCommand(999, dto), CancellationToken.None);
 

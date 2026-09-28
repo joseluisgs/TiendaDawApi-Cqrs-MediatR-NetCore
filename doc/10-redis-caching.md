@@ -12,13 +12,14 @@
   - [10.7. Cache en Servicios de Negocio](#107-cache-en-servicios-de-negocio)
   - [10.8. Invalidación de Cache](#108-invalidacin-de-cache)
   - [10.9. Cache de Segundo Nivel (Fallback)](#109-cache-de-segundo-nivel-fallback)
-  - [10.10. Resumen y Buenas Prácticas](#1010-resumen-y-buenas-prcticas)
+  - [10.10. Caché HTTP con OutputCache y ETag](#1010-caché-http-con-outputcache-y-etag)
+  - [10.11. Resumen y Buenas Prácticas](#1011-resumen-y-buenas-prcticas)
 
 ---
 
 ## 10.1. Conceptos Fundamentales de Cache
 
-### Â¿Qué es un Cache?
+### ¿Qué es un Cache?
 
 Un cache es una capa de almacenamiento temporal que guarda copias de datos frecuentemente accedidos para reducir el tiempo de acceso. El principio fundamental se basa en la **localidad de referencia**: los datos recientemente accedidos tienen mayor probabilidad de ser accedidos de nuevo.
 
@@ -26,7 +27,7 @@ Un cache es una capa de almacenamiento temporal que guarda copias de datos frecu
 
 ```mermaid
 flowchart TD
-    A["Solicitud de dato"] --> B{"Â¿Existe en cache?"}
+    A["Solicitud de dato"] --> B{"¿Existe en cache?"}
     
     B -->|Sí - Cache Hit| C["Retornar dato cacheado"]
     C --> D["Tiempo: ~1ms"]
@@ -1065,7 +1066,7 @@ public class ProductoService(
 ```mermaid
 flowchart TD
     subgraph "Operación de Lectura"
-        A1["GetByCategoria(catId)"] --> A2{"Â¿En cache?"}
+        A1["GetByCategoria(catId)"] --> A2{"¿En cache?"}
         A2 -->|Sí| A3["Retornar datos cacheados"]
         A2 -->|No| A4["Consultar BD"]
         A4 --> A5["Guardar en cache"]
@@ -1398,7 +1399,125 @@ public class CacheWithFallbackService : ICacheService
 
 ---
 
-## 10.10. Resumen y Buenas Prácticas
+## 10.10. Caché HTTP con OutputCache y ETag
+
+> **Otra capa de caché, otro nivel del stack.** Todo lo visto hasta aquí en este módulo es **caché de datos** (`IMemoryCache`, `IDistributedCache`, cache-aside en los servicios). Esto es **caché de respuestas HTTP**: la guarda y la devuelve el middleware antes de que el controlador se entere. No hay `GetOrSet` en el código de negocio, solo atributos y tags. (Fase 4 del plan.)
+
+### Registro: Infrastructures/OutputCacheConfig.cs
+
+```csharp
+public static class OutputCacheConfig
+{
+    /// <summary>
+    /// Registra el middleware de caché de salida (OutputCache).
+    /// Las políticas concretas (60 s + tag) se declaran por endpoint con
+    /// [OutputCache(Duration = 60, Tags = new[] { ... })].
+    /// </summary>
+    public static IServiceCollection AddOutputCacheConfig(this IServiceCollection services)
+    {
+        services.AddOutputCache();
+        return services;
+    }
+
+    /// <summary>
+    /// Habilita la caché de salida en el pipeline. Debe llamarse antes de MapControllers.
+    /// </summary>
+    public static WebApplication UseOutputCacheConfig(this WebApplication app)
+    {
+        app.UseOutputCache();
+        return app;
+    }
+}
+```
+
+En `Program.cs` se llama en los dos sitios obligatorios:
+
+```csharp
+services.AddOutputCacheConfig();      // ~línea 58: registro
+// ...
+app.UseOutputCacheConfig();           // ~línea 116: ANTES de MapControllers
+app.MapControllers();
+```
+
+### Política declarada por endpoint, no global
+
+Solo se cachea lo que lo declara explícitamente — GET anónimos de Productos y Categorías:
+
+```csharp
+// ProductosController.cs (GET, GET {id} y GET paged)
+[HttpGet]
+[OutputCache(Duration = 60, Tags = new[] { "productos" })]
+public async Task<IActionResult> GetAll(/* filtros, paginación y ordenación */) { ... }
+
+// CategoriasController.cs — mismo patrón con su propia tag
+[OutputCache(Duration = 60, Tags = new[] { "categorias" })]
+```
+
+- **`Duration = 60`**: TTL en segundos.
+- **`Tags = { ... }`**: identificadores de invalidación selectiva.
+- Los endpoints con `Authorization` o mutaciones **no** llevan el atributo → nunca se cachean respuestas de usuario.
+
+### Invalidación por tag tras cada CUD
+
+El TTL solo es el techo: los comandos invalidan "al evento", no esperan 60 s. La invalidación viaja **dentro del propio fire & forget** de la mutación — se lanza sin `await`, protegida con `try/catch`, para no penalizar la respuesta HTTP:
+
+```csharp
+// CreateProductoCommand.cs — tras Create/Update/Delete (dentro de _ = Task.Run(...))
+try
+{
+    await cacheService.RemoveAsync("productos:all");               // caché de datos (Redis)
+    await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);   // caché de respuesta
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+}
+```
+
+`Create/Update/DeleteCategoriaCommand.cs` hacen lo propio con la tag `"categorias"`. Las mutaciones de **GraphQL** delegan en los mismos comandos MediatR (`ProductoMutation.cs` → `CreateProductoCommand`) → invalidan lo mismo sin código duplicado.
+
+### ETag y revalidación 304
+
+Cada GET cacheable también firma su respuesta con ETag para que el navegador/proxy pueda revalidar cuando la caché de salida ya no la retiene:
+
+```csharp
+Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+```
+
+Flujo verificado en el smoke de la Fase 4:
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant M as Middleware OutputCache
+    participant Ctrl as Controlador
+    C->>M: GET /api/productos
+    alt TTL vigente en caché
+        M-->>C: 200 (respuesta cacheada)
+    else sin caché / revalidación
+        M->>Ctrl: pasa al controlador
+        Ctrl-->>C: 200 + ETag "abc..."
+        C->>M: GET + If-None-Match: "abc..."
+        M-->>C: 304 Not Modified (sin cuerpo)
+    end
+```
+
+Comprobación real: segundo `GET /api/productos` → **304**; en los logs de la API: **0 excepciones**.
+
+### Qué aporta frente a Redis (cache-aside)
+
+| | Cache-aside (Redis, 10.2-10.9) | OutputCache (aquí) |
+|---|---|---|
+| Qué guarda | Entidades/DTOs | Respuesta HTTP completa (headers incluidos) |
+| Dónde se decide | El código de negocio | Atributo del endpoint |
+| Invalidación | Claves calculadas a mano | Tags + TTL |
+| Transporte | Redis compartido | Memoria del middleware (por instancia) |
+
+> **Combinación real de este proyecto**: OutputCache+ETag (60 s) para el listado **público** de respuestas, y cache-aside Redis con TTL 5 min + invalidación por claves para los **datos** que leen los servicios (ver 10.7/10.8). Las dos capas conviven sin solaparse: atacan puntos distintos del viaje de una petición.
+
+---
+
+## 10.11. Resumen y Buenas Prácticas
 
 ### Puntos Clave del Módulo
 

@@ -39,11 +39,11 @@ public class UpdateMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        
+
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
         var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
 
@@ -57,10 +57,10 @@ public class UpdateMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
-        
+
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
         var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
 
@@ -74,10 +74,10 @@ public class UpdateMyPedidoCommandHandlerTests
     {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
-        
+
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
         var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
 

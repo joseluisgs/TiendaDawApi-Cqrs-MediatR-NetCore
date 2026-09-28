@@ -23,22 +23,22 @@ public class GetPedidoByIdQueryHandlerTests
         var cacheService = new Mock<ICacheService>();
         var configuration = new Mock<IConfiguration>();
         var objectId = ObjectId.GenerateNewId();
-        
-        var pedido = new Pedido 
-        { 
+
+        var pedido = new Pedido
+        {
             Id = objectId,
             UserId = 1,
             Estado = "Pendiente",
             Total = 100m,
             Items = new List<PedidoItem>()
         };
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido);
-        
+
         var handler = new GetPedidoByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
-        
+
         var result = await handler.Handle(new GetPedidoByIdQuery("PED-2024-0001"), CancellationToken.None);
-        
+
         result.IsSuccess.Should().BeTrue();
     }
 
@@ -48,13 +48,13 @@ public class GetPedidoByIdQueryHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = new Mock<IConfiguration>();
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
-        
+
         var handler = new GetPedidoByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
-        
+
         var result = await handler.Handle(new GetPedidoByIdQuery("PED-9999-9999"), CancellationToken.None);
-        
+
         result.IsFailure.Should().BeTrue();
     }
 }

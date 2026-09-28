@@ -24,13 +24,13 @@ En ASP.NET Core, los **archivos estáticos** son aquellos que se sirven directam
 flowchart LR
     subgraph "Estructura del Proyecto"
         A1["TiendaApi.Apis/"]
-        A2["â”œâ”€â”€ wwwroot/"]
-        A3["â”‚   â”œâ”€â”€ images/"]
-        A4["â”‚   â”‚   â””â”€â”€ productos/"]
-        A5["â”‚   â””â”€â”€ uploads/"]
-        A6["â”œâ”€â”€ Services/"]
-        A7["â”‚   â””â”€â”€ Storage/"]
-        A8["â””â”€â”€ Program.cs"]
+        A2["├── wwwroot/"]
+        A3["│   ├── images/"]
+        A4["│   │   └── productos/"]
+        A5["│   └── uploads/"]
+        A6["├── Services/"]
+        A7["│   └── Storage/"]
+        A8["└── Program.cs"]
     end
     
     subgraph "Solicitud HTTP"
@@ -73,12 +73,12 @@ El directorio `wwwroot` es el directorio predeterminado para archivos estáticos
 
 ```
 TiendaApi.Apis/wwwroot/
-â”œâ”€â”€ images/
-â”‚   â””â”€â”€ productos/          # Imágenes de productos
-â””â”€â”€ uploads/                # Archivos subidos por usuarios
-    â”œâ”€â”€ productos/
-    â”œâ”€â”€ usuarios/
-    â””â”€â”€ categorias/
+├── images/
+│   └── productos/          # Imágenes de productos
+└── uploads/                # Archivos subidos por usuarios
+    ├── productos/
+    ├── usuarios/
+    └── categorias/
 ```
 
 ### Configuración en Program.cs
@@ -86,7 +86,7 @@ TiendaApi.Apis/wwwroot/
 
 ```csharp
 // Archivos estáticos (wwwroot)
-Log.Information("ðŸ–¼ï¸ Habilitando archivos estáticos desde wwwroot...");
+Log.Information("🖼️ Habilitando archivos estáticos desde wwwroot...");
 app.UseStaticFiles();
 ```
 
@@ -236,10 +236,10 @@ public interface IStorageService
 
 ```
 wwwroot/uploads/
-â”œâ”€â”€ productos/          # Imágenes de productos
-â”œâ”€â”€ usuarios/           # Avatares y documentos
-â”œâ”€â”€ categorias/         # Imágenes de categorías
-â””â”€â”€ documentos/         # Documentos varios
+├── productos/          # Imágenes de productos
+├── usuarios/           # Avatares y documentos
+├── categorias/         # Imágenes de categorías
+└── documentos/         # Documentos varios
 ```
 
 ---
@@ -549,7 +549,7 @@ El **path traversal** es un ataque donde un usuario malintencionado intenta acce
 ```mermaid
 flowchart TD
     A["Malicioso: /api/files?path=../../../etc/passwd"] --> B["Validación"]
-    B --> C{"Â¿Contiene '..'?"}
+    B --> C{"¿Contiene '..'?"}
     C -->|Sí| D["Bloquear - 400 Bad Request"]
     C -->|No| E["Procesar normalmente"]
 ```
@@ -657,11 +657,11 @@ builder.Services.AddScoped<IStorageService, FileSystemStorageService>();
 
 | Componente       | Configuración      | Estado          |
 | ---------------- | ------------------ | --------------- |
-| wwwroot/         | Directorio base    | âœ… Creado        |
-| uploads/         | Subida de archivos | âœ… Configurado   |
-| UseStaticFiles() | Middleware         | âœ… En Program.cs |
-| IStorageService  | Abstacción         | âœ… Implementado  |
-| Validación       | Seguridad          | âœ… Implementada  |
+| wwwroot/         | Directorio base    | ✅ Creado        |
+| uploads/         | Subida de archivos | ✅ Configurado   |
+| UseStaticFiles() | Middleware         | ✅ En Program.cs |
+| IStorageService  | Abstacción         | ✅ Implementado  |
+| Validación       | Seguridad          | ✅ Implementada  |
 
 ### Siguientes Pasos
 

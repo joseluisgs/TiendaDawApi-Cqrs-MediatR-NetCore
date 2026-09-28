@@ -10,6 +10,9 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoEliminadoWebSocketHandler(ProductosWebSocketHandler webSocketHandler)
     : INotificationHandler<ProductoEliminadoNotification>
 {
+    /// <summary>
+    /// Procesa el evento ProductoEliminado y notifica la baja por WebSocket.
+    /// </summary>
     public async Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken)
     {
         Log.Information("📡 [WEBSOCKET] Recibida notificación ProductoEliminado para ID: {ProductoId}", notification.ProductoId);

@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
@@ -49,7 +50,10 @@ public class GetAllCategoriasQueryHandler(
         _ = Task.Run(async () =>
         {
             try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return Result.Success<PagedResult<CategoriaDto>, DomainError>(pagedResult);

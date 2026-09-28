@@ -3,7 +3,7 @@
 ## Índice
 
 [24. Background Jobs y Tareas Programadas](#24-background-jobs-y-tareas-programadas)
-  - [24.1. Â¿Qué son Background Jobs?](#241-qu-son-background-jobs)
+  - [24.1. ¿Qué son Background Jobs?](#241-qu-son-background-jobs)
   - [24.2. Arquitectura de Background Jobs](#242-arquitectura-de-background-jobs)
   - [24.3. Implementación del Job de Reporte de Productos](#243-implementacin-del-job-de-reporte-de-productos)
   - [24.4. Background Service Orchestrator](#244-background-service-orchestrator)
@@ -14,11 +14,12 @@
   - [24.9. Pruebas Unitarias](#249-pruebas-unitarias)
   - [24.10. Beneficios y Consideraciones](#2410-beneficios-y-consideraciones)
   - [24.11. Comparación con Otras Soluciones](#2411-comparacin-con-otras-soluciones)
-  - [24.12. Resumen](#2412-resumen)
+  - [24.12. Fire & Forget Endurecido (Task.Run + try/catch)](#2412-fire--forget-endurecido-taskrun--trycatch)
+  - [24.13. Resumen](#2413-resumen)
 
 ---
 
-## 24.1. Â¿Qué son Background Jobs?
+## 24.1. ¿Qué son Background Jobs?
 
 Los **background jobs** son tareas que se ejecutan fuera del flujo principal de las solicitudes HTTP, permitiendo operaciones largas sin bloquear la respuesta al usuario.
 
@@ -78,15 +79,15 @@ flowchart TB
 
 ```
 Services/
-â””â”€â”€ Background/
-    â”œâ”€â”€ Jobs/                          â† Tareas individuales
-    â”‚   â”œâ”€â”€ IProductoReportTask.cs     â† Interfaz del job
-    â”‚   â””â”€â”€ ProductoReportTask.cs      â† Implementación del job
-    â””â”€â”€ Host/                          â† Orchestrator
-        â””â”€â”€ BackgroundJobService.cs    â† Hosted Service
+└── Background/
+    ├── Jobs/                          ← Tareas individuales
+    │   ├── IProductoReportTask.cs     ← Interfaz del job
+    │   └── ProductoReportTask.cs      ← Implementación del job
+    └── Host/                          ← Orchestrator
+        └── BackgroundJobService.cs    ← Hosted Service
 
 Infrastructures/
-â””â”€â”€ BackgroundJobsConfig.cs            â† Configuración DI
+└── BackgroundJobsConfig.cs            ← Configuración DI
 ```
 
 ```mermaid
@@ -393,7 +394,7 @@ services.AddCache(environment);
 services.AddEmail(environment);
 services.AddStorage();
 services.AddWebSockets();
-services.AddBackgroundJobs();  // â† Registrar aquí
+services.AddBackgroundJobs();  // ← Registrar aquí
 ```
 
 ---
@@ -620,7 +621,81 @@ Para este proyecto usamos **BackgroundService nativo** por su simplicidad y falt
 
 ---
 
-## 24.12. Resumen
+## 24.12. Fire & Forget Endurecido (Task.Run + try/catch)
+
+No todo efecto secundario merece un `BackgroundService` con canal y cola (24.4). Para operaciones **baratas y no críticas** — escribir en caché, firmar un ETag, avisar por WebSocket — el proyecto usa **fire & forget** directo desde el handler que atiende el request:
+
+```csharp
+// Patrón general: se lanza y NO se espera (el caller no puede reintentarlo,
+// y la respuesta HTTP no debe esperar a un caché/Redis/SMTP).
+_ = Task.Run(async () =>
+{
+    try
+    {
+        await cacheService.SetAsync(key, value, _cacheTTL);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+    }
+});
+```
+
+### Ejemplos reales del proyecto
+
+Los 25 sitios se reparten entre los handlers MediatR (`Features/**Commands|Queries`) y `ProductoService` (lecturas que rellenan la caché):
+
+```csharp
+// ProductoService.cs — cache-aside de listados (rellena la caché tras leer)
+_ = Task.Run(async () =>
+{
+    try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
+    catch (Exception ex) { Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache"); }
+});
+
+// CreateProductoCommand.cs — invalidación tras Create/Update/Delete:
+// Redis + OutputCache en el MISMO lambda (una sola barrida de errores)
+_ = Task.Run(async () =>
+{
+    try
+    {
+        await cacheService.RemoveAsync("productos:all");
+        await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
+    }
+    catch (Exception ex) { Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache"); }
+});
+```
+
+### Inventario y reglas (fase FF del plan)
+
+| Dato | Valor |
+|---|---|
+| Sitios `_ = Task.Run(...)` | **25** (Pedidos 7 · Productos 8 · Users 5 · Categoría 5) |
+| Endurecidos | 25 con `try/catch` + `Log.Warning` en el interior (caché/WS/SignalR) |
+| Sin endurecer | 0 — ninguno llegó sin `catch` |
+| Verificación | build 0/0 · 1032 tests · E2E 95/55/127 con logs de la API sin excepciones |
+
+**Reglas (las tres, siempre juntas):**
+
+1. **`_ = Task.Run(...)` y no `await`** — si esperas, no es fire & forget: la respuesta HTTP se atasca con Redis/SMTP.
+2. **`try/catch (Exception)` en el interior del lambda** — un `Task.Run` sin `catch` es una excepción *unobserved*: en .NET moderno no crashea, pero **nadie se entera** de que dejó de funcionar. Con el `catch` + log, el problema aparece en Serilog.
+3. **Nunca `await Task.WhenAll(...)` con esto** — rechazado explícitamente en el plan: `WhenAll` vuelve a bloquear la respuesta.
+
+### ¿Cuándo NO usarlo (y qué usar entonces)?
+
+| Escenario | Alternativa |
+|---|---|
+| Caché, ETag, avisos WebSocket no críticos | ✅ Fire & forget endurecido |
+| Emails que deben salir sí o sí y toleran reintentos (SMTP caído) | **Cola + `BackgroundService`** (24.6) + reintentos de Polly |
+| Trabajo con estado, reintentos o garantía de entrega | `BackgroundService` con `Channel` (24.4) |
+| Debe sobrevivir reinicios | Cola persistente (Redis) |
+
+> **Regla práctica**: si al perder ese trabajo el usuario no se entera (o hay TTL/otro camino), fire & forget; si se entera, necesita cola.
+
+---
+
+## 24.13. Resumen
 
 Los background jobs son esenciales para operaciones que no deben bloquear solicitudes HTTP. La arquitectura implementada:
 

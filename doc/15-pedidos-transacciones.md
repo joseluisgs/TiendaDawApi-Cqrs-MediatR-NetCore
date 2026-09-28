@@ -21,6 +21,8 @@
 
 Cuando múltiples usuarios intentan comprar el mismo producto simultáneamente, surgen problemas de concurrencia que pueden llevar a inconsistencias en el inventario. Sin mecanismos adecuados, podríamos vender más productos de los que realmente tenemos en stock.
 
+Antes de la concurrencia, conviene fijar qué es un pedido en este proyecto: es un **agregado** —destinatario, dirección de envío y lista de items con su precio congelado al emitirlo— que se guarda en **MongoDB como un único documento embebido**, con destinatario e items anidados dentro del propio pedido. Así se lee y se escribe completo, sin joins con las tablas relacionales, y el precio congelado del item hace que un cambio posterior del producto no altere los pedidos ya emitidos.
+
 ```mermaid
 flowchart TD
     subgraph "Escenario Problemático"
@@ -129,7 +131,7 @@ flowchart TB
     style N2 fill:#fcc419,color:#000
 ```
 
-### Â¿Por qué usar CQRS para Pedidos?
+### ¿Por qué usar CQRS para Pedidos?
 
 | Aspecto | Con Service | Con CQRS |
 |---------|-------------|----------|
@@ -143,29 +145,29 @@ flowchart TB
 
 ```
 Features/Pedidos/
-â”œâ”€â”€ Commands/
-â”‚   â”œâ”€â”€ CreatePedidoCommand.cs
-â”‚   â”œâ”€â”€ CreatePedidoCommandHandler.cs
-â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommand.cs
-â”‚   â”œâ”€â”€ UpdatePedidoEstadoCommandHandler.cs
-â”‚   â”œâ”€â”€ UpdatePedidoAdminCommand.cs
-â”‚   â”œâ”€â”€ UpdateMyPedidoCommand.cs
-â”‚   â”œâ”€â”€ DeletePedidoAdminCommand.cs
-â”‚   â””â”€â”€ DeleteMyPedidoCommand.cs
-â”œâ”€â”€ Queries/
-â”‚   â”œâ”€â”€ GetAllPedidosQuery.cs
-â”‚   â”œâ”€â”€ GetAllPedidosQueryHandler.cs
-â”‚   â”œâ”€â”€ GetAllPedidosListQuery.cs
-â”‚   â”œâ”€â”€ GetMyPedidosQuery.cs
-â”‚   â”œâ”€â”€ GetMyPedidosQueryHandler.cs
-â”‚   â”œâ”€â”€ GetPedidoByIdQuery.cs
-â”‚   â””â”€â”€ GetMyPedidoByIdQuery.cs
-â””â”€â”€ Notifications/
-    â”œâ”€â”€ PedidoCreadoNotification.cs
-    â”œâ”€â”€ PedidoCreadoEmailHandler.cs
-    â”œâ”€â”€ PedidoCreadoSignalRHandler.cs
-    â”œâ”€â”€ EstadoPedidoActualizadoNotification.cs
-    â””â”€â”€ PedidoCanceladoNotification.cs
+├── Commands/
+│   ├── CreatePedidoCommand.cs
+│   ├── CreatePedidoCommandHandler.cs
+│   ├── UpdatePedidoEstadoCommand.cs
+│   ├── UpdatePedidoEstadoCommandHandler.cs
+│   ├── UpdatePedidoAdminCommand.cs
+│   ├── UpdateMyPedidoCommand.cs
+│   ├── DeletePedidoAdminCommand.cs
+│   └── DeleteMyPedidoCommand.cs
+├── Queries/
+│   ├── GetAllPedidosQuery.cs
+│   ├── GetAllPedidosQueryHandler.cs
+│   ├── GetAllPedidosListQuery.cs
+│   ├── GetMyPedidosQuery.cs
+│   ├── GetMyPedidosQueryHandler.cs
+│   ├── GetPedidoByIdQuery.cs
+│   └── GetMyPedidoByIdQuery.cs
+└── Notifications/
+    ├── PedidoCreadoNotification.cs
+    ├── PedidoCreadoEmailHandler.cs
+    ├── PedidoCreadoSignalRHandler.cs
+    ├── EstadoPedidoActualizadoNotification.cs
+    └── PedidoCanceladoNotification.cs
 ```
 
 Cada archivo tiene UNA responsabilidad. El `CreatePedidoCommandHandler` solo sabe crear pedidos. No conoce emails, no conoce SignalR, solo la lógica de negocio de creación.
@@ -325,7 +327,7 @@ flowchart TD
     A["Transacción comienza"] --> B["Leer datos"]
     B --> C["Procesar lógica"]
     C --> D["Validar conflictos"]
-    D --> E{"Â¿Sin conflictos?"}
+    D --> E{"¿Sin conflictos?"}
     E -->|Sí| F["Escribir cambios"]
     E -->|No| G["Rechazar cambios"]
     F --> H["Transacción exitosa"]
@@ -550,6 +552,53 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
+### Polly en este proyecto: dónde está y dónde NO (Fase 6)
+
+El ejemplo de arriba usa la **API clásica de Polly v7** (`Policy.Handle<T>().WaitAndRetryAsync(...)`) con `DbUpdateConcurrencyException`. En este proyecto la realidad es distinta y conviene saber por qué:
+
+**1. Los pedidos NO reintentan con Polly.** El reintento de serialización es **a mano**, con el contador explícito del handler:
+
+```csharp
+// CreatePedidoCommand.cs (handler MediatR)
+private const int MaxRetries = 3;
+
+for (var attempt = 1; attempt <= MaxRetries; attempt++)
+{
+    try
+    {
+        return await CreateWithSerializableTransactionAsync(request, cancellationToken);
+    }
+    catch (SerializationFailureException) when (attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);          // backoff lineal (50, 100, 150 ms)
+    }
+    catch (DbUpdateException ex) when (IsSerializationFailure(ex) && attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);
+    }
+    catch (NpgsqlException ex) when (IsSerializationFailureMessage(ex.Message) && attempt < MaxRetries)
+    {
+        await Task.Delay(50 * attempt, cancellationToken);
+    }
+}
+
+return Result.Failure<PedidoDto, DomainError>(PedidoError.ErrorProcesando());
+```
+
+Tres intentos y backoff lineal acotados con `when` a fallos de serialización… pero sin dependencia de Polly. ¿Por qué no envolverlo?
+
+**2. `EnableRetryOnFailure` de EF Core está deliberadamente OFF.** La transacción explícita de pedidos (`BeginTransactionAsync`, ver «Transacciones con EF Core en Handlers» — 15.3) es **incompatible** con la *retrying strategy* de EF: con retry activo, EF lanza `InvalidOperationException` al abrir una transacción manual. El patrón oficial (`CreateExecutionStrategy().ExecuteAsync(...)`) obligaría a reestructurar el flujo central `POST /api/pedidos/me` — riesgo alto sin beneficio demostrable. Documentado en la Fase 11.
+
+**3. Polly SÍ está, pero sobre el email** (Fase 6, `Infrastructures/PollyConfig.cs`) — el otro I/O externo con fallos transitorios (SMTP). Pipeline v8 `ResiliencePipeline`: Retry(3, 2^n) → CircuitBreaker(3 fallos → 30 s) → Timeout(10 s), todo **en background** vía `EmailBackgroundService`, así que un SMTP caído nunca bloquea ni rompe una respuesta HTTP. Detalle completo en `23-email-services.md`.
+
+| I/O externo | Estrategia elegida | Motivo |
+|---|---|---|
+| PostgreSQL (pedidos) | Reintento a mano + transacción Serializable | Transacción explícita incompatible con retry de EF |
+| SMTP (email) | **Polly v8** (Retry + CircuitBreaker + Timeout) | I/O sin transacción, con fallos transitorios clásicos |
+| MongoDB/Redis | Sin retry extra | Conexiones de larga duración, sin caso de uso |
+
+> **Lección**: Polly (o cualquier librería de resiliencia) es para cuando aporta más de lo que cuesta. Antes de envolver un flujo, comprueba incompatibilidades (transacciones), coste de reintento (¿idempotente?) y si el fallo llega al usuario (aquí no: background).
+
 ---
 
 ## 15.4. Enfoque Pesimista
@@ -568,7 +617,7 @@ flowchart TD
     F --> G["Transacción exitosa"]
     
     subgraph "Otras transacciones"
-        H["Intentan leer"] --> I{"Â¿Bloqueado?"}
+        H["Intentan leer"] --> I{"¿Bloqueado?"}
         I -->|Sí| J["Esperar"]
         I -->|No| K["Leer datos"]
     end
@@ -689,10 +738,10 @@ COMMIT;
 
 | Nivel                | Dirty Read  | Non-repeatable | Phantom     | Bloqueo |
 | -------------------- | ----------- | -------------- | ----------- | ------- |
-| **Read Uncommitted** | âŒ Permitido | âŒ Permitido    | âŒ Permitido | Ninguno |
-| **Read Committed**   | âœ… Protegido | âŒ Permitido    | âŒ Permitido | Filas   |
-| **Repeatable Read**  | âœ… Protegido | âœ… Protegido    | âŒ Permitido | Filas   |
-| **Serializable**     | âœ… Protegido | âœ… Protegido    | âœ… Protegido | Tabla   |
+| **Read Uncommitted** | ❌ Permitido | ❌ Permitido    | ❌ Permitido | Ninguno |
+| **Read Committed**   | ✅ Protegido | ❌ Permitido    | ❌ Permitido | Filas   |
+| **Repeatable Read**  | ✅ Protegido | ✅ Protegido    | ❌ Permitido | Filas   |
+| **Serializable**     | ✅ Protegido | ✅ Protegido    | ✅ Protegido | Tabla   |
 
 ### Serializable con EF Core
 
@@ -867,7 +916,7 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
-### Â¿Por qué este handler es mejor que un PedidoService tradicional?
+### ¿Por qué este handler es mejor que un PedidoService tradicional?
 
 | Aspecto | PedidoService tradicional | CreatePedidoCommandHandler |
 |---------|--------------------------|----------------------------|
@@ -1055,10 +1104,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["Â¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
+    A["¿Qué tipo de carga tienes?"] --> B["Escrituras frecuentes, alta contención"]
     A --> C["Lecturas frecuentes, pocas escrituras"]
     
-    B --> D{"Â¿Es inventario crítico?"}
+    B --> D{"¿Es inventario crítico?"}
     D -->|Sí, absolutamente crítico| E["Pesimista"]
     D -->|No, admite algunos reintentos| F["Mixto"]
     
@@ -1344,16 +1393,16 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 }
 ```
 
-### Â¿Qué hace el controlador ahora?
+### ¿Qué hace el controlador ahora?
 
 | Responsabilidad | Antes | Ahora |
 |-----------------|-------|-------|
-| Extraer userId del claim | âŒ En el servicio | âœ… En el controller |
-| Validar entrada | âŒ En el servicio | âœ… En el handler + FluentValidation |
-| Lógica de negocio | âŒ En el servicio | âœ… En el CommandHandler |
-| Transacciones | âŒ En el servicio | âœ… En el CommandHandler |
-| Efectos secundarios | âŒ En el servicio | âœ… En NotificationHandlers |
-| Mapear respuesta | âŒ En el servicio | âœ… En el handler |
+| Extraer userId del claim | ❌ En el servicio | ✅ En el controller |
+| Validar entrada | ❌ En el servicio | ✅ En el handler + FluentValidation |
+| Lógica de negocio | ❌ En el servicio | ✅ En el CommandHandler |
+| Transacciones | ❌ En el servicio | ✅ En el CommandHandler |
+| Efectos secundarios | ❌ En el servicio | ✅ En NotificationHandlers |
+| Mapear respuesta | ❌ En el servicio | ✅ En el handler |
 
 ---
 

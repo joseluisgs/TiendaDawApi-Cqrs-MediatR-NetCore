@@ -21,11 +21,11 @@ public class UpdatePedidoAdminCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         var pedido = new Pedido { Id = ObjectId.GenerateNewId(), Estado = "Pendiente" };
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        
+
         var dto = new UpdatePedidoDto { Estado = "Enviado", DireccionEnvio = "Nueva direccion" };
         var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 
@@ -40,9 +40,9 @@ public class UpdatePedidoAdminCommandHandlerTests
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        
+
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
-        
+
         var dto = new UpdatePedidoDto { Estado = "Enviado" };
         var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
 

@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Usuarios;
@@ -63,7 +64,10 @@ public class UpdateUserCommandHandler(
                 await cacheService.RemoveAsync("usuarios:all");
                 await cacheService.RemoveAsync($"usuarios:{request.Id}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
         });
 
         return Result.Success<UserDto, DomainError>(dto);

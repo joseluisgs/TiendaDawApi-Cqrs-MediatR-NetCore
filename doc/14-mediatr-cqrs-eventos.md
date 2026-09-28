@@ -4,7 +4,7 @@
 
 [14. MediatR + CQRS + Eventos de Dominio](#14-mediatr--cqrs--eventos-de-dominio)
   - [14.1. El Problema: Acoplamiento entre Efectos Secundarios](#141-el-problema-acoplamiento-entre-efectos-secundarios)
-  - [14.2. Â¿Qué son los Eventos de Dominio?](#142-qu-son-los-eventos-de-dominio)
+  - [14.2. ¿Qué son los Eventos de Dominio?](#142-qu-son-los-eventos-de-dominio)
   - [14.3. Notifications en MediatR: La Implementación del Patrón](#143-notifications-en-mediatr-la-implementacin-del-patrn)
   - [14.4. Anatomía de una Notification y sus Handlers](#144-anatoma-de-una-notification-y-sus-handlers)
   - [14.5. La metáfora del periódico](#145-la-metfora-del-peridico)
@@ -13,7 +13,8 @@
   - [14.8. Open/Closed Principle en Acción](#148-openclosed-principle-en-accin)
   - [14.9. Comparativa: Llamada Directa vs Notifications](#149-comparativa-llamada-directa-vs-notifications)
   - [14.10. Consideraciones y Mejores Prácticas](#1410-consideraciones-y-mejores-prcticas)
-  - [14.11. Resumen y Siguientes Pasos](#1411-resumen-y-siguientes-pasos)
+  - [14.11. Consistencia Eventual: los cambios entre la escritura y la lectura](#1411-consistencia-eventual-los-cambios-entre-la-escritura-y-la-lectura)
+  - [14.12. Resumen y Siguientes Pasos](#1412-resumen-y-siguientes-pasos)
 
 ---
 
@@ -21,17 +22,17 @@
 
 Imaginemos que eres un chef en una cocina profesional. Acabas de terminar de preparar un plato principal y ahora necesitas:
 
-1. ðŸ“§ Enviar un email al cliente confirmando su orden
-2. ðŸ“± Enviar una notificación por SignalR al cliente
-3. ðŸ“Š Actualizar las métricas de ventas en tiempo real
-4. ðŸ”„ Invalidar la cache de productos
-5. ðŸ“ Escribir en el log de auditoría
-6. ðŸ“¦ Notificar al departamento de inventario
+1. 📧 Enviar un email al cliente confirmando su orden
+2. 📱 Enviar una notificación por SignalR al cliente
+3. 📊 Actualizar las métricas de ventas en tiempo real
+4. 🔄 Invalidar la cache de productos
+5. 📝 Escribir en el log de auditoría
+6. 📦 Notificar al departamento de inventario
 
 Si todo esto está en tu `CreateProductoCommandHandler`, tienes un problema de acoplamiento masivo:
 
 ```csharp
-// âŒ PROBLEMA: Handler con acoplamiento directo
+// ❌ PROBLEMA: Handler con acoplamiento directo
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand command)
@@ -50,7 +51,7 @@ public class CreateProductoCommandHandler
 }
 ```
 
-### Â¿Por qué esto es un problema?
+### ¿Por qué esto es un problema?
 
 ```mermaid
 flowchart TB
@@ -74,11 +75,11 @@ flowchart TB
 1. **Responsabilidad única violada**: El handler hace mucho más que crear un producto
 2. **Difícil de testear**: Necesitas mockear 6 servicios diferentes
 3. **Imposible de modificar**: Agregar/eliminar un efecto requiere cambiar el handler
-4. **No reutilizable**: Â¿Cómo usas esta lógica en un batch job?
+4. **No reutilizable**: ¿Cómo usas esta lógica en un batch job?
 
 ---
 
-## 14.2. Â¿Qué son los Eventos de Dominio?
+## 14.2. ¿Qué son los Eventos de Dominio?
 
 Un **Evento de Dominio** es un objeto que representa "algo que ocurrió" en el dominio y que puede ser interesante para otras partes del sistema.
 
@@ -295,13 +296,13 @@ public class UsuarioRegistradoBienvenidaEmailHandler
         
         await _emailService.SendAsync(
             to: notification.Usuario.Email,
-            subject: "Â¡Bienvenido a TiendaApi!",
+            subject: "¡Bienvenido a TiendaApi!",
             body: $"""
                 Hola {notification.Usuario.Username},
                 
                 Bienvenido a nuestra tienda. Tu cuenta ha sido creada exitosamente.
                 
-                Â¡Gracias por registrarte!
+                ¡Gracias por registrarte!
                 """
         );
     }
@@ -370,7 +371,7 @@ Para entender mejor cómo funcionan las notifications, usemos una metáfora que 
 
 ```mermaid
 flowchart TB
-    subgraph "EL PERIá“DICO"
+    subgraph "EL PERIÓDICO"
         P[Editor\n(Command Handler)]
         N[Periódico\n(INotification)]
         S1[Lector de Deportes]
@@ -395,7 +396,7 @@ flowchart TB
 2. **El Periódico (Notification)** se distribuye a todos los suscriptores
 3. **Los Lectores (Notification Handlers)** reciben el periódico y cada uno reacciona a lo que le interesa
 
-### Â¿Por qué es mejor así?
+### ¿Por qué es mejor así?
 
 | Aspecto | Sin Notification | Con Notification |
 |---------|------------------|-------------------|
@@ -497,14 +498,14 @@ sequenceDiagram
 
 Los **Pipeline Behaviors** son como "middleware" para MediatR. Permiten ejecutar código antes y después de cada handler, de forma transparente.
 
-### Â¿Para qué sirven?
+### ¿Para qué sirven?
 
 Imagina que quieres:
-- ðŸ“ Loggear todas las peticiones que entran
-- â±ï¸ Medir cuánto tiempo tarda cada handler
-- ðŸ”’ Verificar autorización en un solo lugar
-- ðŸ’± Manejar transacciones automáticamente
-- ðŸ“Š Registrar métricas
+- 📝 Loggear todas las peticiones que entran
+- ⏱️ Medir cuánto tiempo tarda cada handler
+- 🔒 Verificar autorización en un solo lugar
+- 💱 Manejar transacciones automáticamente
+- 📊 Registrar métricas
 
 Con behaviors, esto se hace una sola vez y aplica a TODOS los handlers.
 
@@ -530,7 +531,7 @@ public class LoggingBehavior<TRequest, TResponse>
         var requestName = typeof(TRequest).Name;
         
         // ANTES del handler
-        _logger.LogInformation("ðŸ“¥ Request {RequestName} iniciada", requestName);
+        _logger.LogInformation("📥 Request {RequestName} iniciada", requestName);
         var startTime = DateTime.UtcNow;
         
         try
@@ -541,7 +542,7 @@ public class LoggingBehavior<TRequest, TResponse>
             // DESPUá‰S del handler (success)
             var duration = DateTime.UtcNow - startTime;
             _logger.LogInformation(
-                "âœ… Request {RequestName} completada en {Duration}ms",
+                "✅ Request {RequestName} completada en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -553,7 +554,7 @@ public class LoggingBehavior<TRequest, TResponse>
             var duration = DateTime.UtcNow - startTime;
             _logger.LogError(
                 ex,
-                "âŒ Request {RequestName} falló en {Duration}ms",
+                "❌ Request {RequestName} falló en {Duration}ms",
                 requestName,
                 duration.TotalMilliseconds);
             
@@ -725,7 +726,7 @@ public class ProductoCreadoWhatsAppHandler
 }
 ```
 
-**Â¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
+**¡Solo creas un nuevo archivo!** No necesitas modificar nada del código existente.
 
 ---
 
@@ -766,7 +767,7 @@ public class CreatePedidoCommandHandler
 ```
 
 **Problemas**:
-- SiåŽ»æŽ‰ uno de estos servicios, hay que modificar el handler
+- Si去掉 uno de estos servicios, hay que modificar el handler
 - Testing requiere mockear 5 servicios
 - No hay forma de deshabilitar temporalmente un efecto secundario
 
@@ -830,28 +831,28 @@ public class PedidoCreadoCacheHandler : INotificationHandler<PedidoCreadoNotific
 
 ## 14.10. Consideraciones y Mejores Prácticas
 
-Ahora que conoces el poder de las Notifications, aquíæœ‰ä¸€äº› consideraciones importantes.
+Ahora que conoces el poder de las Notifications, aquí有一些 consideraciones importantes.
 
 ### Cuándo usar Notifications
 
-âœ… **Efectos secundarios que no afectan el resultado principal**
+✅ **Efectos secundarios que no afectan el resultado principal**
 Enviar emails, notificar por SignalR, logs, métricas
 
-âœ… **Operaciones que pueden fallar sin afectar el flujo principal**
+✅ **Operaciones que pueden fallar sin afectar el flujo principal**
 Si el email falla, el pedido igual debe crearse
 
-âœ… **Cuando múltiples sistemas deben reaccionar al mismo evento**
+✅ **Cuando múltiples sistemas deben reaccionar al mismo evento**
 Email + SignalR + Auditoría
 
 ### Cuándo NO usar Notifications
 
-âŒ **Cuando el resultado depende del efecto secundario**
+❌ **Cuando el resultado depende del efecto secundario**
 Si necesitas esperar a que termine el email para retornar, no uses notifications
 
-âŒ **Operaciones transaccionales**
+❌ **Operaciones transaccionales**
 Invalidar cache dentro de una transacción debe hacerse en el handler principal
 
-âŒ **Efectos secundarios que pueden bloquear**
+❌ **Efectos secundarios que pueden bloquear**
 No pongas operaciones largas en notification handlers
 
 ### Mejores prácticas
@@ -876,7 +877,7 @@ flowchart TB
 ### Error común: dependency circular
 
 ```csharp
-// âŒ NO HAGAS ESTO: Dependency circular
+// ❌ NO HAGAS ESTO: Dependency circular
 public class CreateProductoCommandHandler
 {
     public async Task Handle(CreateProductoCommand cmd)
@@ -920,13 +921,183 @@ public class PedidoCreadoEmailHandler
 
 ---
 
-## 14.11. Resumen y Siguientes Pasos
+## 14.11. Consistencia Eventual: los cambios entre la escritura y la lectura
+
+Hasta aquí todo son eventos *dentro* de la misma petición: el command escribe, publica y responde. Pero si la **lectura** no ocurre en la misma base de datos que la **escritura**, aparece una pregunta inevitable: *¿qué ve un cliente que lee mientras el cambio se propaga?* La respuesta es la **consistencia eventual**: el dato acaba llegando a todas las lecturas, pero puede tardar.
+
+### El mapa real de escritura y lectura de este proyecto
+
+| Dato | Escritura (Commands) | Lectura (Queries) | ¿Hay ventana de inconsistencia? |
+|------|----------------------|-------------------|----------------------------------|
+| **Productos** | PostgreSQL (EF Core, `IProductoRepository`) | MongoDB `productos_read` (vía `IProductoService`) + caché | **Sí**: PG → Mongo y Mongo → caché |
+| **Categorías** | PostgreSQL | PostgreSQL (EF) + caché | Solo la caché (se invalida al escribir) |
+| **Pedidos** | MongoDB (`IPedidosRepository`) | MongoDB (mismo almacén) | No (misma fuente) |
+| **Users** | PostgreSQL | PostgreSQL | No |
+
+Los productos son el caso CQRS *puro* del proyecto: **PostgreSQL es la fuente de verdad** y `productos_read` (MongoDB) es el **read model** desnormalizado —categoría embebida incluida— que alimentan REST y GraphQL. La sincronización la hacen los propios eventos: `ProductoReadSyncHandler` escucha `ProductoCreadoNotification`, `ProductoActualizadoNotification`, `ProductoEliminadoNotification` y `CategoriaActualizadaNotification`.
+
+### Ciclo completo de un cambio, con marcas de tiempo
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente
+    participant H as CreateProductoCommandHandler
+    participant PG as PostgreSQL
+    participant Cache as Redis / OutputCache
+    participant M as MongoDB productos_read
+    participant O as Email / SignalR / WS
+
+    C->>H: POST /api/productos
+    H->>PG: SaveAsync + commit
+    Note over PG: t0 — el producto ya existe en la fuente de verdad
+    H->>Cache: Task.Run: borra claves y tag "productos"
+    H->>M: await Publish(ProductoCreadoNotification) → UpsertAsync
+    Note over M: t1 — read model al día (SyncAt = t1)
+    par Otros efectos (no bloquean la respuesta)
+        H->>O: EmailHandler / SignalRHandler / WebSocketHandler
+    end
+    H-->>C: 201 Created (con el DTO montado desde PostgreSQL)
+    C->>H: GET /api/productos
+    H->>Cache: consulta (miss tras invalidar)
+    Cache->>M: FindAllPagedAsync
+    M-->>C: 200 — lista con el producto nuevo
+```
+
+Dos detalles importantes de este flujo:
+
+1. `await mediator.Publish(...)` se ejecuta **antes** de devolver el 201: cuando el escritor recibe la respuesta, en condiciones normales el read model ya está al día (t1 ≤ t201).
+2. La invalidación de caché es **fire-and-forget** (`_ = Task.Run(...)`): corre en paralelo con el sync y su fallo solo genera un `Log.Warning` — nunca rompe la escritura.
+
+### La ventana de inconsistencia
+
+Aun así, **otro cliente que lea entre t0 y t1** verá el estado anterior — y es correcto: es el precio de no transaccionar dos bases de datos a la vez.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Cliente A (escritor)
+    participant PG as PostgreSQL
+    participant M as MongoDB read model
+    participant B as Cliente B (lector)
+
+    A->>PG: PUT /api/productos/7 — precio 19,99 → 24,99 (t0)
+    Note over B: t1 — GET /api/productos/7
+    B->>M: consulta
+    M-->>B: precio 19,99 (estado anterior)
+    Note over PG,M: ventana de inconsistencia (t0 → t1)
+    PG->>M: Publish → UpsertAsync (t1)
+    Note over B: t2 — GET de nuevo
+    B->>M: consulta
+    M-->>B: precio 24,99 (estado nuevo)
+```
+
+> En este proyecto la ventana PG → Mongo dura **milisegundos** (es el `UpsertAsync` de dentro del mismo `Publish`). La ventana que más puede doler es la de **caché**: si una lectura concurrente se cuela entre la invalidación y el `UpsertAsync`, puede repoblar la caché con el dato antiguo y mantenerlo hasta su TTL (OutputCache: **60 s**; caché de fachada: **10 min**).
+
+### ¿Qué hace la ventana más larga o más corta?
+
+| Factor | Efecto en la ventana |
+|--------|----------------------|
+| Duración del commit en PostgreSQL | retrasa t0: la ventana empieza cuando confirma la transacción |
+| Tiempo del `UpsertAsync` en MongoDB | es t1 − t0 en condiciones normales: milisegundos |
+| Latencia de red API → MongoDB | se suma al sync; en local, casi nada |
+| Carga del clúster o escrituras encadenadas | los `Publish` se serializan por petición |
+| **Fallo de MongoDB en t1** | la ventana se abre **indefinidamente** hasta reparar (ver abajo) |
+| TTL de la caché (60 s / 10 min) | techo del segundo tramo (Mongo → caché) si la invalidación falla |
+
+### Cómo manejarla: estrategias
+
+| Estrategia | Aplicación en este proyecto |
+|------------|------------------------------|
+| **Aceptar la ventana** | por defecto: para un catálogo, eventualmente consistente es suficiente |
+| **Mostrar cuándo se sincronizó** | `ProductoRead.SyncAt` guarda el instante de la última réplica: puede devolverse al cliente por transparencia |
+| **Invalidar la caché al escribir** | `EvictByTagAsync("productos")` + `RemoveAsync("productos:{id}")` en los commands: reduce el tramo Mongo → caché a milisegundos |
+| **Leer de la fuente de verdad tras escribir** | el 201 devuelve el DTO montado desde PostgreSQL, nunca desde el read model |
+| **Reparar al arrancar** | `ProductoReadSeeder`: en dev, drop + bulk insert; en prod, upsert + poda de documentos huérfanos |
+
+### Polling frente a Domain Events
+
+¿Y si en vez de eventos hiciéramos un proceso que preguntase cada X segundos si cambió algo (*polling*)?
+
+```mermaid
+flowchart LR
+    subgraph P["Polling cada 60 s"]
+        W1[Escritura] --> R1[(Read DB)]
+        J["Cron cada 60 s"] -.->|compara y proyecta| R1
+        R1 --> L1["Lectura: hasta 60 s de retraso"]
+    end
+    subgraph E["Domain Events — este proyecto"]
+        W2[Escritura] -->|Publish| S2[ProductoReadSyncHandler]
+        S2 -->|UpsertAsync| R2[(Read DB)]
+        R2 --> L2["Lectura: milisegundos"]
+    end
+```
+
+| | Polling | Domain Events (lo elegido) |
+|---|---------|------------------------------|
+| **Latencia** | hasta el intervalo (p. ej. 60 s) | milisegundos |
+| **Coste** | consultas constantes aunque no haya cambios | 1 sync solo cuando hay cambio |
+| **Complejidad** | proceso o cron extra + detección de cambios | ya vivíamos `IMediator.Publish` |
+| **Fallos** | el siguiente tick reintenta solo | hay que gestionarlos explícitamente |
+
+El polling sigue siendo válido cuando el productor **no puede publicar eventos** (sistemas ajenos, datos de terceros); aquí los commands publican, así que los eventos ganan.
+
+### Manejo de errores en la sincronización
+
+¿Y si MongoDB no está disponible en t1? La regla del proyecto es: **una caída del read model no puede tumbar una escritura ya commiteada en PostgreSQL**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant H as CreateProductoCommandHandler
+    participant PG as PostgreSQL
+    participant S as ProductoReadSyncHandler
+    participant M as MongoDB
+
+    H->>PG: commit OK (t0)
+    H->>S: Publish(ProductoCreadoNotification)
+    S->>M: UpsertAsync
+    M-->>S: ✗ MongoDB no disponible
+    S->>S: catch → LogError (no relanza)
+    S-->>H: Publish termina sin excepción
+    H-->>H: 201 Created — la escritura NO falla
+    Note over M: PG ya commiteado;<br/>ProductoReadSeeder repara la réplica<br/>en el próximo arranque
+```
+
+Así está implementado: cada `Handle` de `ProductoReadSyncHandler` envuelve la operación en `try/catch` y solo registra el error; la reparación la hace el seeder de arranque.
+
+Si queremos acortar la ventana de fallo sin tocar la escritura, la evolución natural es **reintentar el sync con backoff** (el mismo espíritu de Polly que ya usamos en email — `doc/23-email-services.md`):
+
+```csharp
+private static async Task RetryAsync(Func<Task> action, ILogger logger, int maxAttempts = 3)
+{
+    for (var attempt = 1; ; attempt++)
+    {
+        try { await action(); return; }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            logger.LogWarning(ex, "Sync reintento {Attempt}/{Max}", attempt, maxAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+        }
+    }
+}
+```
+
+Para sistemas con más exigencia existen opciones mayores: **cola de mensajes** entre PostgreSQL y MongoDB, **CDC** (Debezium leyendo el WAL) o **idempotencia** en los consumidores para reintentar sin miedo a duplicar — todas ellas descritas en `doc/12-cqrs-commands-queries.md` (sección 12.15, *Patrones de Sincronización*).
+
+### En una frase
+
+> **CQRS separa el camino de lectura del de escritura; la consistencia eventual es lo que hay que gestionar a cambio.** En este proyecto: PostgreSQL manda, los eventos replican en milisegundos, la caché se invalida al escribir, el seeder repara lo que falte y `SyncAt` deja constancia de cuándo se sincronizó cada documento.
+
+---
+
+## 14.12. Resumen y Siguientes Pasos
 
 ### Puntos clave del capítulo
 
 1. **Los Eventos de Dominio representan "algo que ocurrió"**
    - Nombres en pasado: `ProductoCreado`, `PedidoEnviado`
-   - Notifican a múltiples interesados sinè€¦åˆ
+   - Notifican a múltiples interesados sin耦合
 
 2. **INotification de MediatR implementa el patrón Pub/Sub**
    - El handler principal publica una notificación

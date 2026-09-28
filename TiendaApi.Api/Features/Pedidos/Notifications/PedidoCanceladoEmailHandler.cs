@@ -13,6 +13,9 @@ public class PedidoCanceladoEmailHandler(
     IConfiguration configuration)
     : INotificationHandler<PedidoCanceladoNotification>
 {
+    /// <summary>
+    /// Procesa la cancelación de un pedido y envía el email de aviso al administrador.
+    /// </summary>
     public async Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken)
     {
         var adminEmail = configuration["Smtp:AdminEmail"];

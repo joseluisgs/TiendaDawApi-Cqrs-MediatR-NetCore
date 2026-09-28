@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization.Metadata;
 using Serilog;
 using Serilog.Extensions.Logging;
 using TiendaApi.Api;
@@ -30,7 +31,19 @@ var environment = builder.Environment;
 
 // Core - Controllers
 services.AddMvcControllers();
+
+// Serialización JSON con source-gen (AppJsonContext) + fallback a reflexión
+// para los tipos no declarados (anónimos, ProblemDetails, etc.)
+services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolver =
+    JsonTypeInfoResolver.Combine(AppJsonContext.Default, new DefaultJsonTypeInfoResolver()));
+
 services.AddFluentValidationServices();
+
+// Compresión HTTP (Brotli + Gzip)
+services.AddResponseCompressionConfig();
+
+// TimeProvider global (inyectable, testable con FakeTimeProvider)
+services.AddSingleton(TimeProvider.System);
 
 // API
 services.AddApiVersioningPolicy();
@@ -53,6 +66,10 @@ services.AddServices();
 services.AddCache(environment);
 services.AddEmail(environment);
 services.AddStorage();
+
+// Caché HTTP (OutputCache + ETag + 304) - solo endpoints con [OutputCache]
+services.AddOutputCacheConfig();
+
 services.AddWebSockets();
 services.AddBackgroundJobs();
 
@@ -64,6 +81,9 @@ services.AddGraphQL(environment);
 
 // AutoMapper
 services.AddAutoMapper();
+
+// Health Checks (sondeo de dependencias en /health)
+services.AddHealthChecks(environment);
 
 // ============================================================================
 // 🚀 CONSTRUCCIÓN DE LA APLICACIÓN
@@ -79,6 +99,7 @@ Log.Information("✅ Aplicación construida");
 // ============================================================================
 
 app.UseSwaggerUI(isDevelopment);
+app.UseResponseCompression();
 app.UseGlobalExceptionHandler();
 
 // Security Headers - Siempre activo (no afecta funcionalidad)
@@ -104,8 +125,18 @@ app.UseWebSockets();
 app.MapWebSocketEndpoints();
 app.MapSignalRHubs();
 app.UseStaticFiles();
+
+// Caché HTTP: antes de MapControllers; solo afecta a los endpoints con [OutputCache]
+app.UseOutputCacheConfig();
+
 app.MapControllers();
 app.MapGraphQLEndpoints();
+
+// Health Check (GET /health - JSON: 200 OK, 503 si alguna dependencia cae)
+app.MapHealthEndpoint();
+
+// Versión de la API (GET /version)
+app.MapVersionEndpoint();
 
 // ============================================================================
 // 🗄️ INICIALIZACIÓN DE DATOS
@@ -135,11 +166,11 @@ finally
 }
 
 
-/// <summary>
-/// Imprime en los logs la información de inicio de la aplicación.
-/// </summary>
-/// <param name="isDevelopment">Indica si el entorno es de desarrollo.</param>
-/// <param name="configuration">La configuración de la aplicación.</param>
+// <summary>
+// Imprime en los logs la información de inicio de la aplicación.
+// </summary>
+// <param name="isDevelopment">Indica si el entorno es de desarrollo.</param>
+// <param name="configuration">La configuración de la aplicación.</param>
 static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
 {
     var urls = configuration["ASPNETCORE_URLS"]?.Split(';') ?? new[] { "http://localhost:5000" };
@@ -189,3 +220,10 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
         baseUrl, mode);
     Log.Information("=================================================================");
 }
+
+
+/// <summary>
+/// Declaración parcial del programa para que los tests de integración
+/// puedan crear la aplicación con <c>WebApplicationFactory&lt;Program&gt;</c>.
+/// </summary>
+public partial class Program;

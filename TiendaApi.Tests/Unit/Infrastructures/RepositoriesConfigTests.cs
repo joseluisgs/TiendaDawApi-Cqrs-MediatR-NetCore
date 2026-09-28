@@ -5,6 +5,7 @@ using Moq;
 using NUnit.Framework;
 using TiendaApi.Api.Infrastructures;
 using TiendaApi.Api.Repositories.Pedidos;
+using TiendaApi.Api.Repositories.Productos;
 
 namespace TiendaApi.Tests.Unit.Infrastructures;
 
@@ -80,5 +81,20 @@ public class RepositoriesConfigTests
 
         // Assert
         _services.Should().Contain(d => d.ServiceType == typeof(TiendaApi.Api.Repositories.Categorias.ICategoriaRepository));
+    }
+
+    [Test]
+    public void AddRepositories_Siempre_RegistraProductoReadRepository_EnAmbasRamas()
+    {
+        // Arrange — la rama "MongoDbEfCore" es el caso no por defecto
+        _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns("MongoDbEfCore");
+
+        // Act
+        _services.AddRepositories(_mockConfiguration.Object);
+
+        // Assert — Fase 13: el read model de Mongo no depende del switch de pedidos
+        var descriptor = _services.Should()
+            .Contain(d => d.ServiceType == typeof(IProductoReadRepository)).Subject;
+        descriptor.ImplementationType.Should().Be<ProductoReadRepository>();
     }
 }

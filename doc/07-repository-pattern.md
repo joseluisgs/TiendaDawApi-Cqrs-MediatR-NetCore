@@ -21,7 +21,7 @@ Imagina que tienes un servicio de productos que necesita obtener datos de la bas
 Sin un repositorio, los servicios contienen lógica de acceso a datos mezclada con lógica de negocio. Esto hace el código difícil de testear porque no puedes facilmente substituir el acceso a base de datos. También hace que cambiar la tecnología de persistencia requiera modificar código en múltiples lugares.
 
 ```csharp
-// âŒ INCORRECTO: Lógica de datos en el servicio
+// ❌ INCORRECTO: Lógica de datos en el servicio
 public class ProductoService
 {
     private readonly TiendaDbContext _context;
@@ -55,7 +55,7 @@ public class ProductoService
 Con el Repository Pattern, el servicio solo conoce la interfaz del repositorio, no su implementación. El repositorio encapsula todo el acceso a datos, exponiendo métodos claros y específicos. Esto hace los servicios más simples, más testables, y la persistencia fácilmente substituible.
 
 ```csharp
-// âœ… CORRECTO: Repository con interfaz
+// ✅ CORRECTO: Repository con interfaz
 public interface IProductoRepository
 {
     Task<Producto?> FindById(long id);
