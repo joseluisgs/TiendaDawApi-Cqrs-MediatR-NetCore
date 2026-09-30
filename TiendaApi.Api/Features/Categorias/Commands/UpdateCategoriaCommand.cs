@@ -55,18 +55,9 @@ public class UpdateCategoriaCommandHandler(
         var updated = await repository.UpdateAsync(categoria);
         var dto = updated.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"categorias:{request.Id}");
+        await cacheService.RemoveAsync($"categorias:{request.Id}");
                 await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+            
 
         // Propagar el renombre al read model de productos (nombres embebidos en Mongo).
         await mediator.Publish(

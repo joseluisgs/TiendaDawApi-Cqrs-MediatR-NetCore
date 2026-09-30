@@ -57,17 +57,8 @@ public class UpdateUserCommandHandler(
         var updated = await repository.UpdateAsync(user);
         var dto = updated.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"usuarios:{request.Id}");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        await cacheService.RemoveAsync($"usuarios:{request.Id}");
+            
 
         return Result.Success<UserDto, DomainError>(dto);
     }

@@ -56,14 +56,7 @@ public class CreateUserCommandHandler(
         var saved = await repository.SaveAsync(user);
         var dto = saved.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.RemoveAsync($"usuarios:{saved.Id}"); }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        await cacheService.RemoveAsync($"usuarios:{saved.Id}"); 
 
         await mediator.Publish(new UsuarioRegistradoNotification(dto), cancellationToken);
         return Result.Success<UserDto, DomainError>(dto);

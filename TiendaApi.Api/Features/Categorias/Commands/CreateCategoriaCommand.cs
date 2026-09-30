@@ -46,17 +46,8 @@ public class CreateCategoriaCommandHandler(
         var saved = await repository.SaveAsync(request.Dto.ToEntity());
         var dto = saved.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
+            
 
         return Result.Success<CategoriaDto, DomainError>(dto);
     }

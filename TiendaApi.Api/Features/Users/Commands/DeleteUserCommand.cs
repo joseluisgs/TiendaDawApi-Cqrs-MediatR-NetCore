@@ -33,17 +33,8 @@ public class DeleteUserCommandHandler(
         user.IsDeleted = true;
         await repository.UpdateAsync(user);
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"usuarios:{request.Id}");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        await cacheService.RemoveAsync($"usuarios:{request.Id}");
+            
 
         return UnitResult.Success<DomainError>();
     }

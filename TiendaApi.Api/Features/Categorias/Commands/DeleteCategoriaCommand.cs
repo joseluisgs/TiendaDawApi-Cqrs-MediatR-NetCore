@@ -34,18 +34,9 @@ public class DeleteCategoriaCommandHandler(
 
         await repository.DeleteAsync(request.Id);
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"categorias:{request.Id}");
+        await cacheService.RemoveAsync($"categorias:{request.Id}");
                 await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+            
 
         return UnitResult.Success<DomainError>();
     }
