@@ -55,15 +55,15 @@ public class UpdateCategoriaCommandHandler(
         var updated = await repository.UpdateAsync(categoria);
         var dto = updated.ToDto();
 
-        await cacheService.RemoveAsync($"categorias:{request.Id}");
-                // Invalidar caché de categorías Y productos (los DTO de producto llevan categoriaNombre)
-        await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
-        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
-            
-
-        // Propagar el renombre al read model de productos (nombres embebidos en Mongo).
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a Mongo), DESPUÉS invalidar.
+        // El Publish renombra categoriaNombre embebido en productos_read.
         await mediator.Publish(
             new CategoriaActualizadaNotification(request.Id, dto.Nombre), cancellationToken);
+
+        await cacheService.RemoveAsync($"categorias:{request.Id}");
+        // Invalidar también productos (los DTO llevan categoriaNombre)
+        await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
 
         return Result.Success<CategoriaDto, DomainError>(dto);
     }
