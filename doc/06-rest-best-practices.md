@@ -836,7 +836,8 @@ public async Task<IActionResult> GetAll(/* filtros, paginación y ordenación */
     var resultado = await mediator.Send(new GetAllProductosQuery(filter));
     return resultado.Match(onSuccess: productos =>
     {
-        Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";   // ETag por respuesta
+        // ETag lo gestiona OutputCache ([OutputCache] attribute)
+        // Antes usábamos Guid.NewGuid() pero era decorativo: nunca casaba con If-None-Match
         return Ok(productos);
     }, onFailure: error => error.ToHttpResult());
 }
@@ -844,7 +845,7 @@ public async Task<IActionResult> GetAll(/* filtros, paginación y ordenación */
 
 - **`Duration = 60`**: durante 60 s las peticiones idénticas se sirven desde la caché de salida (middleware `OutputCache`, registrado en `Infrastructures/OutputCacheConfig.cs` y activado con `app.UseOutputCacheConfig()` **antes** de `MapControllers`).
 - **`Tags = { "productos" }`**: invalidación selectiva. Tras cualquier CUD, los comandos MediatR llaman a `IOutputCacheStore.EvictByTagAsync("productos", ...)` — incluido el alta desde **GraphQL**, que también muta productos. Sin tags, los 60 s de TTL dejarían datos viejos tras un PUT/DELETE.
-- **ETag + `304`**: si el cliente revalida (`If-None-Match`) y el middleware no está devolviendo ya la respuesta cacheada, el controlador responde `304 Not Modified` sin cuerpo. Verificado en el smoke de la Fase 4: segundo `GET /api/productos` → **304**.
+- **ETag + `304`**: OutputCache gestiona automáticamente los ETags y respuestas 304. No necesitamos generarlos manualmente en el controlador.
 - **Qué NO se cachea**: endpoints autenticados o mutaciones (`POST/PUT/DELETE`), que dependen de `Authorization`.
 
 > Regla práctica: **TTL para lo que cambia "con el tiempo"** (listados públicos) y **tags para lo que cambia "por eventos"** (cualquier CUD). Las dos conviven: el tag siempre "gana" porque permite invalidar antes de que venza el TTL.

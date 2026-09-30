@@ -779,9 +779,14 @@ public interface ICacheService
     Task<bool> ExistsAsync(string key);
     
     /// <summary>
-    /// Elimina entradas por patrón
+    /// Elimina un valor de la caché por clave.
     /// </summary>
-    Task RemoveByPatternAsync(string pattern);
+    Task RemoveAsync(string key);
+
+    // 🎓 Nota: RemoveByPatternAsync fue ELIMINADO de la interfaz.
+    // MemoryCache no lo soporta y Redis lo haría con SCAN (costoso).
+    // La interfaz solo debe contener lo que las implementaciones pueden
+    // hacer de forma razonable.
 }
 
 /// <summary>

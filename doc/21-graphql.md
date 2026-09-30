@@ -184,23 +184,23 @@ builder.Services
 ```csharp
 public class TiendaQuery
 {
+    // 🎓 Seguridad: GraphQL solo expone DTOs, nunca entidades del modelo de escritura
     // Query pública - cualquiera puede ver productos
-    [UseFirstOrDefault]
-    [UseProjection]
-    public IQueryable<Producto> GetProductos(
+    public async Task<IReadOnlyList<ProductoDto>> GetProductos(
         [Service] IProductoRepository productoRepository)
     {
-        return productoRepository.FindAllAsNoTracking();
+        var productos = await productoRepository.FindAllAsync();
+        return productos.ToDtoList().ToList();
     }
 
     // Query protegida - solo usuarios autenticados
     [Authorize]  // ← Requiere JWT válido
-    [UseFirstOrDefault]
-    public async Task<Producto?> GetProducto(
+    public async Task<ProductoDto?> GetProducto(
         long id,
         [Service] IProductoRepository productoRepository)
     {
-        return await productoRepository.FindByIdAsync(id);
+        var producto = await productoRepository.FindByIdAsync(id);
+        return producto?.ToDto();
     }
 }
 ```
@@ -605,57 +605,87 @@ namespace TiendaApi.Apis.GraphQL.Types;
 
 public class TiendaQuery
 {
+    // 🎓 Seguridad: GraphQL solo expone DTOs, nunca entidades del modelo de escritura
+
     // Consulta básica: Obtener todos los productos
-    [UseFirstOrDefault]
-    [UseProjection]
-    public IQueryable<Producto> GetProductos(
+    public async Task<IReadOnlyList<ProductoDto>> GetProductos(
         [Service] IProductoRepository productoRepository)
     {
-        return productoRepository.FindAllAsNoTracking();
+        var productos = await productoRepository.FindAllAsync();
+        return productos.ToDtoList().ToList();
     }
 
     // Obtener producto por ID
-    [UseFirstOrDefault]
-    public async Task<Producto?> GetProducto(
+    public async Task<ProductoDto?> GetProducto(
         long id,
         [Service] IProductoRepository productoRepository)
     {
-        return await productoRepository.FindByIdAsync(id);
+        var producto = await productoRepository.FindByIdAsync(id);
+        return producto?.ToDto();
     }
 
-    // Paginación
-    [UsePaging(MaxPageSize = 100, DefaultPageSize = 10)]
-    public IQueryable<Producto> GetProductosPaged(
-        [Service] IProductoRepository productoRepository)
+    // Paginación (GraphQL usa base 1, el repositorio base 0)
+    public async Task<PagedResult<ProductoDto>> GetProductosPaged(
+        [Service] IProductoRepository productoRepository,
+        int page = 1,
+        int size = 10)
     {
-        return productoRepository.FindAllAsNoTracking();
+        var filter = new ProductoFilterDto(
+            Nombre: null, Categoria: null, IsDeleted: null,
+            PrecioMax: null, StockMin: null,
+            Page: Math.Max(page - 1, 0), Size: size);
+
+        var result = await productoRepository.FindAllPagedAsync(filter);
+        return new PagedResult<ProductoDto>
+        {
+            Items = result.Items.Select(p => p.ToDto()).ToList(),
+            TotalCount = result.TotalCount,
+            Page = page,
+            PageSize = size
+        };
     }
 
     // Categorías
-    [UseFirstOrDefault]
-    [UseProjection]
-    public IQueryable<Categoria> GetCategorias(
+    public async Task<IReadOnlyList<CategoriaDto>> GetCategorias(
         [Service] ICategoriaRepository categoriaRepository)
     {
-        return categoriaRepository.FindAllAsNoTracking();
+        var categorias = await categoriaRepository.FindAllAsync();
+        return categorias.Select(c => c.ToDto()).ToList();
     }
 
-    [UseFirstOrDefault]
-    public async Task<Categoria?> GetCategoria(
+    public async Task<CategoriaDto?> GetCategoria(
         long id,
         [Service] ICategoriaRepository categoriaRepository)
     {
-        return await categoriaRepository.FindByIdAsync(id);
+        var categoria = await categoriaRepository.FindByIdAsync(id);
+        return categoria?.ToDto();
     }
 
-    [UsePaging(MaxPageSize = 100, DefaultPageSize = 10)]
-    public IQueryable<Categoria> GetCategoriasPaged(
-        [Service] ICategoriaRepository categoriaRepository)
+    // Categorías paginadas
+    public async Task<PagedResult<CategoriaDto>> GetCategoriasPaged(
+        [Service] ICategoriaRepository categoriaRepository,
+        int page = 1,
+        int size = 10)
     {
-        return categoriaRepository.FindAllAsNoTracking();
+        var filter = new CategoriaFilterDto
+        {
+            Nombre = null,
+            Page = Math.Max(page - 1, 0),
+            Size = size
+        };
+        var result = await categoriaRepository.FindAllPagedAsync(filter);
+        return new PagedResult<CategoriaDto>
+        {
+            Items = result.Items.Select(c => c.ToDto()).ToList(),
+            TotalCount = result.TotalCount,
+            Page = page,
+            PageSize = size
+        };
     }
 }
 ```
+
+> ⚠️ **Nota de seguridad**: Antes devolvíamos `IQueryable<Producto>` directamente del repositorio. Esto exponía el modelo de escritura al cliente GraphQL y permitía composición de consultas arbitrarias. Ahora devolvemos DTOs explícitamente.
 
 ### Atributos de HotChocolate
 
