@@ -4,17 +4,20 @@ using HotChocolate.Authorization;
 using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
-using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.GraphQL.Inputs;
+using TiendaApi.Api.Repositories.Productos;
 
 namespace TiendaApi.Api.GraphQL.Mutations;
 
 /// <summary>
 /// Mutations de GraphQL para productos (requiere rol ADMIN).
-/// Refactorizado para usar CQRS + MediatR en lugar de Services.
 ///
 /// 🎓 GraphQL: en vez de devolver null silencioso, lanzamos excepción
 /// para que el cliente vea el error en el array "errors" de la respuesta.
+///
+/// 🎓 Read-before-write: para hacer merge de campos null, leemos del
+/// modelo de ESCRITURA (PostgreSQL), nunca del read model (MongoDB/cache).
+/// Así evitamos escribir encima de un dato reciente que aún no se replicó.
 /// </summary>
 public class ProductoMutation
 {
@@ -48,13 +51,13 @@ public class ProductoMutation
         long id,
         UpdateProductoInput input,
         [Service] IMediator mediator,
+        [Service] IProductoRepository productoRepository,
         CancellationToken ct = default)
     {
-        var existingResult = await mediator.Send(new GetProductoByIdQuery(id), ct);
-        if (existingResult.IsFailure)
-            throw new Exception(existingResult.Error.Message);
-
-        var existing = existingResult.Value;
+        // 🎓 Leer del MODELO DE ESCRITURA (PostgreSQL), no del read model
+        var existing = await productoRepository.FindByIdAsync(id);
+        if (existing is null)
+            throw new Exception($"Producto con ID {id} no encontrado");
 
         var dto = new ProductoRequestDto
         {
