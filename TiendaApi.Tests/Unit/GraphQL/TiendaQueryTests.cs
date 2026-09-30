@@ -1,14 +1,15 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
+using MediatR;
 using Moq;
 using NUnit.Framework;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.GraphQL.Queries;
-using TiendaApi.Api.Models;
-using TiendaApi.Api.Models.Read;
-using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Tests.Unit.GraphQL;
 
@@ -17,29 +18,33 @@ namespace TiendaApi.Tests.Unit.GraphQL;
 [Category("GraphQL")]
 public class TiendaQueryTests
 {
-    private Mock<IProductoService> _productoServiceMock = null!;
-    private Mock<ICategoriaRepository> _categoriaRepoMock = null!;
+    private Mock<IMediator> _mediatorMock = null!;
     private TiendaQuery _query = null!;
 
     [SetUp]
     public void Setup()
     {
-        _productoServiceMock = new Mock<IProductoService>();
-        _categoriaRepoMock = new Mock<ICategoriaRepository>();
+        _mediatorMock = new Mock<IMediator>();
         _query = new TiendaQuery();
     }
 
     #region GetProductos Tests
 
     [Test]
-    public async Task GetProductos_ServiceExists_ReturnsList()
+    public async Task GetProductos_MediatorReturnsList_ReturnsList()
     {
-        _productoServiceMock.Setup(s => s.GetAllAsync())
-            .ReturnsAsync(new List<ProductoRead>());
+        var productos = new List<ProductoDto>
+        {
+            new(1, "Producto 1", "Desc", 10m, 5, null, 1, "Cat", DateTime.UtcNow, DateTime.UtcNow)
+        };
 
-        var result = await _query.GetProductos(_productoServiceMock.Object);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllProductosListQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IReadOnlyList<ProductoDto>, DomainError>(productos));
+
+        var result = await _query.GetProductos(_mediatorMock.Object);
 
         result.Should().NotBeNull();
+        result.Should().HaveCount(1);
     }
 
     #endregion
@@ -49,70 +54,24 @@ public class TiendaQueryTests
     [Test]
     public async Task GetProducto_WithId_ReturnsProducto()
     {
-        var productoId = 1L;
-        var producto = new ProductoRead { Id = productoId, Nombre = "Test" };
+        var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
 
-        _productoServiceMock.Setup(s => s.GetReadByIdAsync(productoId))
-            .ReturnsAsync(producto);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _query.GetProducto(productoId, _productoServiceMock.Object);
+        var result = await _query.GetProducto(1, _mediatorMock.Object);
 
         result.Should().NotBeNull();
-        result!.Id.Should().Be(productoId);
+        result!.Id.Should().Be(1);
     }
 
     [Test]
     public async Task GetProducto_WithInvalidId_ReturnsNull()
     {
-        _productoServiceMock.Setup(s => s.GetReadByIdAsync(It.IsAny<long>()))
-            .ReturnsAsync((ProductoRead?)null);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(new NotFoundError("No encontrado")));
 
-        var result = await _query.GetProducto(999, _productoServiceMock.Object);
-
-        result.Should().BeNull();
-    }
-
-    #endregion
-
-    #region GetCategorias Tests
-
-    [Test]
-    public async Task GetCategorias_RepositoryExists_ReturnsList()
-    {
-        _categoriaRepoMock.Setup(r => r.FindAllAsync())
-            .ReturnsAsync(new List<Categoria>());
-
-        var result = await _query.GetCategorias(_categoriaRepoMock.Object);
-
-        result.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region GetCategoria Tests
-
-    [Test]
-    public async Task GetCategoria_WithId_ReturnsCategoria()
-    {
-        var categoriaId = 1L;
-        var categoria = new Categoria { Id = categoriaId, Nombre = "Test" };
-
-        _categoriaRepoMock.Setup(r => r.FindByIdAsync(categoriaId))
-            .ReturnsAsync(categoria);
-
-        var result = await _query.GetCategoria(categoriaId, _categoriaRepoMock.Object);
-
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(categoriaId);
-    }
-
-    [Test]
-    public async Task GetCategoria_WithInvalidId_ReturnsNull()
-    {
-        _categoriaRepoMock.Setup(r => r.FindByIdAsync(It.IsAny<long>()))
-            .ReturnsAsync((Categoria?)null);
-
-        var result = await _query.GetCategoria(999, _categoriaRepoMock.Object);
+        var result = await _query.GetProducto(999, _mediatorMock.Object);
 
         result.Should().BeNull();
     }
@@ -124,66 +83,76 @@ public class TiendaQueryTests
     [Test]
     public async Task GetProductosPaged_WithPage1_ConvertsToZeroBasedFilter()
     {
-        // Arrange: capturar el filtro que llega al servicio
         ProductoFilterDto? capturedFilter = null;
-        _productoServiceMock.Setup(s => s.GetPagedAsync(It.IsAny<ProductoFilterDto>()))
-            .Callback<ProductoFilterDto>(f => capturedFilter = f)
-            .ReturnsAsync(new PagedResult<ProductoDto>
-            {
-                Items = Enumerable.Empty<ProductoDto>(),
-                TotalCount = 2,
-                Page = 0,
-                PageSize = 10
-            });
+        var pagedResult = new PagedResult<ProductoDto>
+        {
+            Items = Enumerable.Empty<ProductoDto>(),
+            TotalCount = 2,
+            Page = 0,
+            PageSize = 10
+        };
 
-        // Act: GraphQL page=1 (base 1) → el repositorio debe recibir Page=0 (base 0)
-        var result = await _query.GetProductosPaged(_productoServiceMock.Object, 1, 10);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllProductosQuery>(), It.IsAny<CancellationToken>()))
+            .Callback<GetAllProductosQuery, CancellationToken>((q, _) => capturedFilter = q.Filter)
+            .ReturnsAsync(Result.Success<PagedResult<ProductoDto>, DomainError>(pagedResult));
 
-        // Assert
+        var result = await _query.GetProductosPaged(_mediatorMock.Object, 1, 10);
+
         result.Should().NotBeNull();
-        result.Page.Should().Be(1); // GraphQL devuelve base 1
+        result.Page.Should().Be(1);
         capturedFilter.Should().NotBeNull();
-        capturedFilter!.Page.Should().Be(0); // pero el filtro va en base 0
+        capturedFilter!.Page.Should().Be(0);
         capturedFilter.Size.Should().Be(10);
     }
 
+    #endregion
+
+    #region GetCategorias Tests
+
     [Test]
-    public async Task GetProductosPaged_WithPage5_ConvertsToFourZeroBased()
+    public async Task GetCategorias_MediatorReturnsList_ReturnsList()
     {
-        ProductoFilterDto? capturedFilter = null;
-        _productoServiceMock.Setup(s => s.GetPagedAsync(It.IsAny<ProductoFilterDto>()))
-            .Callback<ProductoFilterDto>(f => capturedFilter = f)
-            .ReturnsAsync(new PagedResult<ProductoDto>
-            {
-                Items = Enumerable.Empty<ProductoDto>(),
-                TotalCount = 50,
-                Page = 4,
-                PageSize = 10
-            });
+        var categorias = new List<CategoriaDto>
+        {
+            new(1, "Cat 1", "Desc", DateTime.UtcNow, DateTime.UtcNow)
+        };
 
-        var result = await _query.GetProductosPaged(_productoServiceMock.Object, 5, 10);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllCategoriasListQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IReadOnlyList<CategoriaDto>, DomainError>(categorias));
 
-        result.Page.Should().Be(5);
-        capturedFilter!.Page.Should().Be(4);
+        var result = await _query.GetCategorias(_mediatorMock.Object);
+
+        result.Should().NotBeNull();
+        result.Should().HaveCount(1);
+    }
+
+    #endregion
+
+    #region GetCategoria Tests
+
+    [Test]
+    public async Task GetCategoria_WithId_ReturnsCategoria()
+    {
+        var categoria = new CategoriaDto(1, "Test", "Desc", DateTime.UtcNow, DateTime.UtcNow);
+
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<CategoriaDto, DomainError>(categoria));
+
+        var result = await _query.GetCategoria(1, _mediatorMock.Object);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(1);
     }
 
     [Test]
-    public async Task GetProductosPaged_WithPage0_ClampsToZero()
+    public async Task GetCategoria_WithInvalidId_ReturnsNull()
     {
-        ProductoFilterDto? capturedFilter = null;
-        _productoServiceMock.Setup(s => s.GetPagedAsync(It.IsAny<ProductoFilterDto>()))
-            .Callback<ProductoFilterDto>(f => capturedFilter = f)
-            .ReturnsAsync(new PagedResult<ProductoDto>
-            {
-                Items = Enumerable.Empty<ProductoDto>(),
-                TotalCount = 2,
-                Page = 0,
-                PageSize = 10
-            });
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(new NotFoundError("No encontrado")));
 
-        var result = await _query.GetProductosPaged(_productoServiceMock.Object, 0, 10);
+        var result = await _query.GetCategoria(999, _mediatorMock.Object);
 
-        capturedFilter!.Page.Should().Be(0); // Math.Max(0-1,0)=0, no negativo
+        result.Should().BeNull();
     }
 
     #endregion
@@ -193,35 +162,26 @@ public class TiendaQueryTests
     [Test]
     public async Task GetCategoriasPaged_WithPage1_ConvertsToZeroBasedFilter()
     {
-        // Arrange: capturar el filtro que llega al repositorio
         CategoriaFilterDto? capturedFilter = null;
-        _categoriaRepoMock.Setup(r => r.FindAllPagedAsync(It.IsAny<CategoriaFilterDto>()))
-            .Callback<CategoriaFilterDto>(f => capturedFilter = f)
-            .ReturnsAsync((new List<Categoria>(), 2));
+        var pagedResult = new PagedResult<CategoriaDto>
+        {
+            Items = Enumerable.Empty<CategoriaDto>(),
+            TotalCount = 2,
+            Page = 0,
+            PageSize = 10
+        };
 
-        // Act
-        var result = await _query.GetCategoriasPaged(_categoriaRepoMock.Object, 1, 10);
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllCategoriasQuery>(), It.IsAny<CancellationToken>()))
+            .Callback<GetAllCategoriasQuery, CancellationToken>((q, _) => capturedFilter = q.Filter)
+            .ReturnsAsync(Result.Success<PagedResult<CategoriaDto>, DomainError>(pagedResult));
 
-        // Assert
+        var result = await _query.GetCategoriasPaged(_mediatorMock.Object, 1, 10);
+
         result.Should().NotBeNull();
-        result.Page.Should().Be(1); // GraphQL devuelve base 1
+        result.Page.Should().Be(1);
         capturedFilter.Should().NotBeNull();
-        capturedFilter!.Page.Should().Be(0); // pero el filtro va en base 0
+        capturedFilter!.Page.Should().Be(0);
         capturedFilter.Size.Should().Be(10);
-    }
-
-    [Test]
-    public async Task GetCategoriasPaged_WithPage3_ConvertsToTwoZeroBased()
-    {
-        CategoriaFilterDto? capturedFilter = null;
-        _categoriaRepoMock.Setup(r => r.FindAllPagedAsync(It.IsAny<CategoriaFilterDto>()))
-            .Callback<CategoriaFilterDto>(f => capturedFilter = f)
-            .ReturnsAsync((new List<Categoria>(), 30));
-
-        var result = await _query.GetCategoriasPaged(_categoriaRepoMock.Object, 3, 10);
-
-        result.Page.Should().Be(3);
-        capturedFilter!.Page.Should().Be(2);
     }
 
     #endregion

@@ -1,52 +1,71 @@
+using CSharpFunctionalExtensions;
 using HotChocolate;
 using HotChocolate.Data;
 using HotChocolate.Types;
-using Microsoft.EntityFrameworkCore;
+using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
-using TiendaApi.Api.Mappers;
-using TiendaApi.Api.Models.Read;
-using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.Features.Productos.Queries;
 
 namespace TiendaApi.Api.GraphQL.Queries;
 
 /// <summary>
 /// Consultas GraphQL de la tienda.
 ///
+/// 🎓 CQRS consistente: GraphQL pasa por MediatR igual que REST.
+/// Las queries usan los mismos Query Handlers que los controladores REST.
+///
 /// 🎓 Seguridad: GraphQL solo expone DTOs, nunca entidades del modelo de escritura.
-/// Esto evita que el cliente componga consultas arbitrarias sobre la BD interna.
 /// </summary>
 public class TiendaQuery
 {
     /// <summary>Obtiene todos los productos.</summary>
-    /// <param name="productoService">Fachada de lectura de productos (MongoDB).</param>
-    /// <returns>Productos del read model ordenados por nombre.</returns>
-    public async Task<IReadOnlyList<ProductoRead>> GetProductos(
-        [Service] IProductoService productoService) =>
-        await productoService.GetAllAsync();
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Lista de productos (DTOs).</returns>
+    public async Task<IReadOnlyList<ProductoDto>> GetProductos(
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetAllProductosListQuery(), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        return result.Value;
+    }
 
     /// <summary>Obtiene un producto por ID.</summary>
     /// <param name="id">ID del producto.</param>
-    /// <param name="productoService">Fachada de lectura de productos (MongoDB).</param>
-    /// <returns>Producto encontrado o null.</returns>
-    public async Task<ProductoRead?> GetProducto(
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Producto encontrado (DTO) o null.</returns>
+    public async Task<ProductoDto?> GetProducto(
         long id,
-        [Service] IProductoService productoService) =>
-        await productoService.GetReadByIdAsync(id);
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetProductoByIdQuery(id), ct);
+        if (result.IsFailure)
+            return null;
+
+        return result.Value;
+    }
 
     /// <summary>Obtiene productos paginados.</summary>
     /// <param name="page">Número de página (base 1, contrato GraphQL).</param>
     /// <param name="size">Elementos por página.</param>
-    /// <param name="productoService">Fachada de lectura de productos (MongoDB).</param>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Resultado paginado de productos.</returns>
     public async Task<PagedResult<ProductoDto>> GetProductosPaged(
-        [Service] IProductoService productoService,
+        [Service] IMediator mediator,
         int page = 1,
-        int size = 10)
+        int size = 10,
+        CancellationToken ct = default)
     {
-        // GraphQL expone paginación base 1; el repositorio trabaja con base 0 (Skip(Page*Size))
+        // GraphQL expone paginación base 1; el repositorio trabaja con base 0
         var filter = new ProductoFilterDto(
             Nombre: null,
             Categoria: null,
@@ -56,59 +75,71 @@ public class TiendaQuery
             Page: Math.Max(page - 1, 0),
             Size: size);
 
-        var result = await productoService.GetPagedAsync(filter);
+        var result = await mediator.Send(new GetAllProductosQuery(filter), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
 
-        // Paridad con el origen: GraphQL devuelve Page = parámetro recibido (1-based), mientras que
-        // el REST hace +1 porque su filtro es 0-based (el servicio aplica la fórmula REST).
-        return result with { Page = page };
+        // GraphQL devuelve Page = parámetro recibido (1-based)
+        return result.Value with { Page = page };
     }
 
-    /// <summary>Obtiene todas las categorías como DTOs.</summary>
-    /// <param name="categoriaRepository">Repositorio de categorías.</param>
-    /// <returns>Lista de categorías (DTOs, no entidades).</returns>
+    /// <summary>Obtiene todas las categorías.</summary>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Lista de categorías (DTOs).</returns>
     public async Task<IReadOnlyList<CategoriaDto>> GetCategorias(
-        [Service] ICategoriaRepository categoriaRepository)
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
     {
-        var categorias = await categoriaRepository.FindAllAsync();
-        return categorias.Select(c => c.ToDto()).ToList();
+        var result = await mediator.Send(new GetAllCategoriasListQuery(), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        return result.Value;
     }
 
-    /// <summary>Obtiene una categoría por ID como DTO.</summary>
+    /// <summary>Obtiene una categoría por ID.</summary>
     /// <param name="id">ID de la categoría.</param>
-    /// <param name="categoriaRepository">Repositorio de categorías.</param>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Categoría encontrada (DTO) o null.</returns>
     public async Task<CategoriaDto?> GetCategoria(
         long id,
-        [Service] ICategoriaRepository categoriaRepository)
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
     {
-        var categoria = await categoriaRepository.FindByIdAsync(id);
-        return categoria?.ToDto();
+        var result = await mediator.Send(new GetCategoriaByIdQuery(id), ct);
+        if (result.IsFailure)
+            return null;
+
+        return result.Value;
     }
 
     /// <summary>Obtiene categorías paginadas.</summary>
     /// <param name="page">Número de página (base 1, contrato GraphQL).</param>
     /// <param name="size">Elementos por página.</param>
-    /// <param name="categoriaRepository">Repositorio de categorías.</param>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Resultado paginado de categorías.</returns>
     public async Task<PagedResult<CategoriaDto>> GetCategoriasPaged(
-        [Service] ICategoriaRepository categoriaRepository,
+        [Service] IMediator mediator,
         int page = 1,
-        int size = 10)
+        int size = 10,
+        CancellationToken ct = default)
     {
-        // GraphQL expone paginación base 1; el repositorio trabaja con base 0 (Skip(Page*Size))
+        // GraphQL expone paginación base 1; el repositorio trabaja con base 0
         var filter = new CategoriaFilterDto
         {
             Nombre = null,
             Page = Math.Max(page - 1, 0),
             Size = size
         };
-        var result = await categoriaRepository.FindAllPagedAsync(filter);
-        return new PagedResult<CategoriaDto>
-        {
-            Items = result.Items.Select(c => new CategoriaDto(c.Id, c.Nombre, c.Descripcion, c.CreatedAt, c.UpdatedAt)),
-            TotalCount = result.TotalCount,
-            Page = page,
-            PageSize = size
-        };
+
+        var result = await mediator.Send(new GetAllCategoriasQuery(filter), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        // GraphQL devuelve Page = parámetro recibido (1-based)
+        return result.Value with { Page = page };
     }
 }
