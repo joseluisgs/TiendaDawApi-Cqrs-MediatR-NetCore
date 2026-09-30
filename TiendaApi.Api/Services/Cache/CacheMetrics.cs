@@ -104,7 +104,7 @@ public class CacheMetrics
         removeErrors = RemoveErrors,
         totalErrors = TotalErrors,
         errorRate = $"{ErrorRate:P2}",
-        lastErrorAt = LastErrorAt == DateTime.MinValue ? null : LastErrorAt,
+        lastErrorAt = LastErrorAt == DateTime.MinValue ? (DateTime?)null : LastErrorAt,
         lastErrorMessage = string.IsNullOrEmpty(LastErrorMessage) ? null : LastErrorMessage
     };
 }
