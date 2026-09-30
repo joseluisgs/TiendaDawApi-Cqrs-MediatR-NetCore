@@ -184,26 +184,38 @@ builder.Services
 ```csharp
 public class TiendaQuery
 {
+    // 🎓 CQRS consistente: GraphQL pasa por MediatR igual que REST
     // 🎓 Seguridad: GraphQL solo expone DTOs, nunca entidades del modelo de escritura
+
     // Query pública - cualquiera puede ver productos
     public async Task<IReadOnlyList<ProductoDto>> GetProductos(
-        [Service] IProductoRepository productoRepository)
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
     {
-        var productos = await productoRepository.FindAllAsync();
-        return productos.ToDtoList().ToList();
+        var result = await mediator.Send(new GetAllProductosListQuery(), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        return result.Value;
     }
 
     // Query protegida - solo usuarios autenticados
     [Authorize]  // ← Requiere JWT válido
     public async Task<ProductoDto?> GetProducto(
         long id,
-        [Service] IProductoRepository productoRepository)
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
     {
-        var producto = await productoRepository.FindByIdAsync(id);
-        return producto?.ToDto();
+        var result = await mediator.Send(new GetProductoByIdQuery(id), ct);
+        if (result.IsFailure)
+            return null;
+
+        return result.Value;
     }
 }
 ```
+
+> 🎓 **Nota arquitectónica**: Antes GraphQL inyectaba `IProductoService` directamente, saltándose MediatR. Ahora usa los mismos Query Handlers que REST (`GetAllProductosListQuery`, `GetProductoByIdQuery`, etc.). Esto garantiza consistencia: ambas superficies de API comparten la misma lógica de negocio.
 
 ### Proteger Mutations con Roles
 
