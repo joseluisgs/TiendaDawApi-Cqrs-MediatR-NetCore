@@ -59,7 +59,6 @@ public class UpdateCategoriaCommandHandler(
         {
             try
             {
-                await cacheService.RemoveAsync("categorias:all");
                 await cacheService.RemoveAsync($"categorias:{request.Id}");
                 await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
             }

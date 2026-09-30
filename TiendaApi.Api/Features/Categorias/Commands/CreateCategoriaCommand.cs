@@ -24,7 +24,6 @@ public record CreateCategoriaCommand(CategoriaRequestDto Dto)
 public class CreateCategoriaCommandHandler(
     ICategoriaRepository repository,
     IValidator<CategoriaRequestDto> validator,
-    ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<CreateCategoriaCommand, Result<CategoriaDto, DomainError>>
 {
@@ -51,7 +50,6 @@ public class CreateCategoriaCommandHandler(
         {
             try
             {
-                await cacheService.RemoveAsync("categorias:all");
                 await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
             }
             catch (Exception ex)

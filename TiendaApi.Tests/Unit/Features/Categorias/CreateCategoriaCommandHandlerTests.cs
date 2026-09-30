@@ -22,13 +22,12 @@ public class CreateCategoriaCommandHandlerTests
     {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
-        var cacheService = new Mock<ICacheService>();
         var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Dispositivos electrónicos" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(false);
         repository.Setup(r => r.SaveAsync(It.IsAny<Categoria>())).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
@@ -40,12 +39,11 @@ public class CreateCategoriaCommandHandlerTests
     {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
-        var cacheService = new Mock<ICacheService>();
         var dto = new CategoriaRequestDto { Nombre = "", Descripcion = "Test" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult([new ValidationFailure("Nombre", "obligatorio")]));
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
@@ -58,12 +56,11 @@ public class CreateCategoriaCommandHandlerTests
     {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
-        var cacheService = new Mock<ICacheService>();
         var dto = new CategoriaRequestDto { Nombre = "Electrónica" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(true);
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
         var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 

@@ -58,7 +58,7 @@ public class CreateUserCommandHandler(
 
         _ = Task.Run(async () =>
         {
-            try { await cacheService.RemoveAsync("usuarios:all"); }
+            try { await cacheService.RemoveAsync($"usuarios:{saved.Id}"); }
             catch (Exception ex)
             {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");

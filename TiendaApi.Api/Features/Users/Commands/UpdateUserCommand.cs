@@ -61,7 +61,6 @@ public class UpdateUserCommandHandler(
         {
             try
             {
-                await cacheService.RemoveAsync("usuarios:all");
                 await cacheService.RemoveAsync($"usuarios:{request.Id}");
             }
             catch (Exception ex)
