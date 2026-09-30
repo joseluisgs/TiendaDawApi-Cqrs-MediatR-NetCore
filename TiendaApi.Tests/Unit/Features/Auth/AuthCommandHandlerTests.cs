@@ -1,11 +1,11 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Moq;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Auth.Commands;
 using TiendaApi.Api.Services.Auth;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Auth;
 
@@ -15,6 +15,7 @@ public class AuthCommandHandlerTests
     public async Task SignUpCommandHandler_DelegaASuthService()
     {
         var authService = new Mock<IAuthService>();
+        var cacheService = new Mock<ICacheService>();
         var dto = new RegisterDto { Username = "juan", Email = "juan@test.com", Password = "password123" };
 
         var userDto = new UserDto(1, "juan", "juan@test.com", "", "USER", DateTime.UtcNow);
@@ -23,12 +24,13 @@ public class AuthCommandHandlerTests
         authService.Setup(s => s.SignUpAsync(dto))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(response));
 
-        var handler = new SignUpCommandHandler(authService.Object);
+        var handler = new SignUpCommandHandler(authService.Object, cacheService.Object);
 
         var result = await handler.Handle(new SignUpCommand(dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         authService.Verify(s => s.SignUpAsync(dto), Times.Once);
+        cacheService.Verify(c => c.RemoveAsync("usuarios:1"), Times.Once);
     }
 
     [Test]
