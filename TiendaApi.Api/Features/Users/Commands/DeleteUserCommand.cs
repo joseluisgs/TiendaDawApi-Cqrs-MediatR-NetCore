@@ -1,8 +1,10 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Usuarios;
 using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Users.Commands;
 
@@ -15,7 +17,9 @@ public record DeleteUserCommand(long Id)
 /// <summary>
 /// Handler del comando DeleteUserCommand.
 /// </summary>
-public class DeleteUserCommandHandler(IUserRepository repository)
+public class DeleteUserCommandHandler(
+    IUserRepository repository,
+    ICacheService cacheService)
     : IRequestHandler<DeleteUserCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -28,6 +32,20 @@ public class DeleteUserCommandHandler(IUserRepository repository)
 
         user.IsDeleted = true;
         await repository.UpdateAsync(user);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await cacheService.RemoveAsync("usuarios:all");
+                await cacheService.RemoveAsync($"usuarios:{request.Id}");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
+            }
+        });
+
         return UnitResult.Success<DomainError>();
     }
 }
