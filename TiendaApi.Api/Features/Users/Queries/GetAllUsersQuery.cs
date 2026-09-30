@@ -33,7 +33,8 @@ public class GetAllUsersPagedQueryHandler(
     public async Task<Result<PagedResult<UserDto>, DomainError>> Handle(
         GetAllUsersPagedQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = $"usuarios:paged:{request.Filter.Page}:{request.Filter.Size}";
+        // La key incluye todos los filtros del record (ToString automático de C#)
+        var cacheKey = $"usuarios:paged:{request.Filter}";
         var cached = await cacheService.GetAsync<PagedResult<UserDto>>(cacheKey);
         if (cached is not null)
             return Result.Success<PagedResult<UserDto>, DomainError>(cached);

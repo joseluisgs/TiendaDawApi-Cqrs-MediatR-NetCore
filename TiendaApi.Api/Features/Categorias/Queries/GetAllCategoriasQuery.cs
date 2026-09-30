@@ -33,7 +33,8 @@ public class GetAllCategoriasQueryHandler(
     public async Task<Result<PagedResult<CategoriaDto>, DomainError>> Handle(
         GetAllCategoriasQuery request, CancellationToken cancellationToken)
     {
-        var cacheKey = $"categorias:paged:{request.Filter.Page}:{request.Filter.Size}";
+        // La key incluye todos los filtros del record (ToString automático de C#)
+        var cacheKey = $"categorias:paged:{request.Filter}";
         var cached = await cacheService.GetAsync<PagedResult<CategoriaDto>>(cacheKey);
         if (cached is not null)
             return Result.Success<PagedResult<CategoriaDto>, DomainError>(cached);

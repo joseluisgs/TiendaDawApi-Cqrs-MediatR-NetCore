@@ -60,4 +60,24 @@ public class GetAllCategoriasQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
     }
+
+    [Test]
+    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes()
+    {
+        var repository = new Mock<ICategoriaRepository>();
+        var cacheService = new Mock<ICacheService>();
+        var configuration = CreateMockConfiguration();
+        var filter1 = new CategoriaFilterDto { Nombre = "Electrónica", Page = 0, Size = 10 };
+        var filter2 = new CategoriaFilterDto { Nombre = "Ropa", Page = 0, Size = 10 };
+        repository.Setup(r => r.FindAllPagedAsync(It.IsAny<CategoriaFilterDto>())).ReturnsAsync((new List<Categoria>(), 0));
+        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<CategoriaDto>?)null);
+        var handler = new GetAllCategoriasQueryHandler(repository.Object, cacheService.Object, configuration.Object);
+
+        await handler.Handle(new GetAllCategoriasQuery(filter1), CancellationToken.None);
+        await handler.Handle(new GetAllCategoriasQuery(filter2), CancellationToken.None);
+
+        // Verificar que se llamó GetAsync con keys diferentes para filtros diferentes
+        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Electrónica"))), Times.Once);
+        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Ropa"))), Times.Once);
+    }
 }

@@ -59,4 +59,24 @@ public class GetAllUsersPagedQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
     }
+
+    [Test]
+    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes()
+    {
+        var repository = new Mock<IUserRepository>();
+        var cacheService = new Mock<ICacheService>();
+        var configuration = CreateMockConfiguration();
+        var filter1 = new UserFilterDto("juan", null, null, 0, 10, "id", "asc");
+        var filter2 = new UserFilterDto("maria", null, null, 0, 10, "id", "asc");
+        repository.Setup(r => r.FindAllPagedAsync(It.IsAny<UserFilterDto>())).ReturnsAsync((new List<User>(), 0));
+        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<UserDto>?)null);
+        var handler = new GetAllUsersPagedQueryHandler(repository.Object, cacheService.Object, configuration.Object);
+
+        await handler.Handle(new GetAllUsersPagedQuery(filter1), CancellationToken.None);
+        await handler.Handle(new GetAllUsersPagedQuery(filter2), CancellationToken.None);
+
+        // Verificar que se llamó GetAsync con keys diferentes para filtros diferentes
+        cacheService.Verify(c => c.GetAsync<PagedResult<UserDto>>(It.Is<string>(k => k.Contains("juan"))), Times.Once);
+        cacheService.Verify(c => c.GetAsync<PagedResult<UserDto>>(It.Is<string>(k => k.Contains("maria"))), Times.Once);
+    }
 }
