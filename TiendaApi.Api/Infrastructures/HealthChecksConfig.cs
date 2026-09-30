@@ -6,6 +6,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Serilog;
 using TiendaApi.Api.Data;
+using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Infrastructures;
 
