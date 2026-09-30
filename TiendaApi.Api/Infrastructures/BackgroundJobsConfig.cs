@@ -19,6 +19,7 @@ public static class BackgroundJobsConfig
 
         services.AddScoped<IProductoReportTask, ProductoReportTask>();
         services.AddHostedService<BackgroundJobService>();
+        services.AddHostedService<ReplicaReparadoraJob>();
 
         return services;
     }

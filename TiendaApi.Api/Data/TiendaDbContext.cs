@@ -28,6 +28,9 @@ public class TiendaDbContext : DbContext
     /// <summary>DbSet de Usuarios.</summary>
     public DbSet<User> Users { get; set; } = null!;
 
+    /// <summary>DbSet de marcas de agua para la réplica de productos (job reparador).</summary>
+    public DbSet<ReplicaMarca> ReplicaMarcas { get; set; } = null!;
+
     /// <summary>
     /// Configura el contexto y registra el interceptor de marcas de tiempo.
     /// </summary>
@@ -96,6 +99,14 @@ public class TiendaDbContext : DbContext
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.Role);
             entity.HasQueryFilter(u => !u.IsDeleted);
+        });
+
+        modelBuilder.Entity<ReplicaMarca>(entity =>
+        {
+            entity.ToTable("replica_marcas");
+            entity.HasKey(r => r.Nombre);
+            entity.Property(r => r.Nombre).IsRequired().HasMaxLength(50);
+            entity.Property(r => r.UltimaPasada).IsRequired();
         });
     }
 }

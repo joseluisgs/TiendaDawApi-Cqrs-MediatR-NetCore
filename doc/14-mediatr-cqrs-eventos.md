@@ -1085,9 +1085,120 @@ private static async Task RetryAsync(Func<Task> action, ILogger logger, int maxA
 
 Para sistemas con más exigencia existen opciones mayores: **cola de mensajes** entre PostgreSQL y MongoDB, **CDC** (Debezium leyendo el WAL) o **idempotencia** en los consumidores para reintentar sin miedo a duplicar — todas ellas descritas en `doc/12-cqrs-commands-queries.md` (sección 12.15, *Patrones de Sincronización*).
 
+### Evolución: tres niveles de consistencia (Nivel 1 → 1.5 → 2)
+
+El proyecto actual está en **Nivel 1**: el `Publish` en memoria funciona el 99% de las veces, y si MongoDB falla, el seeder de arranque repara la réplica. Pero hay dos problemas: (1) la reparación solo ocurre al reiniciar la app, y (2) no hay invalidación de caché al reparar.
+
+Aquí están los tres niveles, de menor a mayor exigencia:
+
+#### Nivel 1 — Publish en memoria (ACTUAL)
+
+```csharp
+// Command handler
+var saved = await repository.SaveAsync(entity);  // commit en PG
+await mediator.Publish(new ProductoCreadoNotification(dto), ct);  // sync a Mongo
+// Invalidar caché en el command (Task.Run fire & forget)
+```
+
+- ✅ Separa leer/escribir, enseña eventos de dominio
+- ❌ Si Mongo falla, el evento se pierde hasta el próximo arranque
+- ❌ La caché no se invalida al reparar
+
+#### Nivel 1.5 — + ReplicaReparadoraJob (IMPLEMENTADO)
+
+```csharp
+// El command NO cambia. Lo único que se añade es un BackgroundService:
+public class ReplicaReparadoraJob : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            await RepararAsync(ct);  // cada 5 minutos
+            await Task.Delay(TimeSpan.FromMinutes(5), ct);
+        }
+    }
+
+    private async Task RepararAsync(CancellationToken ct)
+    {
+        // 1. Marca de agua: cuándo pasé por última vez
+        var marca = await db.ReplicaMarcas.SingleAsync(m => m.Nombre == "productos");
+
+        // 2. Query: WHERE UpdatedAt > marca (cubre altas, ediciones Y borrados)
+        var pendientes = await db.Productos
+            .Where(p => p.UpdatedAt > marca.UltimaPasada)
+            .Include(p => p.Categoria)
+            .ToListAsync(ct);
+
+        // 3. Upsert por id: idempotente, seguro
+        foreach (var p in pendientes)
+            await readRepo.UpsertAsync(p.ToRead());
+
+        // 4. Invalidar caché de lo que toqué
+        foreach (var p in pendientes)
+            await cache.RemoveAsync($"productos:{p.Id}");
+
+        // 5. Actualizar marca
+        marca.UltimaPasada = pendientes.Max(p => p.UpdatedAt);
+        await db.SaveChangesAsync(ct);
+    }
+}
+```
+
+- ✅ Auto-reparable en minutos, no en el próximo arranque
+- ✅ Enseña consistencia eventual, idempotencia, marcas de agua
+- ✅ Demo en clase: "mata Mongo a mano, espera 5 min, vuelve a mirar"
+- ❌ Ventana de 5 minutos de desfase máximo
+
+#### Nivel 2 — Outbox transaccional (PRODUCCIÓN, no implementado aquí)
+
+```sql
+CREATE TABLE outbox_events (
+    id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tipo        text        NOT NULL,  -- "ProductoCreadoNotification"
+    payload     jsonb       NOT NULL,  -- el evento serializado
+    creado_en   timestamptz NOT NULL,
+    procesado   boolean     NOT NULL DEFAULT false,
+    intentos    int         NOT NULL DEFAULT 0
+);
+```
+
+```csharp
+// Writer: el evento se GUARDA, no se publica
+context.OutboxEvents.Add(new OutboxEvent
+{
+    Tipo = nameof(ProductoCreadoNotification),
+    Payload = JsonSerializer.SerializeToDocument(dto),
+});
+await context.SaveChangesAsync(); // mismo commit que el producto
+
+// Dispatcher (BackgroundService): SELECT ... WHERE NOT procesado
+var pendientes = await db.OutboxEvents.Where(e => !e.Procesado).ToListAsync();
+foreach (var msg in pendientes)
+{
+    await mediator.Publish(Deserialize(msg), ct);
+    msg.Procesado = true;
+}
+```
+
+- ✅ At-least-once: el evento NUNCA se pierde
+- ✅ Atomicidad transaccional del evento
+- ❌ ~150 líneas + tabla nueva + dispatcher
+- ❌ Para empresa o TFG, no para un ejercicio de DAW
+
+#### Criterio para subir de nivel
+
+| Nivel | Cuándo usarlo |
+|---|---|
+| **1** | Aprendizaje, prototipos, proyectos donde el seeder de arranque es suficiente |
+| **1.5** | Cuando quieras demostrar consistencia eventual en clase y auto-reparación |
+| **2** | Cuando estés perdiendo eventos de verdad en producción — no en teoría |
+
+> 🎓 **Regla del aula:** en una tienda de clase, el Nivel 1.5 es suficiente. El outbox es para cuando llegues a producción y notes que se pierden datos.
+
 ### En una frase
 
-> **CQRS separa el camino de lectura del de escritura; la consistencia eventual es lo que hay que gestionar a cambio.** En este proyecto: PostgreSQL manda, los eventos replican en milisegundos, la caché se invalida al escribir, el seeder repara lo que falte y `SyncAt` deja constancia de cuándo se sincronizó cada documento.
+> **CQRS separa el camino de lectura del de escritura; la consistencia eventual es lo que hay que gestionar a cambio.** En este proyecto: PostgreSQL manda, los eventos replican en milisegundos, la caché se invalida al escribir, el `ReplicaReparadoraJob` repara en minutos lo que falle y el outbox queda como referencia para producción.
 
 ---
 
