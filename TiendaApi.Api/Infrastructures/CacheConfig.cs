@@ -18,6 +18,9 @@ public static class CacheConfig
     /// </summary>
     public static IServiceCollection AddCache(this IServiceCollection services, IWebHostEnvironment environment)
     {
+        // Métricas de caché (singleton compartido)
+        services.AddSingleton<CacheMetrics>();
+
         if (environment.IsDevelopment())
         {
             Log.Information("💾 Configurando caché en memoria (desarrollo local)...");

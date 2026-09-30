@@ -7,14 +7,19 @@ namespace TiendaApi.Api.Services.Cache;
 /// <summary>
 /// Implementación de caché usando Redis.
 /// Implementa el patrón cache-aside.
+///
+/// 🎓 Observabilidad: registra métricas de errores en CacheMetrics
+/// para poder distinguir "Redis caído" de "Redis perfecto".
 /// </summary>
 public class RedisCacheService(
     IDistributedCache cache,
-    ILogger<RedisCacheService> logger
+    ILogger<RedisCacheService> logger,
+    CacheMetrics metrics
 ) : ICacheService
 {
     private readonly IDistributedCache _cache = cache;
     private readonly ILogger<RedisCacheService> _logger = logger;
+    private readonly CacheMetrics _metrics = metrics;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -34,15 +39,18 @@ public class RedisCacheService(
             if (string.IsNullOrEmpty(cachedValue))
             {
                 _logger.LogDebug("Cache miss para clave: {Key}", key);
+                _metrics.RecordGetSuccess();
                 return default;
             }
 
             _logger.LogDebug("Cache hit para clave: {Key}", key);
+            _metrics.RecordGetSuccess();
             return JsonSerializer.Deserialize<T>(cachedValue, _jsonOptions);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al obtener valor de caché para clave: {Key}", key);
+            _metrics.RecordGetError(ex.Message);
             return default;
         }
     }
@@ -66,10 +74,12 @@ public class RedisCacheService(
 
             _logger.LogDebug("Valor cacheado para clave: {Key} con expiración: {Expiration}",
                 key, expiration ?? TimeSpan.FromMinutes(5));
+            _metrics.RecordSetSuccess();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al guardar en caché para clave: {Key}", key);
+            _metrics.RecordSetError(ex.Message);
         }
     }
 
@@ -82,10 +92,12 @@ public class RedisCacheService(
         {
             await _cache.RemoveAsync(key);
             _logger.LogDebug("Entrada de caché eliminada para clave: {Key}", key);
+            _metrics.RecordRemoveSuccess();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al eliminar de caché para clave: {Key}", key);
+            _metrics.RecordRemoveError(ex.Message);
         }
     }
 }

@@ -152,8 +152,9 @@ public static class HealthChecksConfig
 
     /// <summary>
     /// Comprobación de Redis a través de la caché distribuida configurada (misma conexión que usa la API).
+    /// Incluye métricas de errores de caché para observabilidad.
     /// </summary>
-    public class RedisHealthCheck(IDistributedCache cache) : IHealthCheck
+    public class RedisHealthCheck(IDistributedCache cache, CacheMetrics metrics) : IHealthCheck
     {
         /// <inheritdoc />
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
@@ -165,7 +166,14 @@ public static class HealthChecksConfig
                     "ping",
                     new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1) },
                     cancellationToken);
-                return HealthCheckResult.Healthy("Redis accesible");
+
+                // Incluir métricas de caché en la respuesta
+                var data = new Dictionary<string, object>
+                {
+                    ["cache"] = metrics.ToSummary()
+                };
+
+                return HealthCheckResult.Healthy("Redis accesible", data);
             }
             catch (Exception ex)
             {
