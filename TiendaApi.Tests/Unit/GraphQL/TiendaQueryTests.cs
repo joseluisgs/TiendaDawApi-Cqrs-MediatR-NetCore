@@ -77,12 +77,12 @@ public class TiendaQueryTests
     #region GetCategorias Tests
 
     [Test]
-    public void GetCategorias_RepositoryExists_ReturnsQueryable()
+    public async Task GetCategorias_RepositoryExists_ReturnsList()
     {
-        _categoriaRepoMock.Setup(r => r.FindAllAsNoTracking())
-            .Returns(new List<Categoria>().AsQueryable());
+        _categoriaRepoMock.Setup(r => r.FindAllAsync())
+            .ReturnsAsync(new List<Categoria>());
 
-        var result = _query.GetCategorias(_categoriaRepoMock.Object);
+        var result = await _query.GetCategorias(_categoriaRepoMock.Object);
 
         result.Should().NotBeNull();
     }
