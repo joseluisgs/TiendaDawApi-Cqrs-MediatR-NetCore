@@ -150,7 +150,6 @@ public class CreatePedidoCommandHandler(
                 try
                 {
                     await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
-                    await cacheService.RemoveAsync($"pedidos:user:{request.UserId}");
                 }
                 catch (Exception ex)
                 {

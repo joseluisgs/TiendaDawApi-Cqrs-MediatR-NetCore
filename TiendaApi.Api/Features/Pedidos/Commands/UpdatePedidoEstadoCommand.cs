@@ -48,7 +48,6 @@ public class UpdatePedidoEstadoCommandHandler(
             try
             {
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
-                await cacheService.RemoveAsync($"pedidos:user:{pedido.UserId}");
             }
             catch (Exception ex)
             {

@@ -41,7 +41,6 @@ public class DeletePedidoAdminCommandHandler(
             try
             {
                 await cacheService.RemoveAsync($"pedidos:{request.Id}");
-                await cacheService.RemoveAsync($"pedidos:user:{userId}");
             }
             catch (Exception ex)
             {
