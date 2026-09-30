@@ -174,7 +174,66 @@ Cada archivo tiene UNA responsabilidad. El `CreatePedidoCommandHandler` solo sab
 
 ---
 
-## 15.3. Transacciones con EF Core en Handlers
+## 15.3. Estrategia de Caché en Queries de Pedidos
+
+> 🎓 **Decisión de diseño documentada**: no todas las queries de pedidos usan caché. Esta sección explica por qué.
+
+### Tabla de queries y su estrategia de caché
+
+| Query | ¿Usa caché? | TTL | Justificación |
+|-------|-------------|-----|---------------|
+| `GetPedidoByIdQuery` | ✅ Sí | 5 min | Pedido individual, baja frecuencia de escritura |
+| `GetMyPedidosQuery` | ❌ No | — | Listado personal, requiere frescura |
+| `GetMyPedidosPagedQuery` | ❌ No | — | Paginación personal, requiere frescura |
+| `GetAllPedidosQuery` | ❌ No | — | Listado admin, requiere frescura |
+| `GetAllPedidosListQuery` | ❌ No | — | Listado admin, requiere frescura |
+
+### ¿Por qué no cacheamos los listados?
+
+**Pedidos = datos transaccionales, no de catálogo.**
+
+A diferencia de productos (catálogo público, cambios esporádicos), los pedidos cambian frecuentemente:
+
+1. **Estados cambian rápido**: `PENDIENTE → PROCESANDO → ENVIADO → ENTREGADO`
+2. **El usuario necesita ver SU pedido actualizado**: si acaba de pagar, quiere ver el cambio de estado
+3. **El admin necesita frescura**: para gestionar pedidos en tiempo real
+4. **Bajo volumen relativo**: los pedidos son por usuario, no el catálogo completo
+
+### Regla práctica aplicada
+
+> **Cachea lo que cambia "con el tiempo"** (catálogos, listados públicos).
+> **No caches lo que cambia "por eventos"** (transacciones, estados, flujos personales).
+
+### El caso de `GetPedidoByIdQuery`
+
+Sí cachea (5 min) porque:
+- Es un **recurso individual** (un pedido específico)
+- La probabilidad de que cambie entre dos lecturas seguidas es baja
+- El TTL corto (5 min) cubre la ventana de inconsistencia aceptable
+
+### Código de referencia
+
+```csharp
+// ✅ Con caché: pedido individual
+public async Task<Result<PedidoDto, DomainError>> Handle(GetPedidoByIdQuery request, ...)
+{
+    var cacheKey = $"pedidos:{request.Id}";
+    var cached = await cacheService.GetAsync<PedidoDto>(cacheKey);
+    if (cached is not null) return Result.Success<...>(cached);
+    // ... lógica con caché
+}
+
+// ❌ Sin caché: listado personal (frescura garantizada)
+public async Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(GetMyPedidosQuery request, ...)
+{
+    var pedidos = await repository.FindByUserIdAsync(request.UserId);
+    return Result.Success<...>(pedidos.ToDtoList());  // directo a BD
+}
+```
+
+---
+
+## 15.4. Transacciones con EF Core en Handlers
 
 Una **transacción** es un conjunto de operaciones que se ejecutan como una unidad indivisible. Todas las operaciones se completan exitosamente o ninguna se aplica, garantizando la consistencia de los datos.
 
