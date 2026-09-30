@@ -93,7 +93,11 @@ public class TiendaQueryTests
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllProductosQuery>(), It.IsAny<CancellationToken>()))
-            .Callback<GetAllProductosQuery, CancellationToken>((q, _) => capturedFilter = q.Filter)
+            .Callback((IRequest<Result<PagedResult<ProductoDto>, DomainError>> request, CancellationToken _) =>
+            {
+                if (request is GetAllProductosQuery query)
+                    capturedFilter = query.Filter;
+            })
             .ReturnsAsync(Result.Success<PagedResult<ProductoDto>, DomainError>(pagedResult));
 
         var result = await _query.GetProductosPaged(_mediatorMock.Object, 1, 10);
@@ -172,7 +176,11 @@ public class TiendaQueryTests
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllCategoriasQuery>(), It.IsAny<CancellationToken>()))
-            .Callback<GetAllCategoriasQuery, CancellationToken>((q, _) => capturedFilter = q.Filter)
+            .Callback((IRequest<Result<PagedResult<CategoriaDto>, DomainError>> request, CancellationToken _) =>
+            {
+                if (request is GetAllCategoriasQuery query)
+                    capturedFilter = query.Filter;
+            })
             .ReturnsAsync(Result.Success<PagedResult<CategoriaDto>, DomainError>(pagedResult));
 
         var result = await _query.GetCategoriasPaged(_mediatorMock.Object, 1, 10);
