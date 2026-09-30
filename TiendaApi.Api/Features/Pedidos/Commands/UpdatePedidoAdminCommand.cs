@@ -40,19 +40,11 @@ public class UpdatePedidoAdminCommandHandler(
         var updated = await repository.UpdateAsync(pedido);
         var dto = updated.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"pedidos:{request.Id}");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);
+
+        await cacheService.RemoveAsync($"pedidos:{request.Id}");
 
         Log.Information("Notificación publicada para pedido actualizado por admin ID: {PedidoId}", dto.Id);
 

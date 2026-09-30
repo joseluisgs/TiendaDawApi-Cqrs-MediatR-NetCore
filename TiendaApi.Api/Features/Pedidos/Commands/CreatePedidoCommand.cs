@@ -145,20 +145,13 @@ public class CreatePedidoCommandHandler(
             var pedidoGuardado = await pedidosRepository.SaveAsync(pedido);
             await transaction.CommitAsync(cancellationToken);
 
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-                }
-            });
+            
 
             var dto = pedidoGuardado.ToDto();
             await mediator.Publish(new PedidoCreadoNotification(dto), cancellationToken);
+
+            await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
+
             return Result.Success<PedidoDto, DomainError>(dto);
         }
         catch

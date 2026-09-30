@@ -36,17 +36,7 @@ public class DeletePedidoAdminCommandHandler(
         pedido.IsDeleted = true;
         await repository.UpdateAsync(pedido);
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"pedidos:{request.Id}");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        
 
         await mediator.Publish(new PedidoEliminadoNotification(
             pedido.Id.ToString(),
@@ -54,6 +44,8 @@ public class DeletePedidoAdminCommandHandler(
             pedido.Estado ?? "",
             pedido.Total
         ), cancellationToken);
+
+        await cacheService.RemoveAsync($"pedidos:{request.Id}");
 
         Log.Information("Notificación publicada para pedido eliminado por admin ID: {PedidoId}", request.Id);
 

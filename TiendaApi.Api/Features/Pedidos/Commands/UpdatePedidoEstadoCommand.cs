@@ -43,19 +43,12 @@ public class UpdatePedidoEstadoCommandHandler(
         var updated = await repository.UpdateAsync(pedido);
         var dto = updated.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync($"pedidos:{request.Id}");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
+        
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);
+
+        await cacheService.RemoveAsync($"pedidos:{request.Id}");
+
         return Result.Success<PedidoDto, DomainError>(dto);
     }
 }
