@@ -1280,6 +1280,18 @@ flowchart TB
 
 > 🎓 **Regla del aula:** en una tienda de clase, el Nivel 1.5 es suficiente. El outbox es para cuando llegues a producción y notes que se pierden datos.
 
+### Riesgo conocido: renombrar categoría y caché de productos
+
+Cuando se renombra una categoría, los DTO de producto cacheados (`productos:{id}`) llevan `categoriaNombre` **con el valor viejo**. No se pueden enumerar esas claves para invalidarlas.
+
+**Mitigación actual:** al renombrar, también se invalida el tag `productos` de OutputCache (limpia la caché HTTP en ≤60 s). Las claves Redis (`productos:{id}`) expiran solas con el TTL (10 min).
+
+**El job de reparación NO lo arregla:** renombrar una categoría no toca `producto.UpdatedAt`, así que la marca de agua no lo ve.
+
+> 🎓 **Regla práctica:** si un campo embebido en otro modelo cambia, invalida también el tag del modelo afectado. No puedes enumerar las claves individuales, pero el tag de OutputCache + TTL cubren la mayoría de los casos.
+
+---
+
 ### En una frase
 
 > **CQRS separa el camino de lectura del de escritura; la consistencia eventual es lo que hay que gestionar a cambio.** En este proyecto: PostgreSQL manda, los eventos replican en milisegundos, la caché se invalida al escribir, el `ReplicaReparadoraJob` repara en minutos lo que falle y el outbox queda como referencia para producción.
