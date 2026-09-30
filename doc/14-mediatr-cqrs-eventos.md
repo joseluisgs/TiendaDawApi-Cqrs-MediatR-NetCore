@@ -1093,11 +1093,26 @@ Aquí están los tres niveles, de menor a mayor exigencia:
 
 #### Nivel 1 — Publish en memoria (ACTUAL)
 
-```csharp
-// Command handler
-var saved = await repository.SaveAsync(entity);  // commit en PG
-await mediator.Publish(new ProductoCreadoNotification(dto), ct);  // sync a Mongo
-// Invalidar caché en el command (Task.Run fire & forget)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Command
+    participant PG as PostgreSQL
+    participant S as SyncHandler
+    participant M as MongoDB
+    participant K as Redis
+
+    C->>PG: SaveChanges (commit)
+    C->>S: Publish(Notificación)
+    S->>M: UpsertAsync
+    alt Mongo OK
+        M-->>S: ✓
+        C->>K: RemoveAsync (Task.Run)
+    else Mongo caído
+        M-->>S: ✗ Error tragado
+        Note over M: Evento PERDIDO<br/>hasta próximo arranque
+    end
+    C-->>C: 201 Created
 ```
 
 - ✅ Separa leer/escribir, enseña eventos de dominio
@@ -1106,43 +1121,44 @@ await mediator.Publish(new ProductoCreadoNotification(dto), ct);  // sync a Mong
 
 #### Nivel 1.5 — + ReplicaReparadoraJob (IMPLEMENTADO)
 
-```csharp
-// El command NO cambia. Lo único que se añade es un BackgroundService:
-public class ReplicaReparadoraJob : BackgroundService
-{
-    protected override async Task ExecuteAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            await RepararAsync(ct);  // cada 5 minutos
-            await Task.Delay(TimeSpan.FromMinutes(5), ct);
-        }
-    }
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Command
+    participant PG as PostgreSQL
+    participant S as SyncHandler
+    participant M as MongoDB
+    participant K as Redis
+    participant J as ReparadoraJob
 
-    private async Task RepararAsync(CancellationToken ct)
-    {
-        // 1. Marca de agua: cuándo pasé por última vez
-        var marca = await db.ReplicaMarcas.SingleAsync(m => m.Nombre == "productos");
+    Note over C,K: Camino normal (99% de las veces)
+    C->>PG: SaveChanges (commit)
+    C->>S: Publish(Notificación)
+    S->>M: UpsertAsync
+    S->>K: RemoveAsync
+    C-->>C: 201 Created
 
-        // 2. Query: WHERE UpdatedAt > marca (cubre altas, ediciones Y borrados)
-        var pendientes = await db.Productos
-            .Where(p => p.UpdatedAt > marca.UltimaPasada)
-            .Include(p => p.Categoria)
-            .ToListAsync(ct);
+    Note over J: Cada 5 minutos...
+    loop ReplicaReparadoraJob
+        J->>PG: SELECT WHERE UpdatedAt > marca
+        PG-->>J: Productos pendientes
+        loop Para cada producto
+            J->>M: UpsertAsync (idempotente)
+            J->>K: RemoveAsync (invalidar)
+        end
+        J->>PG: Actualizar marca de agua
+    end
+```
 
-        // 3. Upsert por id: idempotente, seguro
-        foreach (var p in pendientes)
-            await readRepo.UpsertAsync(p.ToRead());
-
-        // 4. Invalidar caché de lo que toqué
-        foreach (var p in pendientes)
-            await cache.RemoveAsync($"productos:{p.Id}");
-
-        // 5. Actualizar marca
-        marca.UltimaPasada = pendientes.Max(p => p.UpdatedAt);
-        await db.SaveChangesAsync(ct);
-    }
-}
+```mermaid
+flowchart TD
+    A[Inicio del job<br/>cada 5 min] --> B[Leer marca de agua]
+    B --> C{Query:<br/>WHERE UpdatedAt > marca?}
+    C -->|Sin cambios| A
+    C -->|Hay cambios| D[Upsert en MongoDB<br/>por id - idempotente]
+    D --> E[Invalidar caché<br/>productos:id + productos:all]
+    E --> F[Actualizar marca<br/>UltimaPasada = max UpdatedAt]
+    F --> A
 ```
 
 - ✅ Auto-reparable en minutos, no en el próximo arranque
@@ -1151,6 +1167,56 @@ public class ReplicaReparadoraJob : BackgroundService
 - ❌ Ventana de 5 minutos de desfase máximo
 
 #### Nivel 2 — Outbox transaccional (PRODUCCIÓN, no implementado aquí)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Command
+    participant PG as PostgreSQL
+    participant O as OutboxTable
+    participant D as Dispatcher
+    participant S as SyncHandler
+    participant M as MongoDB
+    participant K as Redis
+
+    Note over C,O: Misma transacción atómica
+    C->>PG: SaveChanges (producto + outbox_event)
+    PG->>O: INSERT evento
+    O-->>PG: ✓
+    PG-->>C: ✓ Commit
+    C-->>C: 201 Created
+
+    Note over D: Cada 200ms...
+    loop OutboxDispatcher
+        D->>O: SELECT WHERE NOT procesado
+        O-->>D: Eventos pendientes
+        par Procesar cada evento
+            D->>S: Publish(Evento)
+            S->>M: UpsertAsync
+            S->>K: RemoveAsync
+        end
+        D->>O: Marcar procesado = true
+    end
+```
+
+```mermaid
+flowchart TD
+    A[Command Handler] --> B[SaveChanges:<br/>producto + outbox_event]
+    B --> C{¿Commit OK?}
+    C -->|Sí| D[201 Created]
+    C -->|No| E[Rollback total<br/>nada se guarda]
+    
+    subgraph "Segundo plano"
+        F[Dispatcher cada 200ms] --> G[SELECT FROM outbox_events<br/>WHERE NOT procesado]
+        G --> H{¿Hay eventos?}
+        H -->|No| F
+        H -->|Sí| I[Para cada evento:<br/>Publish → Sync → Cache]
+        I --> J[Marcar procesado = true]
+        J --> F
+    end
+    
+    D -.-> F
+```
 
 ```sql
 CREATE TABLE outbox_events (
@@ -1163,28 +1229,46 @@ CREATE TABLE outbox_events (
 );
 ```
 
-```csharp
-// Writer: el evento se GUARDA, no se publica
-context.OutboxEvents.Add(new OutboxEvent
-{
-    Tipo = nameof(ProductoCreadoNotification),
-    Payload = JsonSerializer.SerializeToDocument(dto),
-});
-await context.SaveChangesAsync(); // mismo commit que el producto
-
-// Dispatcher (BackgroundService): SELECT ... WHERE NOT procesado
-var pendientes = await db.OutboxEvents.Where(e => !e.Procesado).ToListAsync();
-foreach (var msg in pendientes)
-{
-    await mediator.Publish(Deserialize(msg), ct);
-    msg.Procesado = true;
-}
-```
-
 - ✅ At-least-once: el evento NUNCA se pierde
 - ✅ Atomicidad transaccional del evento
 - ❌ ~150 líneas + tabla nueva + dispatcher
 - ❌ Para empresa o TFG, no para un ejercicio de DAW
+
+#### Comparativa visual de los tres niveles
+
+```mermaid
+flowchart TB
+    subgraph N1["Nivel 1 - Publish en memoria"]
+        A1[Command] --> B1[SaveChanges PG]
+        B1 --> C1[Publish en memoria]
+        C1 --> D1{Mongo OK?}
+        D1 -->|Sí| E1[Upsert + Caché]
+        D1 -->|No| F1[❌ Evento perdido<br/>hasta próximo arranque]
+    end
+
+    subgraph N15["Nivel 1.5 - + ReplicaReparadoraJob"]
+        A2[Command] --> B2[SaveChanges PG]
+        B2 --> C2[Publish en memoria]
+        C2 --> D2{Mongo OK?}
+        D2 -->|Sí| E2[Upsert + Caché]
+        D2 -->|No| F2[⚠️ Evento fallido<br/>job lo repara en ≤5 min]
+        G2[ReplicaReparadoraJob<br/>cada 5 min] --> H2[WHERE UpdatedAt > marca]
+        H2 --> I2[Upsert idempotente]
+        I2 --> J2[Invalidar caché]
+    end
+
+    subgraph N2["Nivel 2 - Outbox transaccional"]
+        A3[Command] --> B3[SaveChanges:<br/>PG + outbox_event]
+        B3 --> C3[201 Created]
+        D3[Dispatcher cada 200ms] --> E3[SELECT WHERE NOT procesado]
+        E3 --> F3[Publish → Sync → Cache]
+        F3 --> G3[Marcar procesado]
+    end
+
+    style F1 fill:#ffcccc
+    style F2 fill:#fff3cd
+    style B3 fill:#d4edda
+```
 
 #### Criterio para subir de nivel
 
