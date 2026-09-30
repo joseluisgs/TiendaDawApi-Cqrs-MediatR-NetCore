@@ -19,7 +19,10 @@ public class RedisCacheServiceEdgeTests
     {
         _mockCache = new Mock<IDistributedCache>();
         _mockLogger = new Mock<ILogger<RedisCacheService>>();
-        _cacheService = new RedisCacheService(_mockCache.Object, _mockLogger.Object);
+        _cacheService = new RedisCacheService(
+            _mockCache.Object,
+            _mockLogger.Object,
+            new CacheMetrics());
     }
 
     #region GetAsync Edge Cases
