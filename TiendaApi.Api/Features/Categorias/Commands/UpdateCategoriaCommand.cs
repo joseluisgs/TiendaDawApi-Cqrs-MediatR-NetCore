@@ -56,7 +56,9 @@ public class UpdateCategoriaCommandHandler(
         var dto = updated.ToDto();
 
         await cacheService.RemoveAsync($"categorias:{request.Id}");
-                await outputCacheStore.EvictByTagAsync("categorias", CancellationToken.None);
+                // Invalidar caché de categorías Y productos (los DTO de producto llevan categoriaNombre)
+        await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
             
 
         // Propagar el renombre al read model de productos (nombres embebidos en Mongo).
