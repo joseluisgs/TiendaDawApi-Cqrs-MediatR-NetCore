@@ -21,8 +21,7 @@ public record SignUpCommand(RegisterDto Dto)
 /// vea el nuevo usuario en el listado sin esperar al TTL (10 min).
 /// </summary>
 public class SignUpCommandHandler(
-    IAuthService authService,
-    ICacheService cacheService)
+    IAuthService authService)
     : IRequestHandler<SignUpCommand, Result<AuthResponseDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -32,9 +31,6 @@ public class SignUpCommandHandler(
         var result = await authService.SignUpAsync(request.Dto);
         if (result.IsFailure)
             return result;
-
-        // Invalidar caché de usuarios para que el listado admin se actualice
-        await cacheService.RemoveAsync($"usuarios:{result.Value.User.Id}");
 
         return result;
     }
