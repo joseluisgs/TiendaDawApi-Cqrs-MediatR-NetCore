@@ -130,23 +130,34 @@ Cada handler hace **exactamente una cosa**. El `GetProductoByIdQueryHandler` sol
 
 Cuando algo falla o necesita modificación, sabes exactamente dónde buscar. ¿El problema está en obtener productos? Vas a `GetProductoByIdQueryHandler`. ¿El problema está en crear productos? Vas a `CreateProductoCommandHandler`.
 
-### La regla de oro: Commands no pueden devolver datos
+### La regla de oro: Commands no devuelven datos de LECTURA
 
-Un command puede ejecutarse correctamente o fallar, pero **nunca** debe devolver datos de lectura. Esta regla parece restrictiva, pero tiene una razón profunda: si necesitas datos después de un command, probablemente sea porque deberías haber hecho primero una query.
+Un command puede ejecutarse correctamente o fallar. La distinción clave es:
+
+- ❌ **NO** devolver datos para "leer" (eso es una query)
+- ✅ **SÍ** devolver el resultado de la escritura (DTO creado/actualizado, ID, confirmación)
+
+Por qué: si necesitas datos *después* de un command para hacer otra operación, probablemente deberías haber hecho primero una query. Pero devolver el DTO que acabas de crear es cómodo para el cliente y no rompe CQRS.
 
 ```csharp
-// ❌ INCORRECTO: Command que devuelve datos
-public record CreateProductoCommand(ProductoDto Dto)
-    : IRequest<ProductoDto>;  // NO HACER ESTO
+// ❌ INCORRECTO: Command que hace de query
+public record GetProductoCommand(long Id)
+    : IRequest<ProductoDto>;  // Esto es una QUERY, no un command
 
-// ✅ CORRECTO: Command sin retorno (o con ID mínimo)
-public record CreateProductoCommand(ProductoDto Dto)
-    : IRequest<Result<ProductoDto, DomainError>>;  // Devuelve el DTO creado
-    
-// O si solo necesitas saber si funcionó:
+// ❌ INCORRECTO: Command que devuelve datos para otra operación
+public record CreateProductoCommand(ProductoRequestDto Dto)
+    : IRequest<ProductoDto>;  // El cliente usa esto como "leer el producto"
+
+// ✅ CORRECTO: Command que devuelve el resultado de la escritura
+public record CreateProductoCommand(ProductoRequestDto Dto)
+    : IRequest<Result<ProductoDto, DomainError>>;  // DTO creado como confirmación
+
+// ✅ CORRECTO: Command que solo confirma éxito/fracaso
 public record DeleteProductoCommand(long Id)
-    : IRequest<UnitResult<DomainError>>;  // Solo indica éxito/fracaso
+    : IRequest<UnitResult<DomainError>>;  // No hay datos que devolver
 ```
+
+> 🎓 **En una frase:** "Los commands devuelven *qué pasó*, no *qué hay*."
 
 ---
 

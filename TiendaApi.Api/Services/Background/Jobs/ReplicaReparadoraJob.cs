@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Mappers;
@@ -19,7 +20,7 @@ namespace TiendaApi.Api.Services.Background.Jobs;
 /// 1. Leer marca de agua (cuándo pasé por última vez)
 /// 2. Query: WHERE UpdatedAt > marca (el interceptor toca UpdatedAt en cualquier cambio)
 /// 3. Upsert en MongoDB por id
-/// 4. Invalidar caché de lo que toqué
+/// 4. Invalidar caché de lo que toqué (Redis + OutputCache)
 /// 5. Actualizar marca de agua
 /// </summary>
 public class ReplicaReparadoraJob(
@@ -61,6 +62,7 @@ public class ReplicaReparadoraJob(
         var db = scope.ServiceProvider.GetRequiredService<TiendaDbContext>();
         var readRepo = scope.ServiceProvider.GetRequiredService<IProductoReadRepository>();
         var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
+        var outputCache = scope.ServiceProvider.GetRequiredService<IOutputCacheStore>();
 
         // 1. Marca de agua: cuándo pasó la última vez
         var marca = await db.ReplicaMarcas
@@ -100,6 +102,7 @@ public class ReplicaReparadoraJob(
             await cache.RemoveAsync($"productos:{p.Id}");
         }
         await cache.RemoveAsync("productos:all");
+        await outputCache.EvictByTagAsync("productos", ct);  // OutputCache HTTP (60s)
 
         // 5. Actualizar marca de agua
         marca.UltimaPasada = pendientes.Max(p => p.UpdatedAt);
