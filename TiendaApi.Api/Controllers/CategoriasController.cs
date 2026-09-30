@@ -65,7 +65,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: categorias =>
             {
-                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return Ok(categorias);
@@ -88,7 +88,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: categoria =>
             {
-                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 return Ok(categoria);
             },
             onFailure: error => error.ToHttpResult());

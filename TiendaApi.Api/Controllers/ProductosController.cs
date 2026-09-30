@@ -50,7 +50,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: productos =>
             {
-                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader))
                     Response.Headers.Append("Link", linkHeader);
@@ -72,7 +72,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: producto =>
             {
-                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 return Ok(producto);
             },
             onFailure: error => error.ToHttpResult()
@@ -91,7 +91,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         return resultado.Match(
             onSuccess: productos =>
             {
-                Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
+                // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 return Ok(productos);
             },
             onFailure: error => error.ToHttpResult()
