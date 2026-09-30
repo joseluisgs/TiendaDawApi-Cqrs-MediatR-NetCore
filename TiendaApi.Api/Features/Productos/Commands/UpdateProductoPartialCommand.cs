@@ -49,21 +49,7 @@ public class UpdateProductoPartialCommandHandler(
         var updated = await repository.UpdateAsync(producto);
         var dto = updated.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync("productos:all");
-                await cacheService.RemoveAsync($"productos:{request.Id}");
-                await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
-                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
-
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
 
         if (request.Dto.Stock.HasValue && dto.Stock <= StockBajoUmbral)
@@ -71,7 +57,11 @@ public class UpdateProductoPartialCommandHandler(
             await mediator.Publish(new ProductoStockBajoNotification(dto, StockBajoUmbral), cancellationToken);
         }
 
-        Log.Information("Notificación publicada para producto actualizado parcialmente ID: {ProductoId}", dto.Id);
+        await cacheService.RemoveAsync($"productos:{request.Id}");
+        await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
+        Log.Information("Notificación publicada y caché invalidada para producto actualizado parcialmente ID: {ProductoId}", dto.Id);
 
         return Result.Success<ProductoDto, DomainError>(dto);
     }

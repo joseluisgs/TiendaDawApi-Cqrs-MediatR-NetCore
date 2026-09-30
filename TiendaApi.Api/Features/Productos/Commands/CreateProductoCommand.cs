@@ -59,25 +59,14 @@ public class CreateProductoCommandHandler(
         var saved = await productoRepository.SaveAsync(request.Dto.ToEntity());
         var dto = saved.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync("productos:all");
-                await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
-                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
-
-        Log.Information("📣 Publicando ProductoCreadoNotification para producto ID: {ProductoId}", dto.Id);
-
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
+        // Si invalidamos antes, un lector puede repueblar la caché con el modelo de lectura viejo.
         await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
 
-        Log.Information("✅ Notificación publicada para producto ID: {ProductoId}", dto.Id);
+        await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
+        Log.Information("✅ Notificación publicada y caché invalidada para producto ID: {ProductoId}", dto.Id);
 
         return Result.Success<ProductoDto, DomainError>(dto);
     }

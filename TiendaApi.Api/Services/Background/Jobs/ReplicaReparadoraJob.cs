@@ -101,7 +101,6 @@ public class ReplicaReparadoraJob(
         {
             await cache.RemoveAsync($"productos:{p.Id}");
         }
-        await cache.RemoveAsync("productos:all");
         await outputCache.EvictByTagAsync("productos", ct);  // OutputCache HTTP (60s)
 
         // 5. Actualizar marca de agua

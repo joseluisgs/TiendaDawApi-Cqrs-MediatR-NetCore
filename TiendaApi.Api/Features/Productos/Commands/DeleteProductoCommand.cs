@@ -43,22 +43,13 @@ public class DeleteProductoCommandHandler(
 
         await repository.DeleteAsync(request.Id);
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await cacheService.RemoveAsync("productos:all");
-                await cacheService.RemoveAsync($"productos:{request.Id}");
-                await cacheService.RemoveAsync($"productos:categoria:{categoriaId}");
-                await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-            }
-        });
-
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         await mediator.Publish(new ProductoEliminadoNotification(request.Id), cancellationToken);
+
+        await cacheService.RemoveAsync($"productos:{request.Id}");
+        await cacheService.RemoveAsync($"productos:categoria:{categoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
         return UnitResult.Success<DomainError>();
     }
 }
