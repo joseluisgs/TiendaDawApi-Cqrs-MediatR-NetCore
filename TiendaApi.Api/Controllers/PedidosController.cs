@@ -31,12 +31,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetAllPedidos()
+    public async Task<ActionResult<IEnumerable<PedidoDto>>> GetAllPedidos()
     {
         var resultado = await mediator.Send(new GetAllPedidosListQuery());
         return resultado.Match(
             onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => StatusCode(500, new { message = error.Message }));
+            onFailure: error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetAllPedidosPaged(
+    public async Task<ActionResult<PagedResult<PedidoDto>>> GetAllPedidosPaged(
         [FromQuery] int page = 1,
         [FromQuery] int size = 10,
         [FromQuery] string? sortBy = null,
@@ -63,9 +63,9 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
-                return Ok(pedidos);
+                return (ActionResult<PagedResult<PedidoDto>>)pedidos;
             },
-            onFailure: error => StatusCode(500, new { message = error.Message }));
+            onFailure: error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
@@ -78,12 +78,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPedidoById(string id)
+    public async Task<ActionResult<PedidoDto>> GetPedidoById(string id)
     {
         var resultado = await mediator.Send(new GetPedidoByIdQuery(id));
         return resultado.Match(
-            onSuccess: pedido => Ok(pedido),
-            onFailure: error => error.ToHttpResult());
+            onSuccess: pedido => pedido,
+            onFailure: error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
@@ -98,12 +98,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdatePedidoAdmin(string id, [FromBody] UpdatePedidoDto dto)
+    public async Task<ActionResult<PedidoDto>> UpdatePedidoAdmin(string id, [FromBody] UpdatePedidoDto dto)
     {
         var resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
         return resultado.Match(
-            onSuccess: pedido => Ok(pedido),
-            onFailure: error => error.ToHttpResult());
+            onSuccess: pedido => pedido,
+            onFailure: error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
@@ -116,11 +116,17 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeletePedidoAdmin(string id)
+    public async Task<ActionResult> DeletePedidoAdmin(string id)
     {
         var resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
         if (resultado.IsSuccess) return NoContent();
-        return resultado.Error.ToHttpResult();
+        var error = resultado.Error;
+        return error switch
+        {
+            NotFoundError => NotFound(new { message = error.Message }),
+            ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
+        };
     }
 
     /// <summary>
@@ -135,12 +141,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdatePedidoEstado(string id, [FromBody] UpdateEstadoDto dto)
+    public async Task<ActionResult<PedidoDto>> UpdatePedidoEstado(string id, [FromBody] UpdateEstadoDto dto)
     {
         var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
         return resultado.Match(
-            onSuccess: pedido => Ok(pedido),
-            onFailure: error => error.ToHttpResult());
+            onSuccess: pedido => pedido,
+            onFailure: error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
@@ -150,7 +156,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMyPedidos()
+    public async Task<ActionResult<IEnumerable<PedidoDto>>> GetMyPedidos()
     {
         logger.LogInformation("GetMyPedidos - User: {User}", User?.Identity?.Name);
         logger.LogInformation("GetMyPedidos - IsAuthenticated: {IsAuth}", User?.Identity?.IsAuthenticated);
@@ -164,7 +170,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         var resultado = await mediator.Send(new GetMyPedidosQuery(userId));
         return resultado.Match(
             onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => StatusCode(500, new { message = error.Message }));
+            onFailure: error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
@@ -178,7 +184,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [Authorize]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMyPedidosPaged(
+    public async Task<ActionResult<PagedResult<PedidoDto>>> GetMyPedidosPaged(
         [FromQuery] int page = 1,
         [FromQuery] int size = 10,
         [FromQuery] string? sortBy = null,
@@ -196,9 +202,9 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
-                return Ok(pedidos);
+                return (ActionResult<PagedResult<PedidoDto>>)pedidos;
             },
-            onFailure: error => StatusCode(500, new { message = error.Message }));
+            onFailure: error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
@@ -211,7 +217,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateMyPedido([FromBody] PedidoRequestDto dto)
+    public async Task<ActionResult<PedidoDto>> CreateMyPedido([FromBody] PedidoRequestDto dto)
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -227,7 +233,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         }
 
         var error = resultado.Error;
-        return error.ToHttpResult();
+        return error.ToHttpResult<PedidoDto>();
     }
 
     /// <summary>
@@ -240,7 +246,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMyPedidoById(string id)
+    public async Task<ActionResult<PedidoDto>> GetMyPedidoById(string id)
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -250,8 +256,8 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
         var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
         return resultado.Match(
-            onSuccess: pedido => Ok(pedido),
-            onFailure: error => error.ToHttpResult());
+            onSuccess: pedido => pedido,
+            onFailure: error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
@@ -266,7 +272,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateMyPedido(string id, [FromBody] UpdatePedidoDto dto)
+    public async Task<ActionResult<PedidoDto>> UpdateMyPedido(string id, [FromBody] UpdatePedidoDto dto)
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -276,8 +282,8 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
         var resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
         return resultado.Match(
-            onSuccess: pedido => Ok(pedido),
-            onFailure: error => error.ToHttpResult());
+            onSuccess: pedido => pedido,
+            onFailure: error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
@@ -291,7 +297,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteMyPedido(string id)
+    public async Task<ActionResult> DeleteMyPedido(string id)
     {
         if (User?.Identity == null || !User.Identity.IsAuthenticated)
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -301,6 +307,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
         var resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
         if (resultado.IsSuccess) return NoContent();
-        return resultado.Error.ToHttpResult();
+        var error = resultado.Error;
+        return error switch
+        {
+            NotFoundError => NotFound(new { message = error.Message }),
+            ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
+        };
     }
 }

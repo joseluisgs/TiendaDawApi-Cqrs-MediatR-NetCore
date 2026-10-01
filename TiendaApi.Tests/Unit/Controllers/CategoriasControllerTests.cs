@@ -39,7 +39,9 @@ public class CategoriasControllerTests
 
         var result = await _controller.GetAll();
 
-        result.Should().BeOfType<OkObjectResult>();
+        // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
+        result.Value.Should().NotBeNull();
+        result.Result.Should().BeNull(); // No hay ObjectResult subyacente, el valor viene en .Value
     }
 
     [Test]

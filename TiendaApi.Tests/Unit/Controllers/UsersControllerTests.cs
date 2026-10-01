@@ -40,7 +40,8 @@ public class UsersControllerTests
 
         var result = await _controller.GetAll();
 
-        result.Should().BeOfType<OkObjectResult>();
+        // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
+        result.Value.Should().NotBeNull();
     }
 
     [Test]
@@ -50,7 +51,7 @@ public class UsersControllerTests
 
         var result = await _controller.GetMyProfile();
 
-        result.Should().BeOfType<UnauthorizedObjectResult>();
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
     [Test]
@@ -68,6 +69,7 @@ public class UsersControllerTests
 
         var result = await _controller.UpdateMyAvatar(new AvatarUpdateDto { AvatarUrl = "avatar" });
 
-        result.Should().BeOfType<OkObjectResult>();
+        // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
+        result.Value.Should().NotBeNull();
     }
 }

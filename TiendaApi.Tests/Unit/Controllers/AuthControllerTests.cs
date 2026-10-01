@@ -31,7 +31,7 @@ public class AuthControllerTests
 
         var result = await _controller.SignUp(dto);
 
-        result.Should().BeOfType<CreatedAtActionResult>();
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
     }
 
     [Test]
@@ -43,6 +43,7 @@ public class AuthControllerTests
 
         var result = await _controller.SignIn(dto);
 
-        result.Should().BeOfType<UnauthorizedObjectResult>();
+        // ActionResult<T> envuelve el resultado: accedemos al subyacente
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 }

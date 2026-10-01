@@ -33,7 +33,7 @@ public class PedidosControllerTests
 
         var result = await _controller.GetAllPedidos();
 
-        result.Should().BeOfType<OkObjectResult>();
+        result.Result.Should().BeOfType<OkObjectResult>();
     }
 
     [Test]
@@ -43,7 +43,7 @@ public class PedidosControllerTests
 
         var result = await _controller.GetMyPedidos();
 
-        result.Should().BeOfType<UnauthorizedObjectResult>();
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
     [Test]
@@ -62,6 +62,6 @@ public class PedidosControllerTests
 
         var result = await _controller.CreateMyPedido(new PedidoRequestDto { Destinatario = new DestinatarioDto(), Items = [new PedidoItemRequestDto { ProductoId = 1, Cantidad = 1 }] });
 
-        result.Should().BeOfType<CreatedAtActionResult>();
+        result.Result.Should().BeOfType<CreatedAtActionResult>();
     }
 }

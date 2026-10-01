@@ -32,7 +32,8 @@ public class ProductosControllerTests
 
         var result = await _controller.GetById(1);
 
-        result.Should().BeOfType<OkObjectResult>();
+        // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
+        result.Value.Should().NotBeNull();
     }
 
     [Test]
@@ -44,6 +45,6 @@ public class ProductosControllerTests
 
         var result = await _controller.Create(dto);
 
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 }
