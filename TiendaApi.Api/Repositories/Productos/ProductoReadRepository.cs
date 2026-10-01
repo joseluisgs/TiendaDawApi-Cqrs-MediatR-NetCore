@@ -66,11 +66,16 @@ public class ProductoReadRepository(
 
         var sort = ApplySorting(filter.SortBy, filter.Direction);
 
+        // 🛡️ Clamp defensivo: GraphQL construye el DTO en código sin pasar
+        // por validación REST, así que el límite se ap aquí como única verdad funcional.
+        var size = Math.Clamp(filter.Size, 1, 100);
+        var page = Math.Max(filter.Page, 0);
+
         var items = await Collection
             .Find(f)
             .Sort(sort)
-            .Skip(filter.Page * filter.Size)
-            .Limit(filter.Size)
+            .Skip(page * size)
+            .Limit(size)
             .ToListAsync();
 
         return (items, (int)totalCount);
