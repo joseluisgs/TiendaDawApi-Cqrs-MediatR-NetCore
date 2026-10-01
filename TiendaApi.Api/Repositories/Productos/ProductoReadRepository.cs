@@ -113,24 +113,40 @@ public class ProductoReadRepository(
         // 🎓 Guardia de versión: solo aplicar si el dato entrante es más reciente
         // que el que ya está en Mongo. Evita que dos updates concurrentes se
         // apliquen fuera de orden (gana el último en llegar, no el más reciente).
+        //
+        // ⚠️ Cuando el documento existente es MÁS reciente, el filtro no coincide
+        // y IsUpsert intenta un insert con el mismo _id → MongoDB lanza E11000
+        // (duplicate key). Eso es correcto: el dato viejo no sobrescribe.
+        // Se atrapa para no registrar un "fallo" que en realidad es un omitido a propósito.
         var filter = Builders<ProductoRead>.Filter.Eq(p => p.Id, producto.Id)
                    & Builders<ProductoRead>.Filter.Lte(p => p.UpdatedAt, producto.UpdatedAt);
 
-        var result = await Collection.ReplaceOneAsync(
-            filter,
-            producto,
-            new ReplaceOptions { IsUpsert = true });
+        try
+        {
+            var result = await Collection.ReplaceOneAsync(
+                filter,
+                producto,
+                new ReplaceOptions { IsUpsert = true });
 
-        if (result.MatchedCount == 0 && result.UpsertedId is null)
-        {
-            // El documento existe pero tiene UpdatedAt más reciente: no sobrescribir.
-            logger.LogDebug(
-                "Upsert omitido (dato más reciente ya presente): {Id}, UpdatedAt entrante={UpdatedAt}",
-                producto.Id, producto.UpdatedAt);
+            if (result.MatchedCount == 0 && result.UpsertedId is null)
+            {
+                logger.LogDebug(
+                    "Upsert omitido (dato más reciente ya presente): {Id}, UpdatedAt entrante={UpdatedAt}",
+                    producto.Id, producto.UpdatedAt);
+            }
+            else
+            {
+                logger.LogDebug("Producto sincronizado en MongoDB (upsert): {Id}", producto.Id);
+            }
         }
-        else
+        catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
         {
-            logger.LogDebug("Producto sincronizado en MongoDB (upsert): {Id}", producto.Id);
+            // E11000: el documento existente tiene UpdatedAt más reciente,
+            // el filtro no coincide y el upsert intenta insertar con _id duplicado.
+            // Es el comportamiento esperado de la guardia de versión — omitir a propósito.
+            logger.LogDebug(
+                "Upsert omitido (versión entrante más antigua, E11000): {Id}, UpdatedAt entrante={UpdatedAt}",
+                producto.Id, producto.UpdatedAt);
         }
     }
 
