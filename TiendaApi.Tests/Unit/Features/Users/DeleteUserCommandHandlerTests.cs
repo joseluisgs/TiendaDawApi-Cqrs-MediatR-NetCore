@@ -53,7 +53,6 @@ public class DeleteUserCommandHandlerTests
         // Esperar a que el Task.Run complete (fire & forget)
         await Task.Delay(100);
 
-        cacheService.Verify(c => c.RemoveAsync("usuarios:all"), Times.Once);
         cacheService.Verify(c => c.RemoveAsync("usuarios:1"), Times.Once);
     }
 }

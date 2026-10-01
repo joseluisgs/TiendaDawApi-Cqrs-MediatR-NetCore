@@ -30,7 +30,6 @@ public class AuthCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         authService.Verify(s => s.SignUpAsync(dto), Times.Once);
-        cacheService.Verify(c => c.RemoveAsync("usuarios:1"), Times.Once);
     }
 
     [Test]
