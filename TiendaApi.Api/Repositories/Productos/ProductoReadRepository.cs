@@ -109,11 +109,29 @@ public class ProductoReadRepository(
     public async Task UpsertAsync(ProductoRead producto)
     {
         producto.SyncAt = DateTime.UtcNow;
-        await Collection.ReplaceOneAsync(
-            p => p.Id == producto.Id,
+
+        // 🎓 Guardia de versión: solo aplicar si el dato entrante es más reciente
+        // que el que ya está en Mongo. Evita que dos updates concurrentes se
+        // apliquen fuera de orden (gana el último en llegar, no el más reciente).
+        var filter = Builders<ProductoRead>.Filter.Eq(p => p.Id, producto.Id)
+                   & Builders<ProductoRead>.Filter.Lte(p => p.UpdatedAt, producto.UpdatedAt);
+
+        var result = await Collection.ReplaceOneAsync(
+            filter,
             producto,
             new ReplaceOptions { IsUpsert = true });
-        logger.LogDebug("Producto sincronizado en MongoDB (upsert): {Id}", producto.Id);
+
+        if (result.MatchedCount == 0 && result.UpsertedId is null)
+        {
+            // El documento existe pero tiene UpdatedAt más reciente: no sobrescribir.
+            logger.LogDebug(
+                "Upsert omitido (dato más reciente ya presente): {Id}, UpdatedAt entrante={UpdatedAt}",
+                producto.Id, producto.UpdatedAt);
+        }
+        else
+        {
+            logger.LogDebug("Producto sincronizado en MongoDB (upsert): {Id}", producto.Id);
+        }
     }
 
     /// <inheritdoc/>
