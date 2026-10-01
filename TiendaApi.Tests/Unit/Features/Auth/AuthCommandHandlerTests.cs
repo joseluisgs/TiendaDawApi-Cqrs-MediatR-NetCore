@@ -24,7 +24,7 @@ public class AuthCommandHandlerTests
         authService.Setup(s => s.SignUpAsync(dto))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(response));
 
-        var handler = new SignUpCommandHandler(authService.Object, cacheService.Object);
+        var handler = new SignUpCommandHandler(authService.Object);
 
         var result = await handler.Handle(new SignUpCommand(dto), CancellationToken.None);
 
