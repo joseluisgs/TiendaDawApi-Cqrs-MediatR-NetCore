@@ -24,13 +24,18 @@ public class GetAllPedidosQueryHandler(IPedidosRepository repository)
     public async Task<Result<PagedResult<PedidoDto>, DomainError>> Handle(
         GetAllPedidosQuery request, CancellationToken cancellationToken)
     {
-        var (pedidos, totalCount) = await repository.FindAllPagedAsync(request.Page, request.Size);
+        // 🛡️ Clamp defensivo: GraphQL construye la query en código sin pasar
+        // por validación REST. El límite se aplica aquí como única verdad funcional.
+        var size = Math.Clamp(request.Size, 1, 100);
+        var page = Math.Max(request.Page, 0);
+
+        var (pedidos, totalCount) = await repository.FindAllPagedAsync(page, size);
         return Result.Success<PagedResult<PedidoDto>, DomainError>(new PagedResult<PedidoDto>
         {
             Items = pedidos.ToDtoList(),
             TotalCount = totalCount,
-            Page = request.Page + 1,
-            PageSize = request.Size
+            Page = page + 1,
+            PageSize = size
         });
     }
 }
