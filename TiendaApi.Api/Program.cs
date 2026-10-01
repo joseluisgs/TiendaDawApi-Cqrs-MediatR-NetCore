@@ -52,7 +52,7 @@ services.AddCorsPolicy(configuration, environment.IsDevelopment());
 services.AddRateLimitingPolicy();
 
 // Data
-services.AddDatabases(configuration);
+services.AddDatabases(configuration, environment);
 
 // Auth
 services.AddAuthentication(configuration);
@@ -63,7 +63,7 @@ services.AddMediatRHandlers();
 services.AddServices();
 
 // Servicios Adicionales (desarrollo vs producción)
-services.AddCache(environment);
+services.AddCache(environment, configuration);
 services.AddEmail(environment);
 services.AddStorage();
 

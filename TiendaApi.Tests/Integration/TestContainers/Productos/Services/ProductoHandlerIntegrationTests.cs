@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Hosting;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
@@ -77,7 +78,7 @@ public class ProductoHandlerIntegrationTests
         services.AddOutputCacheConfig();
         services.AddMvcControllers();
         services.AddFluentValidationServices();
-        services.AddDatabases(configuration);
+        services.AddDatabases(configuration, Mock.Of<IWebHostEnvironment>());
         services.AddRepositories(configuration);
         services.AddMediatRHandlers();
         services.AddScoped<ICacheService, MemoryCacheService>();

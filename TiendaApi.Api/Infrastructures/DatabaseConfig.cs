@@ -16,21 +16,49 @@ public static class DatabaseConfig
     /// </summary>
     /// <param name="services">Colección de servicios.</param>
     /// <param name="configuration">Configuración de la app.</param>
+    /// <param name="environment">Entorno (producción exige configuración explícita).</param>
     /// <returns>IServiceCollection para encadenar.</returns>
-    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         Log.Information("Configurando PostgreSQL...");
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Database=tienda;Username=admin;Password=admin123";
+
+        // 🎓 Fail-fast: en producción, si falta la configuración, la app NO debe arrancar.
+        // En desarrollo, se usan los fallbacks para poder trabajar localmente.
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            if (environment.IsDevelopment())
+            {
+                connectionString = "Host=localhost;Database=tienda;Username=admin;Password=admin123";
+                Log.Warning("⚠️ Usando credenciales por defecto de desarrollo (ConnectionStrings:DefaultConnection no definida)");
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection no está definida. " +
+                    "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
+            }
+        }
 
         services.AddDbContext<TiendaDbContext>(options => options.UseNpgsql(connectionString));
 
         // MongoDB: el cliente y la base de datos se registran SIEMPRE.
-        // El read model de productos (productos_read) no puede depender del switch
-        // de Pedidos:RepositoryType — toda lectura de productos sale de MongoDB.
         Log.Information("Configurando MongoDB (cliente + base de datos)...");
-        var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"]
-            ?? "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
+        var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"];
+        if (string.IsNullOrEmpty(mongoConnectionString))
+        {
+            if (environment.IsDevelopment())
+            {
+                mongoConnectionString = "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
+                Log.Warning("⚠️ Usando credenciales por defecto de desarrollo (MongoDbSettings:ConnectionString no definida)");
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    "MongoDbSettings:ConnectionString no está definida. " +
+                    "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
+            }
+        }
         var mongoDatabaseName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
 
         services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));

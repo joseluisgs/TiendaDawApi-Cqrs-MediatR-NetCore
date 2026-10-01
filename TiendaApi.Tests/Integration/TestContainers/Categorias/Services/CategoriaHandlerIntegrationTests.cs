@@ -1,3 +1,5 @@
+using Moq;
+using Microsoft.AspNetCore.Hosting;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -69,7 +71,7 @@ public class CategoriaHandlerIntegrationTests
         services.AddOutputCacheConfig();
         services.AddMvcControllers();
         services.AddFluentValidationServices();
-        services.AddDatabases(configuration);
+        services.AddDatabases(configuration, Mock.Of<IWebHostEnvironment>());
         services.AddRepositories(configuration);
         services.AddMediatRHandlers();
         services.AddScoped<ICacheService, MemoryCacheService>();

@@ -16,7 +16,7 @@ public static class CacheConfig
     /// Desarrollo: MemoryCache.
     /// Producción: Redis.
     /// </summary>
-    public static IServiceCollection AddCache(this IServiceCollection services, IWebHostEnvironment environment)
+    public static IServiceCollection AddCache(this IServiceCollection services, IWebHostEnvironment environment, IConfiguration configuration)
     {
         // Métricas de caché (singleton compartido)
         services.AddSingleton<CacheMetrics>();
@@ -29,11 +29,20 @@ public static class CacheConfig
         }
         else
         {
+            // 🎓 Fail-fast: en producción, Redis debe configurarse explícitamente.
+            var redisConfig = configuration["Cache:RedisConfiguration"];
+            if (string.IsNullOrEmpty(redisConfig))
+            {
+                throw new InvalidOperationException(
+                    "Cache:RedisConfiguration no está definida. " +
+                    "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
+            }
+
             Log.Information("💾 Configurando caché Redis (producción)...");
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = "localhost:6379";
-                options.InstanceName = "TiendaApi:";
+                options.Configuration = redisConfig;
+                options.InstanceName = configuration["Cache:RedisInstanceName"] ?? "TiendaApi:";
             });
             services.TryAddSingleton<ICacheService, RedisCacheService>();
         }

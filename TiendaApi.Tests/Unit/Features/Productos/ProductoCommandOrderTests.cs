@@ -55,6 +55,7 @@ public class ProductoCommandOrderTests
             .ReturnsAsync(new Categoria { Id = 1, Nombre = "Test" });
 
         // Publish registra "publish"
+        // IMediator.Publish(INotification, CancellationToken) es extensión → reenvía a Publish(object, ct)
         _mediatorMock.Setup(m => m.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .Callback(() => _orden.Add("publish"))
             .Returns(Task.CompletedTask);
