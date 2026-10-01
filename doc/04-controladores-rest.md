@@ -557,29 +557,38 @@ public async Task<IActionResult> GetById(long id)
 }
 ```
 
-### ActionResult<T> (mezcla de tipos)
+### ActionResult<T> (lo que usa este proyecto)
 
-ActionResult<T> combina IActionResult con un tipo específico, permitiéndote devolver tanto resultados tipados como errores. Es ideal cuando la respuesta exitosa siempre tiene el mismo tipo.
+ActionResult<T> combina IActionResult con un tipo específico, permitiéndote devolver tanto resultados tipados como errores. Es ideal cuando la respuesta exitosa siempre tiene el mismo tipo. **Este proyecto usa `ActionResult<T>` en todos los controladores** — antes usaba `IActionResult`, se refactorizó para dar type safety en Swagger y en el código.
 
 ```csharp
 [HttpGet("{id:long}")]
 public async Task<ActionResult<ProductoDto>> GetById(long id)
 {
-    var resultado = await _service.GetByIdAsync(id);
+    var resultado = await mediator.Send(new GetProductoByIdQuery(id));
     
     return resultado.Match(
-        producto => Ok(producto),  // ActionResult<ProductoDto>
-        error => NotFound(new { error.Message })  // ActionResult<ProductoDto>
+        producto => producto,                              // T → ActionResult<T> (conversión implícita)
+        error => error.ToHttpResult<ProductoDto>()          // ActionResult<T> desde la extensión
     );
 }
 
 [HttpGet]
-public async Task<ActionResult<List<ProductoDto>>> GetAll()
+public async Task<ActionResult<PagedResult<ProductoDto>>> GetAll(/* filtros */)
 {
-    var productos = await _service.GetAllAsync();
-    return Ok(productos);  // ActionResult<List<ProductoDto>>
+    var resultado = await mediator.Send(new GetAllProductosQuery(filter));
+    return resultado.Match(
+        onSuccess: productos =>
+        {
+            // ... headers Link ...
+            return (ActionResult<PagedResult<ProductoDto>>)productos;  // cast explícito en Match con lambda block
+        },
+        onFailure: error => error.ToHttpResult<PagedResult<ProductoDto>>()
+    );
 }
 ```
+
+> 🎓 **Por qué el cast en Match:** cuando `Match` usa una lambda con bloque `{ }`, el compilador no puede inferir el tipo de retorno si las dos ramas devuelven tipos distintos (`T` y `ActionResult<T>`). El cast explícito `(ActionResult<T>)` resuelve la inferencia. En lambdas expresión (sin `{ }`), la conversión implícita funciona sin cast.
 
 ### Typed Results (más conciso, .NET 7+)
 
@@ -651,7 +660,7 @@ flowchart LR
 
 ### Cuándo usar cada uno
 
-Usa IActionResult cuando trabajes con código legacy o cuando necesites máxima flexibilidad para devolver tipos muy diferentes. Usa ActionResult<T> cuando quieras tipado fuerte pero flexibilidad para devolver errores. Usa Typed Results cuando puedas, porque es la sintaxis más limpia y moderna.
+Usa IActionResult cuando trabajes con código legacy o cuando necesites máxima flexibilidad para devolver tipos muy diferentes. Usa ActionResult<T> cuando quieras tipado fuerte pero flexibilidad para devolver errores — **es lo que usa este proyecto en todos sus controladores**. Usa Typed Results cuando puedas, porque es la sintaxis más limpia y moderna.
 
 ---
 
@@ -1170,7 +1179,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<ProductoDto>), StatusCodes.Status200OK)]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult<PagedResult<ProductoDto>>> GetAll(
         [FromQuery] string? nombre = null,
         [FromQuery] string? categoria = null,
         [FromQuery] int page = 0,
@@ -1185,16 +1194,16 @@ public class ProductosController(IMediator mediator) : ControllerBase
         // Enviar al mediator (no sabe qué handler lo procesa)
         var resultado = await mediator.Send(new GetAllProductosQuery(filter));
         
-        // Usar Match para convertir Result a IActionResult
+        // Usar Match para convertir Result a ActionResult<T>
         return resultado.Match(
             onSuccess: productos =>
             {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader))
                     Response.Headers.Append("Link", linkHeader);
-                return Ok(productos);
+                return (ActionResult<PagedResult<ProductoDto>>)productos;
             },
-            onFailure: error => StatusCode(500, new { message = error.Message })
+            onFailure: error => error.ToHttpResult<PagedResult<ProductoDto>>()
         );
     }
 
@@ -1203,16 +1212,12 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(ProductoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    public async Task<IActionResult> GetById(long id)
+    public async Task<ActionResult<ProductoDto>> GetById(long id)
     {
         var resultado = await mediator.Send(new GetProductoByIdQuery(id));
         return resultado.Match(
-            onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onSuccess: producto => producto,
+            onFailure: error => error.ToHttpResult<ProductoDto>()
         );
     }
 
@@ -1222,7 +1227,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<IActionResult> Create([FromBody] ProductoRequestDto dto)
+    public async Task<ActionResult<ProductoDto>> Create([FromBody] ProductoRequestDto dto)
     {
         var resultado = await mediator.Send(new CreateProductoCommand(dto));
         return resultado.Match(
@@ -1230,13 +1235,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
                 nameof(GetById),
                 new { id = producto.Id },
                 producto),
-            onFailure: error => error switch
-            {
-                ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-                NotFoundError => NotFound(new { message = error.Message }),
-                ConflictError => Conflict(new { message = error.Message }),
-                _ => StatusCode(500, new { message = error.Message })
-            }
+            onFailure: error => error.ToHttpResult<ProductoDto>()
         );
     }
 }
@@ -1282,12 +1281,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetAllPedidos()
+    public async Task<ActionResult<IEnumerable<PedidoDto>>> GetAllPedidos()
     {
         var resultado = await mediator.Send(new GetAllPedidosListQuery());
         return resultado.Match(
             onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => StatusCode(500, new { message = error.Message })
+            onFailure: error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError }
         );
     }
 
@@ -1298,7 +1297,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateMyPedido([FromBody] PedidoRequestDto dto)
+    public async Task<ActionResult<PedidoDto>> CreateMyPedido([FromBody] PedidoRequestDto dto)
     {
         // Extraer userId del claim
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -1314,16 +1313,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
             return CreatedAtAction(nameof(GetMyPedidoById), new { id = pedido.Id }, pedido);
         }
 
-        var error = resultado.Error;
-        return error switch
-        {
-            NotFoundError => NotFound(new { message = error.Message }),
-            ValidationError ve => BadRequest(new { message = ve.Message, errors = ve.ValidationErrors }),
-            BusinessRuleError => BadRequest(new { message = error.Message }),
-            ForbiddenError => StatusCode(#4, new { message = error.Message }),
-            ConflictError => Conflict(new { message = error.Message }),
-            _ => StatusCode(500, new { message = error.Message })
-        };
+        return resultado.Error.ToHttpResult<PedidoDto>();
     }
 }
 ```

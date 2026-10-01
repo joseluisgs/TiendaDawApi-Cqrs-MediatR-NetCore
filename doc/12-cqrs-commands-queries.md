@@ -1023,14 +1023,14 @@ El controlador **no conoce** a los handlers. Solo conoce al mediador. El mediado
 public class ProductosController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ProductoRequestDto dto)
+    public async Task<ActionResult<ProductoDto>> Create([FromBody] ProductoRequestDto dto)
     {
         // Solo envía el comando, no conoce el handler
         var result = await mediator.Send(new CreateProductoCommand(dto));
         
         return result.Match(
             onSuccess: p => CreatedAtAction(nameof(GetById), new { id = p.Id }, p),
-            onFailure: e => BadRequest(new { message = e.Message })
+            onFailure: e => e.ToHttpResult<ProductoDto>()
         );
     }
 }
@@ -1208,18 +1208,14 @@ public class GetProductoByIdQueryHandler(
 public class ProductosController(IMediator mediator) : ControllerBase
 {
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(long id)
+    public async Task<ActionResult<ProductoDto>> GetById(long id)
     {
         var resultado = await mediator.Send(new GetProductoByIdQuery(id));
         
-        // Match convierte Result a IActionResult
+        // Match convierte Result a ActionResult<ProductoDto>
         return resultado.Match(
-            onSuccess: producto => Ok(producto),
-            onFailure: error => error switch
-            {
-                NotFoundError => NotFound(new { message = error.Message }),
-                _ => StatusCode(500, new { message = "Error interno" })
-            }
+            onSuccess: producto => producto,
+            onFailure: error => error.ToHttpResult<ProductoDto>()
         );
     }
 }
