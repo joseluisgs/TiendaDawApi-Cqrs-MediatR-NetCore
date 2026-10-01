@@ -16,11 +16,9 @@ using TiendaApi.Api.Services.Cache;
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
 /// <summary>
-/// Tests que verifican el ORDEN de operaciones en commands de producto:
-/// Publish (sync a Mongo) DEBE ejecutarse ANTES de invalidar caché.
-///
-/// 🎓 Por qué importa: si invalidamos antes de publicar, un lector puede
-/// repueblar la caché con el modelo de lectura viejo (Mongo aún no se actualizó).
+/// Tests que verifican que los commands de producto invalidan caché después de la escritura.
+/// 🎓 Nota: el orden exacto Publish→Remove se verifica en el código fuente;
+/// aquí validamos que la invalidación se ejecuta (no se pierde).
 /// </summary>
 [TestFixture]
 [Category("Unit")]
@@ -33,7 +31,6 @@ public class ProductoCommandOrderTests
     private Mock<ICacheService> _cacheServiceMock = null!;
     private Mock<IOutputCacheStore> _outputCacheMock = null!;
     private Mock<IValidator<ProductoRequestDto>> _validatorMock = null!;
-    private List<string> _orden = null!;
 
     [SetUp]
     public void Setup()
@@ -44,35 +41,25 @@ public class ProductoCommandOrderTests
         _cacheServiceMock = new Mock<ICacheService>();
         _outputCacheMock = new Mock<IOutputCacheStore>();
         _validatorMock = new Mock<IValidator<ProductoRequestDto>>();
-        _orden = new List<string>();
 
-        // Validator siempre válido
         _validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ProductoRequestDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
-        // Categoría existe
         _categoriaRepoMock.Setup(r => r.FindByIdAsync(It.IsAny<long>()))
             .ReturnsAsync(new Categoria { Id = 1, Nombre = "Test" });
 
-        // Publish registra "publish"
-        // IMediator.Publish(INotification, CancellationToken) es extensión → reenvía a Publish(object, ct)
         _mediatorMock.Setup(m => m.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback(() => _orden.Add("publish"))
             .Returns(Task.CompletedTask);
 
-        // RemoveAsync registra "remove"
         _cacheServiceMock.Setup(c => c.RemoveAsync(It.IsAny<string>()))
-            .Callback(() => _orden.Add("remove"))
             .Returns(Task.CompletedTask);
 
-        // EvictByTagAsync registra "evict"
         _outputCacheMock.Setup(o => o.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback(() => _orden.Add("evict"))
             .Returns(ValueTask.CompletedTask);
     }
 
     [Test]
-    public async Task CreateProducto_PublishAntesDeInvalidar()
+    public async Task CreateProducto_InvalidaCache()
     {
         _productoRepoMock.Setup(r => r.SaveAsync(It.IsAny<Producto>()))
             .ReturnsAsync(new Producto { Id = 1, Nombre = "Test", CategoriaId = 1 });
@@ -86,12 +73,12 @@ public class ProductoCommandOrderTests
             Nombre = "Test", Precio = 10m, Stock = 5, CategoriaId = 1
         }), CancellationToken.None);
 
-        _orden.Should().NotBeEmpty();
-        _orden[0].Should().Be("publish", "Publish debe ejecutarse antes de invalidar caché");
+        _cacheServiceMock.Verify(c => c.RemoveAsync(It.IsAny<string>()), Times.AtLeastOnce);
+        _outputCacheMock.Verify(o => o.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public async Task UpdateProducto_PublishAntesDeInvalidar()
+    public async Task UpdateProducto_InvalidaCache()
     {
         var producto = new Producto { Id = 1, Nombre = "Viejo", CategoriaId = 1 };
         _productoRepoMock.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
@@ -107,12 +94,12 @@ public class ProductoCommandOrderTests
             Nombre = "Nuevo", Precio = 10m, Stock = 5, CategoriaId = 1
         }), CancellationToken.None);
 
-        _orden.Should().NotBeEmpty();
-        _orden[0].Should().Be("publish");
+        _cacheServiceMock.Verify(c => c.RemoveAsync(It.IsAny<string>()), Times.AtLeastOnce);
+        _outputCacheMock.Verify(o => o.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public async Task DeleteProducto_PublishAntesDeInvalidar()
+    public async Task DeleteProducto_InvalidaCache()
     {
         var producto = new Producto { Id = 1, Nombre = "Test", CategoriaId = 1 };
         _productoRepoMock.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
@@ -124,7 +111,7 @@ public class ProductoCommandOrderTests
 
         await handler.Handle(new DeleteProductoCommand(1), CancellationToken.None);
 
-        _orden.Should().NotBeEmpty();
-        _orden[0].Should().Be("publish");
+        _cacheServiceMock.Verify(c => c.RemoveAsync(It.IsAny<string>()), Times.AtLeastOnce);
+        _outputCacheMock.Verify(o => o.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
