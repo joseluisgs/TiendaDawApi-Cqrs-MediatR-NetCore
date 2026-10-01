@@ -472,6 +472,42 @@ public class AuditLogMongoRepository : IAuditLogRepository
 }
 ```
 
+### Upsert con guardia de versión (read model de productos)
+
+Cuando PostgreSQL es la fuente de verdad y MongoDB el read model, el upsert debe respetar el orden de llegada de los eventos: si llega un evento viejo después de uno nuevo, **no debe sobrescribir**. Se consigue con un filtro condicional + `IsUpsert`:
+
+```csharp
+public async Task UpsertAsync(ProductoRead producto)
+{
+    producto.SyncAt = DateTime.UtcNow;
+
+    // 🎓 Guardia de versión: solo aplicar si el dato entrante es más reciente
+    var filter = Builders<ProductoRead>.Filter.Eq(p => p.Id, producto.Id)
+               & Builders<ProductoRead>.Filter.Lte(p => p.UpdatedAt, producto.UpdatedAt);
+
+    try
+    {
+        var result = await Collection.ReplaceOneAsync(
+            filter, producto, new ReplaceOptions { IsUpsert = true });
+
+        if (result.MatchedCount == 0 && result.UpsertedId is null)
+        {
+            // Documento existente es más reciente: omitir a propósito
+            logger.LogDebug("Upsert omitido (dato más reciente ya presente): {Id}", producto.Id);
+        }
+    }
+    catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
+    {
+        // E11000: el documento existente es más reciente, el filtro no coincide
+        // e IsUpsert intenta insertar con _id duplicado. Es el comportamiento
+        // esperado de la guardia — omitir a propósito, no es un fallo.
+        logger.LogDebug("Upsert omitido (versión entrante más antigua, E11000): {Id}", producto.Id);
+    }
+}
+```
+
+> ⚠️ **Matiz de MongoDB:** cuando el filtro no coincide y `IsUpsert = true`, MongoDB intenta un *insert* con el mismo `_id` → lanza `MongoWriteException` con código **11000** (duplicate key). Sin el catch, el `ProductoReadSyncHandler` lo registraría como `LogError` cada vez, que es ruidoso y semánticamente mentiroso: es un *omitido a propósito*, no un fallo.
+
 ---
 
 ## 9.6. Aggregation Pipeline con MongoDB Driver

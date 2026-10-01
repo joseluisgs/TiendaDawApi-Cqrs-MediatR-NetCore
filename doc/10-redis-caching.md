@@ -843,8 +843,10 @@ public class ProductCacheService : IProductCacheService
 
     private const string PRODUCTOS_BY_CATEGORIA_KEY = "productos:categoria:{0}";
     private const string PRODUCTO_KEY = "producto:{0}";
-    private const string PRODUCTOS_ALL_KEY = "productos:all";
-    private const string PRODUCTOS_PATTERN = "productos:*";
+
+    // 🎓 Nota: RemoveByPatternAsync fue ELIMINADO de ICacheService.
+    // MemoryCache no lo soporta y Redis lo haría con SCAN (costoso).
+    // La invalidación se hace con tags de OutputCache + RemoveAsync explícito.
 
     public ProductCacheService(
         ICacheService cacheService,
@@ -879,25 +881,19 @@ public class ProductCacheService : IProductCacheService
     {
         var key = FormatKey(PRODUCTOS_BY_CATEGORIA_KEY, categoriaId);
         await _cacheService.RemoveAsync(key);
-        
-        // También invalidar cache "todos los productos"
-        await InvalidateAllProductsCacheAsync();
     }
 
     public async Task InvalidateAllProductsCacheAsync()
     {
-        await _cacheService.RemoveByPatternAsync(
-            FormatKey(PRODUCTOS_PATTERN));
+        // 🎓 Antes usaba RemoveByPatternAsync("productos:*") — eliminado.
+        // Ahora: OutputCache.EvictByTagAsync("productos") + RemoveAsync explícito
+        // de las claves conocidas. No hay claves muertas que invalidar.
     }
 
     public async Task InvalidateProductoCacheAsync(long productoId)
     {
         var key = FormatKey(PRODUCTO_KEY, productoId);
         await _cacheService.RemoveAsync(key);
-        
-        // Invalidar cache de categorías
-        await _cacheService.RemoveByPatternAsync(
-            FormatKey(PRODUCTOS_BY_CATEGORIA_KEY.Replace("{0}", "*")));
     }
 }
 ```
@@ -1270,14 +1266,14 @@ public class CacheInvalidationService
 
     public async Task InvalidateEntityCollectionAsync(string entityType, long relatedId)
     {
-        var pattern = FormatKey($"{entityType.ToLower()}:{relatedId}:*");
-        await _cacheService.RemoveByPatternAsync(pattern);
+        // 🎓 RemoveByPatternAsync fue eliminado de ICacheService.
+        // La invalidación por tag se hace con OutputCache.EvictByTagAsync.
     }
 
     public async Task InvalidateAllAsync()
     {
-        // Precaución: invalida todo el cache
-        await _cacheService.RemoveByPatternAsync(_keyPrefix + "*");
+        // 🎓 RemoveByPatternAsync fue eliminado de ICacheService.
+        // En producción: reiniciar el contenedor o usar tags de OutputCache.
     }
 }
 ```
@@ -1289,7 +1285,7 @@ public class CacheInvalidationService
 | CREATE producto | productos:categoria:{categoriaId} |
 | UPDATE producto | productos:categoria:{categoriaId} + producto:{id} |
 | DELETE producto | productos:categoria:{categoriaId} + producto:{id} |
-| UPDATE categoría | productos:categoria:{id} + productos:* |
+| UPDATE categoría | productos:categoria:{id} (via UpdateCategoriaNombreAsync en Mongo) |
 
 ---
 
@@ -1467,16 +1463,11 @@ public async Task<IActionResult> GetAll(/* filtros, paginación y ordenación */
 El TTL solo es el techo: los comandos invalidan "al evento", no esperan 60 s. La invalidación viaja **dentro del propio fire & forget** de la mutación — se lanza sin `await`, protegida con `try/catch`, para no penalizar la respuesta HTTP:
 
 ```csharp
-// CreateProductoCommand.cs — tras Create/Update/Delete (dentro de _ = Task.Run(...))
-try
-{
-    await cacheService.RemoveAsync("productos:all");               // caché de datos (Redis)
-    await outputCacheStore.EvictByTagAsync("productos", CancellationToken.None);   // caché de respuesta
-}
-catch (Exception ex)
-{
-    Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
-}
+// CreateProductoCommand.cs — tras Create/Update/Delete
+// 🎓 Orden correcto: Publish PRIMERO, invalidar DESPUÉS (await, sin Task.Run)
+await mediator.Publish(new ProductoCreadoNotification(producto), cancellationToken);
+await cacheService.RemoveAsync($"producto:{producto.Id}");           // caché de datos (Redis)
+await outputCacheStore.EvictByTagAsync("productos", cancellationToken);  // caché de respuesta (OutputCache)
 ```
 
 `Create/Update/DeleteCategoriaCommand.cs` hacen lo propio con la tag `"categorias"`. Las mutaciones de **GraphQL** delegan en los mismos comandos MediatR (`ProductoMutation.cs` → `CreateProductoCommand`) → invalidan lo mismo sin código duplicado.

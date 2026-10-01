@@ -564,22 +564,29 @@ public static class ServiceConfiguration
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // 🛡️ Fail-fast en producción: credenciales obligatorias.
+        // En Development se permiten fallbacks para facilitar el arranque local.
+        var isDevelopment = builder.Environment.IsDevelopment();
+
         // DbContext
-        var connectionString = configuration.GetConnectionString("PostgreSQL");
+        var connectionString = configuration.GetConnectionString("PostgreSQL")
+            ?? (isDevelopment ? "Host=localhost;Database=tienda;..." : throw new InvalidOperationException("PostgreSQL connection string es obligatoria en producción"));
         services.AddDbContext<TiendaDbContext>(options =>
         {
             options.UseNpgsql(connectionString);
         });
 
         // MongoDB
-        var mongoConnection = configuration.GetConnectionString("MongoDB");
+        var mongoConnection = configuration.GetConnectionString("MongoDB")
+            ?? (isDevelopment ? "mongodb://localhost:27017" : throw new InvalidOperationException("MongoDB connection string es obligatoria en producción"));
         services.AddSingleton<IMongoClient>(sp =>
         {
             return new MongoClient(mongoConnection);
         });
 
         // Redis
-        var redisConnection = configuration.GetConnectionString("Redis");
+        var redisConnection = configuration.GetConnectionString("Redis")
+            ?? (isDevelopment ? "localhost:6379" : throw new InvalidOperationException("Redis connection string es obligatoria en producción"));
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
             return ConnectionMultiplexer.Connect(redisConnection);
@@ -589,6 +596,8 @@ public static class ServiceConfiguration
     }
 }
 ```
+
+> 🎓 **Fail-fast**: en producción, si falta una credencial (PostgreSQL, MongoDB o Redis), la aplicación **no arranca** — lanza `InvalidOperationException` en el momento del registro. En Development se permiten fallbacks (`localhost`) para facilitar el desarrollo local. Esto evita que la app "arranque rota" y falle silenciosamente en el primer request.
 
 ```csharp
 // Program.cs
