@@ -1606,6 +1606,133 @@ Las claves huérfanas son las **menos accedidas** (nadie las lee tras la invalid
 | Fail-Open | Si el cache falla, continuar sin él |
 | Invalidación | Estrategias para mantener cache sincronizado |
 
+### 🎓 Guía de Supervivencia: Cache Multinivel en CQRS
+
+#### ¿Qué es la cache multinivel en CQRS?
+
+En arquitectura CQRS, la lectura y escritura van por caminos separados. La cache multinivel apila capas entre el cliente y el **read model** (MongoDB), mientras las escrituras van directas a **PostgreSQL** vía commands.
+
+```mermaid
+flowchart TB
+    subgraph "Camino de LECTURA"
+        Client[Cliente HTTP/GraphQL] --> L1["Layer 1: OutputCache<br/>Respuesta HTTP completa<br/>TTL: 60s"]
+        L1 -->|miss| Handler[Query Handler<br/>MediatR]
+        Handler --> L2["Layer 2: Cache-Aside Redis<br/>Objetos DTO<br/>TTL: 10min + clave versionada"]
+        L2 -->|miss| Mongo[(MongoDB<br/>productos_read)]
+    end
+
+    subgraph "Camino de ESCRITURA"
+        Writer[Client] --> Command[Command Handler<br/>MediatR]
+        Command --> PG[(PostgreSQL<br/>write model)]
+        Command -->|Publish| Sync[ProductoReadSyncHandler]
+        Sync -->|replicate| Mongo
+        Command -->|invalidate| L1
+        Command -->|invalidate| L2
+    end
+
+    style L1 fill:#3498db,color:#fff
+    style L2 fill:#e74c3c,color:#fff
+    style Mongo fill:#2ecc71,color:#fff
+    style PG fill:#9b59b6,color:#fff
+```
+
+#### ¿Por qué en CQRS la cache es MÁS importante?
+
+| Motivo | Explicación |
+|--------|-------------|
+| **Lecturas frecuentes** | Un marketplace tiene 100 reads por cada 1 write |
+| **MongoDB como read model** | Más rápido que PostgreSQL para reads, pero aún así tiene latencia |
+| **Separación de caminos** | Las escrituras no necesitan esperar a que la cache se limpie — el sync es asíncrono |
+| **GraphQL + REST + Background** | Tres consumidores diferentes leen el mismo read model |
+
+#### Flujo completo: Write → Invalidate → Read
+
+```mermaid
+sequenceDiagram
+    participant W as Writer
+    participant CMD as Command Handler
+    participant PG as PostgreSQL
+    participant SYNC as Sync Handler
+    participant M as MongoDB
+    participant OC as OutputCache
+    participant CA as Cache-Aside
+    participant R as Reader
+
+    W->>CMD: POST /productos (Create)
+    CMD->>PG: INSERT
+    CMD->>SYNC: Publish Notification
+    CMD->>OC: EvictByTagAsync("productos")
+    CMD->>CA: RemoveAsync("productos:{id}")
+    CMD->>CA: RemoveAsync("productos:categoria:{id}")
+    CMD->>CA: InvalidatePagedCache() → incrementa versión
+    CMD-->>W: 201 Created
+
+    SYNC->>M: Upsert en productos_read
+
+    R->>OC: GET /productos?page=1
+    OC-->>R: MISS (tag invalidado)
+    R->>CA: GetPagedAsync(filter)
+    CA-->>R: MISS (versión nueva)
+    R->>M: FindAllPagedAsync(filter)
+    M-->>R: Datos frescos ✅
+```
+
+#### Ventajas
+
+| Ventaja | En CQRS |
+|---------|---------|
+| **Hit rate acumulado** | OutputCache absorbe el 70%, Redis el 80% del resto → 94% total |
+| **Invalidación por capas** | Commands invalidan ambas capas en una sola transacción |
+| **Clave versionada** | `productos:paged:v{n}:{filter}` — sin necesidad de RemoveByPrefix |
+| **Read model dedicado** | MongoDB es más rápido para reads que PostgreSQL |
+
+#### ⚠️ Problemas y Cómo Sobrevivir
+
+| Problema | Síntoma | Solución |
+|----------|---------|----------|
+| **Datos stale entre capas** | OutputCache sirve datos viejos tras escritura | Invalidar OutputCache tag en **todos** los commands |
+| **Sync asíncrono** | MongoDB puede tener datos viejos tras escritura | El sync handler replica inmediatamente; cache se invalida antes |
+| **Claves huérfanas** | Redis se llena con versiones viejas de paginación | TTL 10min + eviction LRU (`volatile-lru`) |
+| **Multi-instancia** | Contador estático `_pagedCacheVersion` no funciona en varios servidores | Usar Redis `INCR` en vez de `Interlocked.Increment` |
+| **GraphQL mutations** | ¿Invalidan la cache? | Solo si llaman al mismo service que los REST commands |
+
+#### Reglas de Oro del Proyecto CQRS
+
+```
+1. Toda escritura (Command) invalida:
+   - OutputCache: EvictByTagAsync("productos")
+   - Cache-aside: RemoveAsync("productos:{id}")
+   - Cache-aside: RemoveAsync("productos:categoria:{id}")
+   - Paginación: InvalidatePagedCache() (clave versionada)
+
+2. Los TTLs son DECRECIENTES:
+   - OutputCache: 60s
+   - Cache-aside: 10min
+   - Nunca L2 > L1
+
+3. El sync a MongoDB va DESPUÉS de invalidar:
+   - Primero: Publish notification (replicate)
+   - Después: Invalidate cache
+   - Si al revés, un lector repuebla cache con datos viejos
+
+4. No cachear datos privados:
+   - Pedidos, Usuarios → sin OutputCache
+   - Solo: Productos, Categorías
+
+5. En multi-instancia:
+   - Reemplazar contador estático por Redis INCR
+   - Redis ya es compartido entre instancias
+```
+
+#### ¿Cuándo NO usar cache multinivel en CQRS?
+
+| Escenario | Alternativa |
+|-----------|-------------|
+| Datos que cambian cada segundo | Sin cache o TTL < 1s |
+| Reportes background | Sin cache (deben ver datos frescos) |
+| GraphQL subscriptions | Sin cache (streaming en tiempo real) |
+| Pocas consultas al día | Solo MongoDB, sin cache |
+
 ### Buenas Prácticas
 
 ```mermaid
