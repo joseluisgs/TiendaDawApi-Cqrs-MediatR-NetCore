@@ -10,6 +10,7 @@ using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
@@ -55,6 +56,7 @@ public class UpdateProductoImageCommandHandler(
 
         await cacheService.RemoveAsync($"productos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+        ProductoService.InvalidatePagedCache();
 
         Log.Information("Notificación publicada y caché invalidada para producto imagen actualizada ID: {ProductoId}", dto.Id);
 

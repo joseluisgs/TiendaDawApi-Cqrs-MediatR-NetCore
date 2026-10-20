@@ -9,6 +9,7 @@ using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -60,6 +61,7 @@ public class UpdateProductoPartialCommandHandler(
         await cacheService.RemoveAsync($"productos:{request.Id}");
         await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+        ProductoService.InvalidatePagedCache();
 
         Log.Information("Notificación publicada y caché invalidada para producto actualizado parcialmente ID: {ProductoId}", dto.Id);
 

@@ -11,6 +11,7 @@ using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -86,6 +87,7 @@ public class UpdateProductoCommandHandler(
         if (oldCategoriaId != request.Dto.CategoriaId)
             await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+        ProductoService.InvalidatePagedCache();
 
         Log.Information("Notificación publicada y caché invalidada para producto actualizado ID: {ProductoId}", dto.Id);
 

@@ -24,10 +24,35 @@ public class ProductoService(
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
 
+    /// <summary>
+    /// 🎓 Contador de versión para invalidar la caché de paginación.
+    ///
+    /// Al escribir (Create/Update/Delete), los commands incrementan este contador.
+    /// La clave de paginación incluye la versión: "productos:paged:v{n}:{filter}".
+    /// Al incrementar n, todas las claves viejas quedan huérfanas y mueren por TTL.
+    ///
+    /// Ventaja: no necesitamos RemoveByPrefix (que MemoryCache no soporta).
+    /// Memoria: las claves huérfanas se liberan por TTL (10 min) y por
+    /// eviction LRU si MemoryCache alcanza SizeLimit.
+    ///
+    /// En multi-instancia (varios servidores), usar Redis INCR en vez de
+    /// un contador estático en memoria.
+    /// </summary>
+    private static long _pagedCacheVersion;
+
+    /// <summary>
+    /// Incrementa la versión del caché de paginación.
+    /// Llamado por los commands tras cada escritura.
+    /// </summary>
+    public static void InvalidatePagedCache() =>
+        Interlocked.Increment(ref _pagedCacheVersion);
+
     /// <inheritdoc/>
     public async Task<PagedResult<ProductoDto>> GetPagedAsync(ProductoFilterDto filter)
     {
-        var cacheKey = $"productos:paged:{filter}";
+        // 🎓 Clave versionada: al incrementar _pagedCacheVersion, todas las claves
+        // viejas quedan huérfanas y mueren por TTL. No necesitamos RemoveByPrefix.
+        var cacheKey = $"productos:paged:v{Volatile.Read(ref _pagedCacheVersion)}:{filter}";
         var cached = await cacheService.GetAsync<PagedResult<ProductoDto>>(cacheKey);
         if (cached is not null)
             return cached;

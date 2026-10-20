@@ -1532,21 +1532,65 @@ flowchart LR
 | **OutputCache** | Respuesta HTTP completa | `EvictByTagAsync("productos")` en commands | 60 segundos |
 | **Cache-Aside** | Objetos DTO en Redis | `RemoveAsync("productos:{id}")` en commands | 10 minutos |
 
-### ⚠️ Nota Didáctica: ¿Por qué `productos:paged:{filter}` no se invalida explícitamente?
+### ✅ Solución Implementada: Clave Versionada para Paginación
 
-El cache-aside cachea la paginación con clave `productos:paged:{filter}`. Al crear/editar/borrar un producto, los commands invalidan:
-- `productos:{id}` ✅
-- `productos:categoria:{id}` ✅
-- OutputCache tag `productos` ✅
-- **`productos:paged:{filter}`** ❌ — **no se invalida**
+**Problema:** `ICacheService` no soporta `RemoveByPrefix` (MemoryCache no lo permite, Redis lo haría con SCAN costoso). Las claves de paginación son infinitas y no se pueden enumerar.
 
-**¿Por qué?** `ICacheService` no soporta `RemoveByPrefix` (MemoryCache no lo permite, y Redis lo haría con SCAN que es costoso). Las claves de paginación son infinitas (`?page=1&size=10&categoria=X`, `?page=2&size=20&categoria=Y`, etc.) — no se pueden enumerar.
+**Solución:** Clave versionada — cada clave incluye un contador de versión:
 
-**¿Qué protege contra datos stale?**
-1. **OutputCache (60s)** — cubre la respuesta HTTP inmediata. Tras cada escritura, `EvictByTagAsync("productos")` limpia todas las respuestas cacheadas.
-2. **TTL de 10 min** — la caché de paginación muere sola. Después de 10 minutos, la siguiente petición lee de MongoDB y repuebla con datos frescos.
+```csharp
+// ProductoService.cs
+private static long _pagedCacheVersion;
 
-**Ventana de datos stale:** máximo 10 minutos en el cache-aside, 60 segundos en OutputCache. Para un marketplace educativo, es aceptable. Para un sistema transaccional real, se necesitaría invalidación por pattern o un message bus.
+public static void InvalidatePagedCache() =>
+    Interlocked.Increment(ref _pagedCacheVersion);
+
+// Lectura:
+var cacheKey = $"productos:paged:v{Volatile.Read(ref _pagedCacheVersion)}:{filter}";
+```
+
+**Cómo funciona:**
+
+```
+t=0   Lectura → clave "productos:paged:v0:page=1&size=10" → cachea datos v0
+t=5   Escritura → InvalidatePagedCache() → _version pasa a 1
+t=6   Lectura → clave "productos:paged:v1:page=1&size=10" → MISS → lee MongoDB → cachea datos v1
+      La clave "v0" queda huérfana → muere por TTL (10 min)
+```
+
+**Los 5 commands llaman `InvalidatePagedCache()`:**
+- `CreateProductoCommand`
+- `UpdateProductoCommand`
+- `DeleteProductoCommand`
+- `UpdateProductoImageCommand`
+- `UpdateProductoPartialCommand`
+
+**¿Y la memoria? ¿Las claves huérfanas la llenan?**
+
+| Escenario | Claves huérfanas | Memoria |
+|-----------|-----------------|---------|
+| 100 filtros × 1 escritura/min × TTL 10min | 10 versiones × 100 = 1.000 claves | ~6 MB |
+| 1.000 filtros × 1 escritura/10s × TTL 10min | 60 versiones × 1.000 = 60.000 claves | ~360 MB |
+
+**En escenarios altos, la memoria crece.** Pero ya existe protección:
+
+| Almacén | Protección | Configuración |
+|---------|-----------|---------------|
+| **MemoryCache** | LRU eviction automático | `SizeLimit` + `CompactionPercentage` |
+| **Redis** | LRU eviction | `maxmemory-policy allkeys-lru` o `volatile-lru` |
+
+Las claves huérfanas son las **menos accedidas** (nadie las lee tras la invalidación), así que el eviction LRU las elimina primero. **No necesitamos implementar eviction manual.**
+
+**Multi-instancia:** El contador `static long` solo funciona en un solo servidor. En múltiples instancias, usar `Redis INCR` en vez del contador estático.
+
+### Resumen de Invalidación en CQRS
+
+| Qué se invalida | Cómo | Cuándo |
+|----------------|------|--------|
+| `productos:{id}` | `RemoveAsync()` directo | Commands (Update/Delete/Image/Partial) |
+| `productos:categoria:{id}` | `RemoveAsync()` directo | Commands (Create/Update/Delete) |
+| OutputCache tag `productos` | `EvictByTagAsync()` | Todos los commands |
+| `productos:paged:v{n}:{filter}` | `InvalidatePagedCache()` (versión) | Todos los commands |
 
 ---
 
