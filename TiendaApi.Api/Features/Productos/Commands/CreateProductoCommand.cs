@@ -66,6 +66,11 @@ public class CreateProductoCommandHandler(
         await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
 
+        // 🎓 Nota: NO invalidamos "productos:paged:{filter}" explícitamente.
+        // ICacheService no soporta RemoveByPrefix (MemoryCache no lo permite).
+        // La paginación se invalida por TTL (10 min). OutputCache (60s) sí se
+        // invalida por tag "productos", cubriendo la respuesta HTTP inmediata.
+
         Log.Information("✅ Notificación publicada y caché invalidada para producto ID: {ProductoId}", dto.Id);
 
         return Result.Success<ProductoDto, DomainError>(dto);
