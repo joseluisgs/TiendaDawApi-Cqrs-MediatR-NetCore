@@ -1511,6 +1511,43 @@ Comprobación real: segundo `GET /api/productos` → **304**; en los logs de la 
 
 > **Combinación real de este proyecto**: OutputCache+ETag (60 s) para el listado **público** de respuestas, y cache-aside Redis con TTL 5 min + invalidación por claves para los **datos** que leen los servicios (ver 10.7/10.8). Las dos capas conviven sin solaparse: atacan puntos distintos del viaje de una petición.
 
+### Estrategia de Dos Capas (Resumen para el Alumno)
+
+El proyecto CQRS usa **dos capas de caché independientes** que se complementan:
+
+```mermaid
+flowchart LR
+    Client[Cliente HTTP] --> OC[OutputCache<br/>60s + tag productos]
+    OC -->|miss| Handler[Query Handler]
+    Handler --> SVC[ProductoService<br/>fachada de lectura]
+    SVC --> CA[Cache-Aside Redis<br/>TTL 10min + claves]
+    CA -->|miss| Mongo[(MongoDB<br/>read model)]
+    
+    style OC fill:#3498db,color:#fff
+    style CA fill:#e74c3c,color:#fff
+```
+
+| Capa | Qué cachea | Invalidación | TTL |
+|------|-----------|--------------|-----|
+| **OutputCache** | Respuesta HTTP completa | `EvictByTagAsync("productos")` en commands | 60 segundos |
+| **Cache-Aside** | Objetos DTO en Redis | `RemoveAsync("productos:{id}")` en commands | 10 minutos |
+
+### ⚠️ Nota Didáctica: ¿Por qué `productos:paged:{filter}` no se invalida explícitamente?
+
+El cache-aside cachea la paginación con clave `productos:paged:{filter}`. Al crear/editar/borrar un producto, los commands invalidan:
+- `productos:{id}` ✅
+- `productos:categoria:{id}` ✅
+- OutputCache tag `productos` ✅
+- **`productos:paged:{filter}`** ❌ — **no se invalida**
+
+**¿Por qué?** `ICacheService` no soporta `RemoveByPrefix` (MemoryCache no lo permite, y Redis lo haría con SCAN que es costoso). Las claves de paginación son infinitas (`?page=1&size=10&categoria=X`, `?page=2&size=20&categoria=Y`, etc.) — no se pueden enumerar.
+
+**¿Qué protege contra datos stale?**
+1. **OutputCache (60s)** — cubre la respuesta HTTP inmediata. Tras cada escritura, `EvictByTagAsync("productos")` limpia todas las respuestas cacheadas.
+2. **TTL de 10 min** — la caché de paginación muere sola. Después de 10 minutos, la siguiente petición lee de MongoDB y repuebla con datos frescos.
+
+**Ventana de datos stale:** máximo 10 minutos en el cache-aside, 60 segundos en OutputCache. Para un marketplace educativo, es aceptable. Para un sistema transaccional real, se necesitaría invalidación por pattern o un message bus.
+
 ---
 
 ## 10.11. Resumen y Buenas Prácticas
