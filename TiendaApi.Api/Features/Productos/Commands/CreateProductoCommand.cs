@@ -11,6 +11,7 @@ using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Productos.Commands;
 
@@ -66,10 +67,9 @@ public class CreateProductoCommandHandler(
         await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
 
-        // 🎓 Nota: NO invalidamos "productos:paged:{filter}" explícitamente.
-        // ICacheService no soporta RemoveByPrefix (MemoryCache no lo permite).
-        // La paginación se invalida por TTL (10 min). OutputCache (60s) sí se
-        // invalida por tag "productos", cubriendo la respuesta HTTP inmediata.
+        // 🎓 Invalidar caché de paginación por versión (clave versionada).
+        // Las claves viejas quedan huérfanas y mueren por TTL.
+        ProductoService.InvalidatePagedCache();
 
         Log.Information("✅ Notificación publicada y caché invalidada para producto ID: {ProductoId}", dto.Id);
 
