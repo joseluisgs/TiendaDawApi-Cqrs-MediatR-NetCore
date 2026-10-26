@@ -18,7 +18,12 @@ public class AuthControllerTests
 
     public AuthControllerTests()
     {
-        _controller = new AuthController(_mediator.Object, Mock.Of<ILogger<AuthController>>());
+        _controller = new AuthController(
+            _mediator.Object,
+            Mock.Of<TiendaApi.Api.Services.Auth.IAuthService>(),
+            Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>(),
+            Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationService>(),
+            Mock.Of<ILogger<AuthController>>());
     }
 
     [Test]
