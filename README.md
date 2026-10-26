@@ -6,6 +6,7 @@
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10-blue)](https://dotnet.microsoft.com/en-us/apps/aspnet)
 [![C#](https://img.shields.io/badge/C%23-14-blue)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![EF Core](https://img.shields.io/badge/EF%20Core-10-blue)](https://docs.microsoft.com/en-us/ef/core/)
+[![OAuth2](https://img.shields.io/badge/OAuth%202.0-Google%20%7C%20GitHub%20%7C%20Microsoft-blue)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/)
 
 
 **Ejemplo educativo de uso de APIs para el desarrollo de servicios backend en .NET 10 ASP.NET Core y C# 14, implementando arquitectura CQRS con MediatR.**
@@ -20,9 +21,9 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 
 - 🏪 **Gestión de Productos y Categorías**: CRUD completo con validaciones
 - 🛒 **Sistema de Pedidos**: Documentos embebidos con MongoDB
-- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER)
+- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER) + Login externo OAuth 2.0 (Google, GitHub, Microsoft)
 - 💾 **Multi-Base de Datos**: PostgreSQL (relacional), MongoDB (documentos), Redis (caché)
-- 🔐 **Seguridad**: JWT, validaciones FluentValidation, manejo global de excepciones
+- 🔐 **Seguridad**: JWT, OAuth 2.0, validaciones FluentValidation, manejo global de excepciones
 - 📡 **APIs Avanzadas**: GraphQL con HotChocolate, WebSockets y SignalR para notificaciones en tiempo real
 - ⏰ **Background Jobs**: Tareas programadas con BackgroundService para reportes y sincronización
 - 📊 **Versionado de API**: Control de versiones por URL.
@@ -112,7 +113,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 🏪 **CRUD Completo**: Productos, Categorías, Pedidos y Usuarios
 - 🧩 **CQRS con MediatR**: Commands/Queries/Notifications por funcionalidad (escritura y lectura desacopladas)
 - 🔄 **Read model CQRS**: PostgreSQL → MongoDB (`productos_read`) sincronizado por eventos de dominio
-- 🔐 **Autenticación JWT**: Token-based con roles y claims
+- 🔐 **Autenticación JWT**: Token-based con roles y claims + Login externo OAuth 2.0
 - 🔒 **HTTPS + HSTS**: Redirección HTTP→HTTPS, HSTS 365 días, Security Headers
 - 📧 **Notificaciones por Email**: Envío asíncrono con MailKit (pipeline Polly: retry + circuit breaker)
 - 📊 **Cacheo con Redis**: Patrón Cache-Aside para mejorar rendimiento
@@ -139,6 +140,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - **MongoDB 7.0** - Base de datos de documentos
 - **Redis** - Cache distribuido
 - **JWT** - Autenticación basada en tokens
+- **OAuth 2.0 (Google/GitHub/Microsoft)** - Login externo opcional
 - **MediatR** - Mediator pattern para CQRS Commands, Queries y Notifications
 - **FluentValidation** - Validaciones declarativas
 - **AutoMapper** - Mapeo de objetos
@@ -186,7 +188,16 @@ start http://localhost:5031/swagger
 # Health check (200 OK / 503 si alguna dependencia cae)
 start http://localhost:5031/health
 
+# Login externo OAuth 2.0 (requiere configurar ClientId/Secret)
+# GET http://localhost:5031/api/v1/auth/external/Google
+# GET http://localhost:5031/api/v1/auth/external/GitHub
+# GET http://localhost:5031/api/v1/auth/external/Microsoft
+
 > **Nota:** En producción, la API usa HTTPS obligatorio con HSTS.
+
+> **OAuth 2.0:** Para activar los logins externos, configura los ClientId/Secret con
+> `dotnet user-secrets` y activa los proveedores en `appsettings.Development.json`
+> (`Auth:{Provider}:Enabled = true`). Ver [doc/17](doc/17-jwt-authentication.md).
 ```
 
 ### Desarrollo en Producción con Docker
@@ -391,7 +402,7 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 ### Seguridad
 | #   | Documento                                          | Descripción              |
 | --- | -------------------------------------------------- | ------------------------ |
-| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Tokens, Claims           |
+| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Tokens, Claims + OAuth 2.0 Externo |
 | 18  | [Autorización Roles](doc/18-autorizacion-roles.md) | Policies, Roles          |
 | 19  | [Seguridad HTTP](doc/19-seguridad-http.md)         | HSTS, HTTPS, Headers     |
 
@@ -472,6 +483,15 @@ classDiagram
     +IsLocalAvatar()
     +HasDefaultAvatar()
     +GetAvatarUrl()
+  }
+
+  class UserLogin {
+    +long Id
+    +long UserId
+    +string LoginProvider
+    +string ProviderKey
+    +string? ProviderDisplayName
+    +DateTime CreatedAt
   }
 
   class Categoria {
@@ -566,6 +586,7 @@ classDiagram
   ProductoRead ..> Producto : "replica (mismo Id)"
   Pedido ..> PedidoEstado : "usa estado"
   User "1" --> "*" Pedido : "referencia"
+User "1" --> "*" UserLogin : "vincula"
   Categoria "1" --> "*" Producto : "tiene"
   Producto "*" --> "1" Categoria : "pertenece"
   Pedido "1" *-- "1" Destinatario : "compone"
@@ -598,6 +619,16 @@ erDiagram
         string Role
         bool IsDeleted
     }
+    
+    USER_LOGIN {
+        bigint Id PK
+        bigint UserId FK
+        string LoginProvider
+        string ProviderKey
+        string ProviderDisplayName
+    }
+    
+    USER ||--o{ USER_LOGIN : "vincula"
     
     CATEGORIA {
         bigint Id PK
@@ -727,9 +758,9 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 │   │   ├── Email/                    # Servicio de email (MailKit + pipeline Polly)
 │   │   ├── Productos/                # Fachada de lectura de productos (caché + MongoDB)
 │   │   └── Storage/                  # Servicios de almacenamiento de archivos
-│   ├── Repositories/                 # Acceso a datos (Categorias, Productos, Pedidos, Usuarios)
-│   ├── Models/                       # Modelos de dominio (User, Producto, Categoria, Pedido) + Models/Read
-│   ├── Dtos/                         # Data Transfer Objects (Request/Response)
+│   ├── Repositories/                 # Acceso a datos (Categorias, Productos, Pedidos, Usuarios, Auth)
+│   ├── Models/                       # Modelos de dominio (User, UserLogin, Producto, Categoria, Pedido) + Models/Read
+│   ├── Dtos/                         # Data Transfer Objects (Request/Response, Auth)
 │   ├── Data/                         # DbContext, Seeders y configuración (Abstractions, Interceptors, Seed)
 │   ├── Migrations/                   # Migraciones EF Core (InitialCreate, AddOptimizationIndexes)
 │   ├── Mappers/                      # Mapeadores (Modelos <-> DTO <-> Read)
@@ -1282,6 +1313,7 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 ## 🔐 Seguridad
 
 - ✅ **JWT Authentication**: Tokens Bearer con expiración configurable
+- ✅ **OAuth 2.0 Externo**: Login con Google, GitHub y Microsoft (configurable por entorno)
 - ✅ **Role-Based Authorization**: ADMIN y USER roles con políticas granulares
 - ✅ **FluentValidation**: Validaciones declarativas en DTOs
 - ✅ **Global Exception Handler**: Respuestas de error consistentes y centralizadas
@@ -1302,10 +1334,14 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 
 ### Auth (versionado)
 
-| Endpoint              | Método | Auth | Descripción                  |
-| --------------------- | ------ | ---- | ---------------------------- |
-| `/api/v1/auth/signup` | POST   | No   | Registrar nuevo usuario      |
-| `/api/v1/auth/signin` | POST   | No   | Iniciar sesión y obtener JWT |
+| Endpoint                              | Método | Auth | Descripción                                        |
+| ------------------------------------- | ------ | ---- | -------------------------------------------------- |
+| `/api/v1/auth/signup`                | POST   | No   | Registrar nuevo usuario                            |
+| `/api/v1/auth/signin`                | POST   | No   | Iniciar sesión y obtener JWT                       |
+| `/api/v1/auth/external/{provider}`   | GET    | No   | Login externo: redirige a Google/GitHub/Microsoft  |
+| `/api/v1/auth/external-callback`     | GET    | No   | Callback del proveedor → devuelve JWT propio       |
+
+> 🚪 **Login Externo OAuth 2.0**: los proveedores se activan con `Auth:{Provider}:Enabled` en appsettings. Los ClientId/Secret van en user-secrets o variables de entorno, nunca en appsettings.json.
 
 ### Categorías
 
@@ -1650,6 +1686,8 @@ WS ws://localhost:5031/graphql
 | userdaw | userdaw@tienda.com | userdaw  | USER  |
 
 **Nota:** Las contraseñas son las mismas que los usernames para facilitar las pruebas.
+
+**Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft. Los usuarios creados vía OAuth tendrán la contraseña dummy `OAUTH-{Provider}` (el login normal fallará para ellos). Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
 
 ## 📝 Licencia
 
