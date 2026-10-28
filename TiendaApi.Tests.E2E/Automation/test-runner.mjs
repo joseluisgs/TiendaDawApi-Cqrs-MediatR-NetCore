@@ -235,6 +235,24 @@ let imagenProductoUrl = null;
     assertEq(st(r), 401, "status");
   });
 
+  // OAuth externo: puerta habilitada pero SIN credenciales en este entorno.
+  // Si algún día se configuran credenciales reales, el 404 pasa a ser 302.
+  await test("Auth ext: GET /auth/external/Google sin credenciales → 404 (puerta cerrada)", async () => {
+    const r = await req("GET", "/api/v1/auth/external/Google");
+    assertEq(st(r), 404, "status");
+    assert(String(r.json ?? r.body ?? "").includes("no está configurado"), "mensaje de proveedor no configurado");
+  });
+
+  await test("Auth ext: GET /auth/external/ProveedorInventado → 404", async () => {
+    const r = await req("GET", "/api/v1/auth/external/ProveedorInventado");
+    assertEq(st(r), 404, "status");
+  });
+
+  await test("Auth ext: GET /auth/external-callback sin autenticar → 400", async () => {
+    const r = await req("GET", "/api/v1/auth/external-callback");
+    assertEq(st(r), 400, "status");
+  });
+
   // ============================ CATEGORÍAS ============================
   await test("Categorías: GET paged → 200 con items y paginación", async () => {
     const r = await req("GET", "/api/categorias?page=0&size=2");

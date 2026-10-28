@@ -100,17 +100,18 @@ public class AuthController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AuthResponseDto>> ExternalLoginCallback()
     {
-        var authenticateResult = await authenticationService.AuthenticateAsync(
-            HttpContext, "ExternalCookie");
-        if (!authenticateResult.Succeeded)
+        // 🎓 NO autenticar contra un esquema fijo que pueda no estar registrado:
+        // AuthenticateAsync con un esquema sin registrar LANZA excepción (→ 500
+        // vía manejador global). Iteramos SOLO los esquemas que hayan quedado
+        // registrados; si las puertas OAuth están desactivadas no hay ninguno
+        // y el resultado es el BadRequest controlado de abajo (400).
+        AuthenticateResult authenticateResult = AuthenticateResult.NoResult();
+        foreach (var scheme in await schemeProvider.GetAllSchemesAsync())
         {
-            foreach (var scheme in await schemeProvider.GetAllSchemesAsync())
-            {
-                if (scheme.Name is "Bearer" or "Cookies" or "ExternalCookie") continue;
-                authenticateResult = await authenticationService.AuthenticateAsync(
-                    HttpContext, scheme.Name);
-                if (authenticateResult.Succeeded) break;
-            }
+            if (scheme.Name is "Bearer" or "Cookies") continue;
+            authenticateResult = await authenticationService.AuthenticateAsync(
+                HttpContext, scheme.Name);
+            if (authenticateResult.Succeeded) break;
         }
 
         if (!authenticateResult.Succeeded || authenticateResult.Principal is null)
