@@ -15,7 +15,7 @@ public class UserLoginRepository(
     /// <inheritdoc/>
     public async Task<UserLogin?> FindByProviderAsync(string loginProvider, string providerKey)
     {
-        return await context.UserLogins
+        return await context.ExternalLogins
             .FirstOrDefaultAsync(ul =>
                 ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
     }
@@ -23,7 +23,7 @@ public class UserLoginRepository(
     /// <inheritdoc/>
     public async Task<IEnumerable<UserLogin>> FindByUserIdAsync(long userId)
     {
-        return await context.UserLogins
+        return await context.ExternalLogins
             .Where(ul => ul.UserId == userId)
             .ToListAsync();
     }
@@ -31,7 +31,7 @@ public class UserLoginRepository(
     /// <inheritdoc/>
     public async Task<UserLogin> SaveAsync(UserLogin userLogin)
     {
-        context.UserLogins.Add(userLogin);
+        context.ExternalLogins.Add(userLogin);
         await context.SaveChangesAsync();
         logger.LogInformation("Vinculación OAuth creada: {Provider}/{Key} → UserId {UserId}",
             userLogin.LoginProvider, userLogin.ProviderKey, userLogin.UserId);
@@ -41,7 +41,7 @@ public class UserLoginRepository(
     /// <inheritdoc/>
     public async Task<bool> ExistsAsync(string loginProvider, string providerKey)
     {
-        return await context.UserLogins
+        return await context.ExternalLogins
             .AnyAsync(ul =>
                 ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
     }
