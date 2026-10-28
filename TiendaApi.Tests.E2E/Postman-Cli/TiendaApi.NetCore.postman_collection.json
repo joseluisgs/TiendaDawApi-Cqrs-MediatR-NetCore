@@ -173,7 +173,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"username\":\"\",\"email\":\"test@test.com\",\"password\":\"Test1234\"}"
+              "raw": "{\"username\":\"\",\"email\":\"test@test.com\",\"password\":\"Test1234!\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signup",
@@ -213,7 +213,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"username\":\"testuser\",\"email\":\"email-invalido\",\"password\":\"Test1234\"}"
+              "raw": "{\"username\":\"testuser\",\"email\":\"email-invalido\",\"password\":\"Test1234!\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signup",
@@ -253,7 +253,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"username\":\"{{adminUsername}}\",\"email\":\"otro@test.com\",\"password\":\"Test1234\"}"
+              "raw": "{\"username\":\"{{adminUsername}}\",\"email\":\"otro@test.com\",\"password\":\"Test1234!\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signup",
@@ -305,7 +305,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"username\":\"{{testUsername}}\",\"email\":\"{{testUsername}}@test.com\",\"password\":\"Test1234\"}"
+              "raw": "{\"username\":\"{{testUsername}}\",\"email\":\"{{testUsername}}@test.com\",\"password\":\"Test1234!\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signup",
@@ -491,7 +491,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"username\":\"nonexistentuser12345\",\"password\":\"Test1234\"}"
+              "raw": "{\"username\":\"nonexistentuser12345\",\"password\":\"Test1234!\"}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/signin",

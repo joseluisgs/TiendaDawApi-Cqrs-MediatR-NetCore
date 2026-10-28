@@ -43,6 +43,9 @@ const CONFIG = {
   env: {
     ASPNETCORE_ENVIRONMENT: "Development",
     ASPNETCORE_URLS: "http://localhost:5031",
+    // Auth:Mode parametrizable: AUTH_MODE=Identity node test-runner.mjs
+    // (en modo Identity las contraseñas seed son Admin123!, no admin/userdaw)
+    Auth__Mode: process.env.AUTH_MODE || "Custom",
   },
   dbServices: ["postgres", "mongodb"],
   composeFile: "docker-compose.local.yml",
@@ -194,7 +197,7 @@ let imagenProductoUrl = null;
   // ============================ AUTH ============================
   await test("Auth: POST signup usuario único → 201 con token", async () => {
     const r = await req("POST", "/api/v1/auth/signup", {
-      body: { username: `auto_${ts}`, email: `auto_${ts}@test.com`, password: "Test1234" },
+      body: { username: `auto_${ts}`, email: `auto_${ts}@test.com`, password: "Test1234!" },
     });
     assertEq(st(r), 201, "status");
     assert(r.json?.token, "falta token");
@@ -204,7 +207,7 @@ let imagenProductoUrl = null;
 
   await test("Auth: POST signup con username inválido → 400", async () => {
     const r = await req("POST", "/api/v1/auth/signup", {
-      body: { username: "x", email: `bad_${ts}@test.com`, password: "Test1234" },
+      body: { username: "x", email: `bad_${ts}@test.com`, password: "Test1234!" },
     });
     assertEq(st(r), 400, "status");
   });
@@ -606,7 +609,7 @@ let imagenProductoUrl = null;
 
   await test("Users perfil: DELETE /me/profile (cuenta dedicada) → 204", async () => {
     const su = await req("POST", "/api/v1/auth/signup", {
-      body: { username: `del_${ts}`, email: `del_${ts}@test.com`, password: "Test1234" },
+      body: { username: `del_${ts}`, email: `del_${ts}@test.com`, password: "Test1234!" },
     });
     assertEq(st(su), 201, "signup dedicada");
     assert(su.json?.token, "falta token de la cuenta dedicada");
