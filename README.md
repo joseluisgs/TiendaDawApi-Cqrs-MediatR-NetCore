@@ -21,7 +21,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 
 - 🏪 **Gestión de Productos y Categorías**: CRUD completo con validaciones
 - 🛒 **Sistema de Pedidos**: Documentos embebidos con MongoDB
-- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER) + Login externo OAuth 2.0 (Google, GitHub, Microsoft)
+- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER) + Login externo OAuth 2.0 (Google, GitHub, Microsoft) - modo Custom (BCrypt) o Identity (UserManager) según `Auth:Mode`
 - 💾 **Multi-Base de Datos**: PostgreSQL (relacional), MongoDB (documentos), Redis (caché)
 - 🔐 **Seguridad**: JWT, OAuth 2.0, validaciones FluentValidation, manejo global de excepciones
 - 📡 **APIs Avanzadas**: GraphQL con HotChocolate, WebSockets y SignalR para notificaciones en tiempo real
@@ -114,6 +114,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 🧩 **CQRS con MediatR**: Commands/Queries/Notifications por funcionalidad (escritura y lectura desacopladas)
 - 🔄 **Read model CQRS**: PostgreSQL → MongoDB (`productos_read`) sincronizado por eventos de dominio
 - 🔐 **Autenticación JWT**: Token-based con roles y claims + Login externo OAuth 2.0
+- 🔐 **Auth:Mode switchable**: Custom (BCrypt) o Identity (UserManager) vía configuración
 - 🔒 **HTTPS + HSTS**: Redirección HTTP→HTTPS, HSTS 365 días, Security Headers
 - 📧 **Notificaciones por Email**: Envío asíncrono con MailKit (pipeline Polly: retry + circuit breaker)
 - 📊 **Cacheo con Redis**: Patrón Cache-Aside para mejorar rendimiento
@@ -135,6 +136,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 
 - **.NET 10 con C# 14** - Plataforma principal
 - **ASP.NET Core Web API** - Framework REST
+- **ASP.NET Core Identity** - Autenticación y autorización alternativa (Auth:Mode=Identity) + OAuth 2.0 externo
 - **EF Core 10** - ORM con PostgreSQL y MongoDB
 - **PostgreSQL 17** - Base de datos relacional
 - **MongoDB 7.0** - Base de datos de documentos
@@ -402,7 +404,7 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 ### Seguridad
 | #   | Documento                                          | Descripción              |
 | --- | -------------------------------------------------- | ------------------------ |
-| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Tokens, Claims + OAuth 2.0 Externo |
+| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Manual e Identity + OAuth 2.0 |
 | 18  | [Autorización Roles](doc/18-autorizacion-roles.md) | Policies, Roles          |
 | 19  | [Seguridad HTTP](doc/19-seguridad-http.md)         | HSTS, HTTPS, Headers     |
 
@@ -1724,14 +1726,14 @@ WS ws://localhost:5031/graphql
 
 ## 👥 Usuarios Demo
 
-| Usuario | Email              | Password | Rol   |
-| ------- | ------------------ | -------- | ----- |
-| admin   | admin@tienda.com   | admin    | ADMIN |
-| userdaw | userdaw@tienda.com | userdaw  | USER  |
+| Usuario | Email              | Password (Custom) | Password (Identity) | Rol   |
+| ------- | ------------------ | ----------------- | ------------------- | ----- |
+| admin   | admin@tienda.com   | admin             | Admin123!           | ADMIN |
+| userdaw | userdaw@tienda.com | userdaw           | Admin123!           | USER  |
 
-**Nota:** Las contraseñas son las mismas que los usernames para facilitar las pruebas.
+**Nota:** Las contraseñas del modo Custom son las mismas que los usernames para facilitar las pruebas. En modo Identity (`Auth:Mode = "Identity"`) usan `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. El seed crea los usuarios con el algoritmo correcto según el modo (ver [doc/17 §17.14.4](doc/17-jwt-authentication.md#17144-el-seed-condicional)).
 
-**Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft. Los usuarios creados vía OAuth tendrán la contraseña dummy `OAUTH-{Provider}` (el login normal fallará para ellos). Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
+**Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft (endpoints `/api/v1/auth/external/{provider}`). Los usuarios creados vía OAuth **no tienen contraseña**: en modo Custom se guarda un dummy hash `OAUTH-{Provider}` (el login normal fallará para ellos) y en modo Identity `PasswordHash` queda null. Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
 
 ## 📝 Licencia
 
