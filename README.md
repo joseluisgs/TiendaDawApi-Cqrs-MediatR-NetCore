@@ -1313,6 +1313,7 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 ## 🔐 Seguridad
 
 - ✅ **JWT Authentication**: Tokens Bearer con expiración configurable
+- ✅ **Auth:Mode Dual**: Custom (BCrypt manual) o Identity (UserManager/PBKDF2) según `Auth:Mode` en configuración
 - ✅ **OAuth 2.0 Externo**: Login con Google, GitHub y Microsoft (configurable por entorno)
 - ✅ **Role-Based Authorization**: ADMIN y USER roles con políticas granulares
 - ✅ **FluentValidation**: Validaciones declarativas en DTOs
@@ -1328,7 +1329,50 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 - ✅ **HTTPS + HSTS**: Redirección HTTP→HTTPS y HSTS con max-age 365 días
 - ✅ **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
 
-> **Ver más:** [Seguridad HTTP](doc/19-seguridad-http.md)
+> **Ver más:** [Seguridad HTTP](doc/19-seguridad-http.md) · [JWT Authentication](doc/17-jwt-authentication.md) · [Autorización por Roles](doc/18-autorizacion-roles.md)
+
+### 🔐 Auth:Mode - Custom vs Identity
+
+La autenticación se configura con `Auth:Mode` en `appsettings.json`. **ASP.NET Core Identity** es el sistema de autenticación de Microsoft (UserManager/SignInManager, tablas `AspNet*`, PBKDF2): este proyecto lo ofrece como modo alternativo al enfoque manual.
+
+La API soporta **4 modos de funcionamiento**, y todos producen el mismo JWT Bearer:
+
+| # | Modo | Cómo valida la contraseña | Login externo | Implementación |
+|---|------|---------------------------|---------------|----------------|
+| 1 | **JWT manual** (`Auth:Mode=Custom`) | `BCrypt.Verify()` (hash `$2a$11$...`) | - | `AuthService` |
+| 2 | **JWT con Identity** (`Auth:Mode=Identity`) | `SignInManager.CheckPasswordSignInAsync()` (PBKDF2, `AQAAAA...`) | - | `IdentityAuthService` |
+| 3 | **OAuth manual** (Google/GitHub/Microsoft) | - (el proveedor autentica) | Tabla propia `user_logins` + dummy hash | `OAuthConfig` + `AuthService.LoginExternalAsync` |
+| 4 | **OAuth con Identity** | - (el proveedor autentica) | `AspNetUserLogins` + `UserManager.AddLoginAsync()` | `OAuthConfig` + `IdentityAuthService.LoginExternalAsync` |
+
+Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` (y el callback usa el servicio del modo activo). El middleware JWT `[Authorize]` es idéntico en los 4.
+
+| Modo | Descripción | Hash | Servicio |
+| ---- | ----------- | ---- | -------- |
+| `Custom` (default) | Enfoque propio: BCrypt manual + JWT Bearer | BCrypt (`$2a$11$...`) | `AuthService` |
+| `Identity` | ASP.NET Core Identity (UserManager/SignInManager) + JWT Bearer | PBKDF2 (`AQAAAAEAACcQ...`) | `IdentityAuthService` |
+
+```json
+{
+  "Auth": {
+    "Mode": "Custom",   // "Custom" o "Identity"
+    "Google": { "Enabled": false },
+    "GitHub": { "Enabled": false },
+    "Microsoft": { "Enabled": false }
+  }
+}
+```
+
+🎓 **En clase**: ambos modos comparten el mismo contrato (`IAuthService`) y producen el mismo JWT. La diferencia es **cómo** se valida la contraseña internamente. Cambiar de modo:
+
+1. Cambiar `Auth:Mode` en `appsettings.json`
+2. Aplicar las migraciones pendientes (en desarrollo se aplican solas al arrancar; la migración `AddIdentity` crea las tablas `AspNet*` y renombra `Username`→`UserName`)
+3. Reiniciar - el seed crea los usuarios con el algoritmo correcto según el modo
+
+> **Contraseñas seed**: en modo Custom los usuarios seed usan `admin` / `userdaw`; en modo Identity usan `Admin123!` / `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. Ambas quedan en los logs al sembrar.
+
+> **Nota**: cambiar de modo **no invalida usuarios existentes**, pero los hashes no son intercambiables (un usuario creado en Custom no puede hacer login en Identity y viceversa, salvo que se re-hasheen las contraseñas).
+
+> **Diferencia con el modo de validación**: este proyecto registra `AddFluentValidationAutoValidation()` en el pipeline MVC, así que un DTO inválido (username corto, email mal formado) se rechaza con **400 en ambos modos** antes de llegar al servicio. Las fallas de *política de Identity* (p.ej. una contraseña que incumple los requisitos de UserManager) solo pueden aparecer en modo Identity y se mapean a **422** (`BusinessRuleError`).
 
 ## 📡 Endpoints
 
