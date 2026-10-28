@@ -25,7 +25,10 @@ body:graphql:vars {
 script:post-response {
   test("GraphQL CreateProducto NotFound - Returns null data", function () {
       const jsonData = res.getBody();
-      expect(jsonData.data.createProducto).to.be.null;
+      // La API responde con errors + data:null (o data sin el campo) cuando la
+      // categoría no existe: aceptamos ambos formatos de fallo GraphQL.
+      const resultado = jsonData?.data ? jsonData.data.createProducto ?? null : null;
+      expect(resultado).to.be.null;
   });
 }
 

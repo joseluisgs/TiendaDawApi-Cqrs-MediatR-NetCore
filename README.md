@@ -21,7 +21,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 
 - 🏪 **Gestión de Productos y Categorías**: CRUD completo con validaciones
 - 🛒 **Sistema de Pedidos**: Documentos embebidos con MongoDB
-- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER) + Login externo OAuth 2.0 (Google, GitHub, Microsoft)
+- 👥 **Gestión de Usuarios**: Autenticación JWT con roles (ADMIN, USER) + Login externo OAuth 2.0 (Google, GitHub, Microsoft) - modo Custom (BCrypt) o Identity (UserManager) según `Auth:Mode`
 - 💾 **Multi-Base de Datos**: PostgreSQL (relacional), MongoDB (documentos), Redis (caché)
 - 🔐 **Seguridad**: JWT, OAuth 2.0, validaciones FluentValidation, manejo global de excepciones
 - 📡 **APIs Avanzadas**: GraphQL con HotChocolate, WebSockets y SignalR para notificaciones en tiempo real
@@ -114,6 +114,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 🧩 **CQRS con MediatR**: Commands/Queries/Notifications por funcionalidad (escritura y lectura desacopladas)
 - 🔄 **Read model CQRS**: PostgreSQL → MongoDB (`productos_read`) sincronizado por eventos de dominio
 - 🔐 **Autenticación JWT**: Token-based con roles y claims + Login externo OAuth 2.0
+- 🔐 **Auth:Mode switchable**: Custom (BCrypt) o Identity (UserManager) vía configuración
 - 🔒 **HTTPS + HSTS**: Redirección HTTP→HTTPS, HSTS 365 días, Security Headers
 - 📧 **Notificaciones por Email**: Envío asíncrono con MailKit (pipeline Polly: retry + circuit breaker)
 - 📊 **Cacheo con Redis**: Patrón Cache-Aside para mejorar rendimiento
@@ -135,6 +136,7 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 
 - **.NET 10 con C# 14** - Plataforma principal
 - **ASP.NET Core Web API** - Framework REST
+- **ASP.NET Core Identity** - Autenticación y autorización alternativa (Auth:Mode=Identity) + OAuth 2.0 externo
 - **EF Core 10** - ORM con PostgreSQL y MongoDB
 - **PostgreSQL 17** - Base de datos relacional
 - **MongoDB 7.0** - Base de datos de documentos
@@ -402,7 +404,7 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 ### Seguridad
 | #   | Documento                                          | Descripción              |
 | --- | -------------------------------------------------- | ------------------------ |
-| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Tokens, Claims + OAuth 2.0 Externo |
+| 17  | [JWT Authentication](doc/17-jwt-authentication.md) | Manual e Identity + OAuth 2.0 |
 | 18  | [Autorización Roles](doc/18-autorizacion-roles.md) | Policies, Roles          |
 | 19  | [Seguridad HTTP](doc/19-seguridad-http.md)         | HSTS, HTTPS, Headers     |
 
@@ -1313,6 +1315,7 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 ## 🔐 Seguridad
 
 - ✅ **JWT Authentication**: Tokens Bearer con expiración configurable
+- ✅ **Auth:Mode Dual**: Custom (BCrypt manual) o Identity (UserManager/PBKDF2) según `Auth:Mode` en configuración
 - ✅ **OAuth 2.0 Externo**: Login con Google, GitHub y Microsoft (configurable por entorno)
 - ✅ **Role-Based Authorization**: ADMIN y USER roles con políticas granulares
 - ✅ **FluentValidation**: Validaciones declarativas en DTOs
@@ -1328,7 +1331,50 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 - ✅ **HTTPS + HSTS**: Redirección HTTP→HTTPS y HSTS con max-age 365 días
 - ✅ **Security Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy
 
-> **Ver más:** [Seguridad HTTP](doc/19-seguridad-http.md)
+> **Ver más:** [Seguridad HTTP](doc/19-seguridad-http.md) · [JWT Authentication](doc/17-jwt-authentication.md) · [Autorización por Roles](doc/18-autorizacion-roles.md)
+
+### 🔐 Auth:Mode - Custom vs Identity
+
+La autenticación se configura con `Auth:Mode` en `appsettings.json`. **ASP.NET Core Identity** es el sistema de autenticación de Microsoft (UserManager/SignInManager, tablas `AspNet*`, PBKDF2): este proyecto lo ofrece como modo alternativo al enfoque manual.
+
+La API soporta **4 modos de funcionamiento**, y todos producen el mismo JWT Bearer:
+
+| # | Modo | Cómo valida la contraseña | Login externo | Implementación |
+|---|------|---------------------------|---------------|----------------|
+| 1 | **JWT manual** (`Auth:Mode=Custom`) | `BCrypt.Verify()` (hash `$2a$11$...`) | - | `AuthService` |
+| 2 | **JWT con Identity** (`Auth:Mode=Identity`) | `SignInManager.CheckPasswordSignInAsync()` (PBKDF2, `AQAAAA...`) | - | `IdentityAuthService` |
+| 3 | **OAuth manual** (Google/GitHub/Microsoft) | - (el proveedor autentica) | Tabla propia `user_logins` + dummy hash | `OAuthConfig` + `AuthService.LoginExternalAsync` |
+| 4 | **OAuth con Identity** | - (el proveedor autentica) | `AspNetUserLogins` + `UserManager.AddLoginAsync()` | `OAuthConfig` + `IdentityAuthService.LoginExternalAsync` |
+
+Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` (y el callback usa el servicio del modo activo). El middleware JWT `[Authorize]` es idéntico en los 4.
+
+| Modo | Descripción | Hash | Servicio |
+| ---- | ----------- | ---- | -------- |
+| `Custom` (default) | Enfoque propio: BCrypt manual + JWT Bearer | BCrypt (`$2a$11$...`) | `AuthService` |
+| `Identity` | ASP.NET Core Identity (UserManager/SignInManager) + JWT Bearer | PBKDF2 (`AQAAAAEAACcQ...`) | `IdentityAuthService` |
+
+```json
+{
+  "Auth": {
+    "Mode": "Custom",   // "Custom" o "Identity"
+    "Google": { "Enabled": false },
+    "GitHub": { "Enabled": false },
+    "Microsoft": { "Enabled": false }
+  }
+}
+```
+
+🎓 **En clase**: ambos modos comparten el mismo contrato (`IAuthService`) y producen el mismo JWT. La diferencia es **cómo** se valida la contraseña internamente. Cambiar de modo:
+
+1. Cambiar `Auth:Mode` en `appsettings.json`
+2. Aplicar las migraciones pendientes (en desarrollo se aplican solas al arrancar; la migración `AddIdentity` crea las tablas `AspNet*` y renombra `Username`→`UserName`)
+3. Reiniciar - el seed crea los usuarios con el algoritmo correcto según el modo
+
+> **Contraseñas seed**: en modo Custom los usuarios seed usan `admin` / `userdaw`; en modo Identity usan `Admin123!` / `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. Ambas quedan en los logs al sembrar.
+
+> **Nota**: cambiar de modo **no invalida usuarios existentes**, pero los hashes no son intercambiables (un usuario creado en Custom no puede hacer login en Identity y viceversa, salvo que se re-hasheen las contraseñas).
+
+> **Diferencia con el modo de validación**: este proyecto registra `AddFluentValidationAutoValidation()` en el pipeline MVC, así que un DTO inválido (username corto, email mal formado) se rechaza con **400 en ambos modos** antes de llegar al servicio. Las fallas de *política de Identity* (p.ej. una contraseña que incumple los requisitos de UserManager) solo pueden aparecer en modo Identity y se mapean a **422** (`BusinessRuleError`).
 
 ## 📡 Endpoints
 
@@ -1680,14 +1726,14 @@ WS ws://localhost:5031/graphql
 
 ## 👥 Usuarios Demo
 
-| Usuario | Email              | Password | Rol   |
-| ------- | ------------------ | -------- | ----- |
-| admin   | admin@tienda.com   | admin    | ADMIN |
-| userdaw | userdaw@tienda.com | userdaw  | USER  |
+| Usuario | Email              | Password (Custom) | Password (Identity) | Rol   |
+| ------- | ------------------ | ----------------- | ------------------- | ----- |
+| admin   | admin@tienda.com   | admin             | Admin123!           | ADMIN |
+| userdaw | userdaw@tienda.com | userdaw           | Admin123!           | USER  |
 
-**Nota:** Las contraseñas son las mismas que los usernames para facilitar las pruebas.
+**Nota:** Las contraseñas del modo Custom son las mismas que los usernames para facilitar las pruebas. En modo Identity (`Auth:Mode = "Identity"`) usan `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. El seed crea los usuarios con el algoritmo correcto según el modo (ver [doc/17 §17.14.4](doc/17-jwt-authentication.md#17144-el-seed-condicional)).
 
-**Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft. Los usuarios creados vía OAuth tendrán la contraseña dummy `OAUTH-{Provider}` (el login normal fallará para ellos). Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
+**Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft (endpoints `/api/v1/auth/external/{provider}`). Los usuarios creados vía OAuth **no tienen contraseña**: en modo Custom se guarda un dummy hash `OAUTH-{Provider}` (el login normal fallará para ellos) y en modo Identity `PasswordHash` queda null. Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
 
 ## 📝 Licencia
 

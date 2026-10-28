@@ -29,7 +29,7 @@ public class CreateUserCommandHandlerTests
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.FindByUsernameAsync(dto.Username)).ReturnsAsync((User?)null);
         repository.Setup(r => r.FindByEmailAsync(dto.Email)).ReturnsAsync((User?)null);
-        repository.Setup(r => r.SaveAsync(It.IsAny<User>())).ReturnsAsync(new User { Id = 1, Username = "juan" });
+        repository.Setup(r => r.SaveAsync(It.IsAny<User>())).ReturnsAsync(new User { Id = 1, UserName = "juan" });
         var handler = new CreateUserCommandHandler(repository.Object, validator.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new CreateUserCommand(dto), CancellationToken.None);
@@ -64,7 +64,7 @@ public class CreateUserCommandHandlerTests
         var cacheService = new Mock<ICacheService>();
         var dto = new RegisterDto { Username = "juan", Email = "juan@test.com", Password = "password123" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
-        repository.Setup(r => r.FindByUsernameAsync(dto.Username)).ReturnsAsync(new User { Id = 1, Username = "juan" });
+        repository.Setup(r => r.FindByUsernameAsync(dto.Username)).ReturnsAsync(new User { Id = 1, UserName = "juan" });
         var handler = new CreateUserCommandHandler(repository.Object, validator.Object, mediator.Object, cacheService.Object);
 
         var result = await handler.Handle(new CreateUserCommand(dto), CancellationToken.None);

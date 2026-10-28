@@ -17,10 +17,12 @@ public static class ServicesConfig
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         Log.Information("�sT��? Registrando servicios...");
+        // ⚠️ IAuthService NO se registra aquí: lo decide AuthenticationConfig
+        // según Auth:Mode (Custom → AuthService / Identity → IdentityAuthService).
+        // Un solo dueño = una sola fuente de verdad para el switch.
         return services
             .AddScoped<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
-            .AddScoped<IAuthService, AuthService>()
             .AddScoped<IProductoService, ProductoService>();
     }
 }

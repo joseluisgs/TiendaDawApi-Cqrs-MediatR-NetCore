@@ -46,6 +46,10 @@ public class UpdateProductoPartialCommandHandler(
         if (request.Dto.Precio.HasValue && request.Dto.Precio.Value > 0) producto.Precio = request.Dto.Precio.Value;
         if (request.Dto.Stock.HasValue) producto.Stock = request.Dto.Stock.Value;
         if (!string.IsNullOrWhiteSpace(request.Dto.Imagen)) producto.Imagen = request.Dto.Imagen;
+        // Mover de categoría (PATCH y GraphQL updateProducto): id > 0 para
+        // distinguir "no tocar" de un envío explícito (nullable).
+        if (request.Dto.CategoriaId.HasValue && request.Dto.CategoriaId.Value > 0)
+            producto.CategoriaId = request.Dto.CategoriaId.Value;
 
         var updated = await repository.UpdateAsync(producto);
         var dto = updated.ToDto();
@@ -60,6 +64,8 @@ public class UpdateProductoPartialCommandHandler(
 
         await cacheService.RemoveAsync($"productos:{request.Id}");
         await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+        if (producto.CategoriaId != oldCategoriaId)
+            await cacheService.RemoveAsync($"productos:categoria:{producto.CategoriaId}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
         ProductoService.InvalidatePagedCache();
 
