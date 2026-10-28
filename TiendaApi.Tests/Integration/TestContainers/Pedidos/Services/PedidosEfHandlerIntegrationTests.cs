@@ -126,7 +126,7 @@ public class PedidosEfHandlerIntegrationTests
         var userRepo = _provider.GetRequiredService<IUserRepository>();
         var user = new User
         {
-            Username = $"testuser_{Guid.NewGuid():N}".Substring(0, 15),
+            UserName = $"testuser_{Guid.NewGuid():N}".Substring(0, 15),
             Email = $"test_{Guid.NewGuid():N}@example.com",
             PasswordHash = "$2a$11$test",
             Role = "USER"

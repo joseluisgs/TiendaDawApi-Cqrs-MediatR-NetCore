@@ -27,7 +27,7 @@ public class GetUserByIdQueryHandlerTests
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
-        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, Username = "juan", IsDeleted = false });
+        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, UserName = "juan", IsDeleted = false });
         cacheService.Setup(c => c.GetAsync<UserDto>(It.IsAny<string>())).ReturnsAsync((UserDto?)null);
         var handler = new GetUserByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 

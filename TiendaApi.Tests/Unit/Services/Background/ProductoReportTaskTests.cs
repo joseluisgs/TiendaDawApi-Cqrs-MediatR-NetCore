@@ -102,8 +102,8 @@ public class ProductoReportTaskTests
 
         var usuarios = new List<User>
         {
-            new() { Id = 1, Username = "user1", Email = "user1@example.com" },
-            new() { Id = 2, Username = "user2", Email = "user2@example.com" }
+            new() { Id = 1, UserName = "user1", Email = "user1@example.com" },
+            new() { Id = 2, UserName = "user2", Email = "user2@example.com" }
         };
 
         _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(7))
@@ -180,7 +180,7 @@ public class ProductoReportTaskTests
 
         var usuarios = new List<User>
         {
-            new() { Id = 1, Username = "user1", Email = "user1@example.com" }
+            new() { Id = 1, UserName = "user1", Email = "user1@example.com" }
         };
 
         _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(7))
