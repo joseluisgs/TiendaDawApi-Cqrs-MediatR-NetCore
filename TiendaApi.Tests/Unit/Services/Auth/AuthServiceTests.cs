@@ -83,7 +83,7 @@ public class AuthServiceTests
         var savedUser = new User
         {
             Id = 1,
-            Username = registerDto.Username,
+            UserName = registerDto.Username,
             Email = registerDto.Email,
             PasswordHash = "hashedpassword",
             Role = UserRoles.USER,
@@ -208,7 +208,7 @@ public class AuthServiceTests
         var existingUser = new User
         {
             Id = 1,
-            Username = "existinguser",
+            UserName = "existinguser",
             Email = "existing@test.com"
         };
 
@@ -238,7 +238,7 @@ public class AuthServiceTests
         var existingUser = new User
         {
             Id = 1,
-            Username = "existinguser",
+            UserName = "existinguser",
             Email = "existing@test.com"
         };
 
@@ -270,7 +270,7 @@ public class AuthServiceTests
         var user = new User
         {
             Id = 1,
-            Username = "testuser",
+            UserName = "testuser",
             Email = "test@test.com",
             PasswordHash = passwordHash,
             Role = UserRoles.USER,
@@ -363,7 +363,7 @@ public class AuthServiceTests
         var user = new User
         {
             Id = 1,
-            Username = "testuser",
+            UserName = "testuser",
             Email = "test@test.com",
             PasswordHash = passwordHash,
             Role = UserRoles.USER

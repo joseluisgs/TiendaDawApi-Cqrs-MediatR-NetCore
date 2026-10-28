@@ -7,13 +7,29 @@ services:
     volumes:
       - .:/bruno:ro
       - ./reports:/reports
+    # Carpetas explícitas: los tests WS (12 - WEBSOCKETS) llevan tag
+    # desktop-only y --exclude-tags NO filtra peticiones type:ws en CLI,
+    # así que se excluyen por lista. Los comandos locales deben hacer lo mismo.
     command:
       - run
-      - "."
+      - "0 - SETUP"
+      - "1 - AUTHENTICATION"
+      - "2 - CATEGORÍAS"
+      - "3 - PRODUCTOS"
+      - "4 - PEDIDOS (Usuario)"
+      - "5 - PEDIDOS (Admin)"
+      # USUARIOS tiene subcarpetas anidadas: bru no recursa con la carpeta raíz,
+      # hay que pasarlas por separado (igual que en la API Normal).
+      - "6 - USUARIOS/Gestión Admin"
+      - "6 - USUARIOS/Perfil Propio"
+      - "7 - STORAGE"
+      - "10 - GRAPHQL CATEGORÍAS"
+      - "11 - GRAPHQL PRODUCTOS"
+      - "90 - TEARDOWN"
       - --env-file
-      - environments/local.bru
+      - environments/docker.bru
       # Rate limit de la API (RateLimitConfig.cs): POST:* 20/min.
-      # Sin este delay la colección (64 requests) recibe 429 en cadena.
+      # Sin este delay la colección recibe 429 en cadena.
       - --delay
       - "3200"
       - --reporter-json

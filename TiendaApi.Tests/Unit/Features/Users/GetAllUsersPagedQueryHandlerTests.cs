@@ -30,8 +30,8 @@ public class GetAllUsersPagedQueryHandlerTests
         var filter = new UserFilterDto(null, null, null, 0, 10, "id", "asc");
         var users = new List<User>
         {
-            new() { Id = 1, Username = "juan" },
-            new() { Id = 2, Username = "maria" }
+            new() { Id = 1, UserName = "juan" },
+            new() { Id = 2, UserName = "maria" }
         };
         repository.Setup(r => r.FindAllPagedAsync(filter)).ReturnsAsync((users, 2));
         cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<UserDto>?)null);

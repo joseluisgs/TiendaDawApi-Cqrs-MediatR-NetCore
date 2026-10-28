@@ -5,7 +5,6 @@ using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.GraphQL.Inputs;
-using TiendaApi.Api.Repositories.Productos;
 
 namespace TiendaApi.Api.GraphQL.Mutations;
 
@@ -15,9 +14,18 @@ namespace TiendaApi.Api.GraphQL.Mutations;
 /// 🎓 GraphQL: en vez de devolver null silencioso, lanzamos excepción
 /// para que el cliente vea el error en el array "errors" de la respuesta.
 ///
-/// 🎓 Read-before-write: para hacer merge de campos null, leemos del
-/// modelo de ESCRITURA (PostgreSQL), nunca del read model (MongoDB/cache).
-/// Así evitamos escribir encima de un dato reciente que aún no se replicó.
+/// 🎓 Inyección: las dependencias scoped (mediator, repositorios, servicios)
+/// se inyectan por PARÁMETRO [Service], nunca por constructor: HotChocolate
+/// resuelve el tipo de mutación una sola vez (lifetime de singleton) y una
+/// dependencia scoped capturada en el constructor conservaría un DbContext
+/// YA DISPUESTO tras la primera petición ("Cannot access a disposed context
+/// instance").
+///
+/// 🎓 Capa delgada: el mutation es una capa de traducción - mapea el input y
+/// delega en el comando MediatR. El read-before-write y el merge de campos
+/// null viven DENTRO del handler de UpdateProductoPartialCommand, exactamente
+/// como en el endpoint REST PATCH. Un mutation que inyecta repositorios se
+/// salta la capa de negocio y duplica lógica entre REST y GraphQL.
 /// </summary>
 public class ProductoMutation
 {
@@ -45,31 +53,32 @@ public class ProductoMutation
         return result.Value;
     }
 
-    /// <summary>Actualiza un producto existente.</summary>
+    /// <summary>
+    /// Actualiza un producto existente (merge de campos: solo se envían los que cambian).
+    ///
+    /// 🎓 El mutation es DELGADO: solo mapea el input al DTO de parche y delega en
+    /// el comando. La lectura previa (read-before-write) y el merge de campos
+    /// null viven dentro del handler de UpdateProductoPartialCommand, como en el
+    /// endpoint REST PATCH. No se inyecta ningún repositorio.
+    /// </summary>
     [Authorize(policy: "AdminOnly")]
     public async Task<ProductoDto> UpdateProducto(
         long id,
         UpdateProductoInput input,
         [Service] IMediator mediator,
-        [Service] IProductoRepository productoRepository,
         CancellationToken ct = default)
     {
-        // 🎓 Leer del MODELO DE ESCRITURA (PostgreSQL), no del read model
-        var existing = await productoRepository.FindByIdAsync(id);
-        if (existing is null)
-            throw new Exception($"Producto con ID {id} no encontrado");
-
-        var dto = new ProductoRequestDto
+        var patch = new ProductoPatchDto
         {
-            Nombre = input.Nombre ?? existing.Nombre,
-            Descripcion = input.Descripcion ?? existing.Descripcion,
-            Precio = input.Precio ?? existing.Precio,
-            Stock = input.Stock ?? existing.Stock,
-            Imagen = input.Imagen ?? existing.Imagen,
-            CategoriaId = input.CategoriaId ?? existing.CategoriaId
+            Nombre = input.Nombre,
+            Descripcion = input.Descripcion,
+            Precio = input.Precio,
+            Stock = input.Stock,
+            Imagen = input.Imagen,
+            CategoriaId = input.CategoriaId
         };
 
-        var result = await mediator.Send(new UpdateProductoCommand(id, dto), ct);
+        var result = await mediator.Send(new UpdateProductoPartialCommand(id, patch), ct);
         if (result.IsFailure)
             throw new Exception(result.Error.Message);
 

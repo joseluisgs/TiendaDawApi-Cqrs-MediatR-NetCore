@@ -25,6 +25,7 @@
     - [17.13.7. Puntos Clave para el Alumno](#17137-puntos-clave-para-el-alumno)
     - [17.13.8. ¿Por qué NO usamos ASP.NET Core Identity?](#17138--por-qué-no-usamos-aspnet-core-identity)
   - [17.13. Comparacion del Middleware](#1713-comparacion-del-middleware)
+  - [17.14. Auth:Mode - Los Cuatro Caminos en el Mismo Proyecto](#1714-authmode--los-cuatro-caminos-en-el-mismo-proyecto)
 
 ---
 
@@ -2372,6 +2373,155 @@ http://localhost:5031/api/v1/auth/external/Google
 | Aspecto | Identity | Nuestro enfoque |
 |---------|----------|-----------------|
 | **Tablas** | 8+ tablas | 2 tablas (User, UserLogin) |
-| **Complejidad** | Alta | Baja — control total |
+| **Complejidad** | Alta | Baja - control total |
 | **Para OAuth** | `SignInManager.GetExternalLoginInfoAsync()` | Parseamos claims manualmente |
 | **Para CQRS** | Acopla a Identity | Compatible con MediatR Commands/Queries |
+
+## 17.14. Auth:Mode — Los Cuatro Caminos en el Mismo Proyecto
+
+> 🎓 **Actualización**: ya no hay que elegir. La API soporta **ambos enfoques** con un switch de configuración: `Auth:Mode`.
+
+### 17.14.1. El Problema que Resuelve
+
+La sección 17.12 explicó por qué el proyecto nació sin Identity. Pero en clase también queremos **enseñar Identity**. ¿Cómo tener ambos sin duplicar el proyecto?
+
+**Solución**: un switch en configuración que selecciona qué servicio de autenticación se registra:
+
+```json
+{
+  "Auth": {
+    "Mode": "Custom"   // "Custom" (BCrypt) o "Identity" (UserManager)
+  }
+}
+```
+
+### 17.14.2. Arquitectura: El Patrón Strategy Detrás del Switch
+
+Ambos servicios implementan la misma interfaz `IAuthService`:
+
+```mermaid
+classDiagram
+    class IAuthService {
+        <<interface>>
+        +SignUpAsync(RegisterDto) Result~AuthResponseDto~
+        +SignInAsync(LoginDto) Result~AuthResponseDto~
+        +LoginExternalAsync(ExternalLoginDto) Result~AuthResponseDto~
+    }
+    class AuthService {
+        -BCrypt.HashPassword()
+        -BCrypt.Verify()
+    }
+    class IdentityAuthService {
+        -UserManager~User~
+        -SignInManager~User~
+    }
+    IAuthService <|.. AuthService : AuthMode Custom
+    IAuthService <|.. IdentityAuthService : AuthMode Identity
+    AuthService --> BCryptNet : usa
+    IdentityAuthService --> Identity : usa
+```
+
+El **patrón clave**: el código que consume `IAuthService` (el controller y —en este proyecto— los comandos MediatR como `SignUpCommand`) **no sabe ni le importa** qué modo está activo. Solo recibe un `Result<AuthResponseDto, DomainError>`. La capa CQRS no se entera: el switch ocurre por debajo, en el registro de dependencias.
+
+### 17.14.3. El Switch en AuthenticationConfig
+
+`AuthenticationConfig.AddAuthentication()` lee `Auth:Mode` y registra un servicio u otro. Este es el **único punto de decisión** de toda la autenticación — ocurre una vez, al arrancar:
+
+```mermaid
+flowchart TB
+    START["Program.cs arranca"] --> CFG["Configuration['Auth:Mode']"]
+    CFG --> SW{"¿Modo?"}
+
+    SW -->|"Identity"| ID["AddIdentityAuthentication()<br/>• AddIdentityCore&lt;User&gt; + AddRoles + AddSignInManager<br/>• AddEntityFrameworkStores<br/>• AddJwtBearer (mismo que Custom)<br/>• IAuthService → IdentityAuthService"]
+    SW -->|"Custom (default)"| CU["AddCustomAuthentication()<br/>• AddJwtBearer<br/>• IAuthService → AuthService"]
+
+    ID --> PIPE["Mismo pipeline:<br/>UseAuthentication() → UseAuthorization()<br/>Mismas políticas: RequireAdminRole, AdminOnly"]
+    CU --> PIPE
+
+    PIPE --> EP["Mismos endpoints:<br/>POST /api/v1/auth/signup<br/>POST /api/v1/auth/signin"]
+    EP --> JWT["Mismo JWT Bearer<br/>[Authorize] no nota la diferencia"]
+
+    style SW fill:#f39c12,color:#fff
+    style ID fill:#e67e22,color:#fff
+    style CU fill:#27ae60,color:#fff
+    style JWT fill:#8e44ad,color:#fff
+```
+
+```csharp
+public static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
+{
+    var authMode = configuration["Auth:Mode"] ?? "Custom";
+
+    if (authMode == "Identity")
+    {
+        return AddIdentityAuthentication(services, configuration);  // IdentityAuthService
+    }
+
+    return AddCustomAuthentication(services, configuration);        // AuthService (BCrypt)
+}
+```
+
+Ambos caminos registran **exactamente lo mismo** para el middleware:
+
+- `AddAuthentication(JwtBearerDefaults.AuthenticationScheme)` — el middleware JWT
+- `AddAuthorizationBuilder()` — políticas `RequireAdminRole`, `RequireUserRole`, `AdminOnly` (todas declarando el esquema Bearer **explícitamente**)
+
+**La única diferencia** es la línea de registro:
+
+| Modo | Registro |
+|------|----------|
+| Custom | `services.AddScoped<IAuthService, AuthService>()` |
+| Identity | `services.AddIdentityCore<User>(...).AddRoles<IdentityRole<long>>().AddSignInManager().AddEntityFrameworkStores<TiendaDbContext>()` + `services.AddScoped<IAuthService, IdentityAuthService>()` |
+
+> 🎓 **¿`AddIdentityCore` y no `AddIdentity`?** Es el mecanismo **oficial de Microsoft para APIs sin UI** ("Identity without UI"). `AddIdentity` (la variante "con todo") registra la cookie `Identity.Application` como `DefaultScheme`; los `[Authorize(Roles=...)]` construyen su política **sin esquemas** y usan el DefaultScheme → irían al handler de cookies → redirect a `/Account/Login` (401) en todo endpoint de admin. `AddIdentityCore` + `AddRoles` + `AddSignInManager` dan UserManager, roles y `CheckPasswordSignInAsync` sin tocar el DefaultScheme. Y aun así fijamos el DefaultScheme a Bearer y declaramos el esquema en cada política: defensa en profundidad.
+
+### 17.14.4. El Seed Condicional
+
+`SqlSeeder` lee `Auth:Mode` para crear los usuarios con el algoritmo correcto:
+
+```mermaid
+flowchart TD
+    A[SqlSeeder.SeedAsync] --> B{Auth:Mode?}
+    B -->|Custom| C[Crear User con<br/>PasswordHash = BCrypt hardcoded]
+    B -->|Identity| D[Crear User con<br/>userManager.CreateAsync user, password]
+    C --> E[✅ Login funciona]
+    D --> F[✅ Login funciona]
+```
+
+En modo Identity, el seeder usa `IServiceScopeFactory` para resolver `UserManager<User>` y `RoleManager<IdentityRole<long>>` (porque el seeder está en un scope diferente al del request), y crea los roles antes de asignarlos (`AddToRoleAsync` lanza excepción si el rol no existe).
+
+> ⚠️ **Las contraseñas seed difieren entre modos**. La política de password de Identity (≥6 chars, dígito, mayúscula) hace que `"admin"` sea rechazado, así que el seed Identity usa `Admin123!` mientras el modo Custom usa `admin`. Ambas quedan documentadas en los logs al sembrar.
+
+> 🔧 **Regla que enseñamos en clase**: no ocultes propiedades de una clase base que un framework genérico escribe por ti. `UserStore` escribe en la propiedad heredada `PasswordHash` de `IdentityUser`; si la redeclaramos con `new`, EF mapearía la nuestra y el hash real se perdería en una propiedad fantasma. En su lugar, `PasswordHash` es nullable (los usuarios OAuth no tienen contraseña) y quitamos el `IsRequired()` del mapeo.
+
+### 17.14.5. Puntos Clave para el Alumno
+
+1. **El patrón Strategy**: dos implementaciones de una interfaz, seleccionadas en tiempo de arranque por configuración. Es el mismo principio detrás de `IPaymentService`, `IEmailService`, etc.
+
+2. **El middleware JWT no cambia**: tanto Custom como Identity producen un JWT Bearer. El middleware solo valida el token; no sabe cómo se creó la sesión.
+
+3. **Identity no es mala** — es una herramienta con un coste (más tablas, más abstracción) y un beneficio (features de auth listas). Elegir es un **trade-off**, no una religión.
+
+4. **El DTO protege el contrato externo**: renombrar `Username` → `UserName` en la entidad no rompió ningún cliente porque el DTO sigue exponiendo `Username`. *Los DTOs son tu API pública; la entidad es tu asunto interno.*
+
+5. **En este proyecto la validación es doble**: FluentValidation valida el DTO en el pipeline (`AddFluentValidationAutoValidation`) y Identity valida la *política* de password dentro de `UserManager`. Un DTO inválido se rechaza con **400 en ambos modos**; una política de Identity incumplida solo puede pasar en modo Identity y se mapea a **422** (`BusinessRuleError`).
+
+### 17.14.6. Estrategia de Testing del Auth:Mode
+
+Los tests del switch viven en tres archivos (27 tests):
+
+| Archivo | Qué prueba | Técnica |
+|---------|-----------|---------|
+| `IdentityAuthServiceTests` | SignUp/SignIn/LoginExternal en modo Identity | Identity **real** + EF InMemory; solo `IJwtService` mockeado |
+| `AuthenticationConfigTests` | El switch selecciona el servicio correcto | Inspección de `ServiceCollection` (descriptores) |
+| `SqlSeederTests` | Seed BCrypt vs PBKDF2 según el modo | Contenedor DI mínimo + `CheckPasswordAsync` real |
+
+🎓 **Por qué Identity real en vez de mocks**: `SignInManager` tiene un constructor que Moq no puede proxyar en .NET 10, y — más importante — probar con mocks solo verificaría que *nuestro mock* devuelve true. Con Identity real validamos que la contraseña se verifica con el algoritmo correcto (PBKDF2) y que un hash BCrypt **no** pasa por `UserManager`.
+
+**Tests de regresión clave**:
+
+- `SeedAsync_ModoIdentity_NoDebeSembrarUsuariosConHashBcrypt` — caza el error de reutilizar los hashes hardcoded en modo Identity
+- `SignUpAsync_ConDatosValidos_DebeGuardarHashPbkdf2NoBcrypt` — el hash guardado empieza por `AQAAAA` (PBKDF2), nunca `$2a$` (BCrypt)
+- `LoginExternalAsync_UsuarioCreadoPorOAuth_NoDebePoderLoginConPassword` — un usuario OAuth no tiene contraseña
+
+**Ver también**: [Login Externo con OAuth 2.0](#1713-login-externo-con-oauth-20)

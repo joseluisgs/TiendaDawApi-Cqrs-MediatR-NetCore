@@ -1725,6 +1725,51 @@ public async Task<Producto?> GetProducto(
 }
 ```
 
+#### Por qué los mutations NO deben inyectar por constructor
+
+HotChocolate registra el tipo de mutation (la clase `ProductoMutation`...) con **lifetime singleton**: se crea una sola vez y vive todo el proceso. Eso tiene una consecuencia importante para la inyección de dependencias:
+
+| Dónde se inyecta | Lifetime de la dependencia | Resultado |
+|------------------|---------------------------|-----------|
+| **Constructor** | Se captura en la instancia singleton | Una dependencia **scoped** (cualquier servicio o repositorio con `DbContext`) conserva el **mismo objeto durante todo el proceso** |
+| **Parámetro `[Service]`** | HotChocolate la resuelve del scope de **cada petición** | La dependencia vive lo que vive la petición: `DbContext` creado y dispuesto correctamente |
+
+Un `DbContext` capturado por un singleton queda **dispuesto** tras la primera petición (su scope se cierra), y cualquier petición posterior recibe un error:
+
+```
+System.InvalidOperationException:
+Cannot access a disposed context instance.
+```
+
+Es un error **difícil de interpretar** porque aparece "de golpe" en la segunda o tercera operación, no en la primera. La regla para los mutations del proyecto:
+
+```csharp
+// ❌ Mal: el repositorio quedaría capturado en el singleton
+public class ProductoMutation(IProductoRepository repository) { ... }
+
+// ✅ Bien: mutation DELGADO, delega en el comando MediatR
+public class ProductoMutation
+{
+    public async Task<ProductoDto> UpdateProducto(
+        long id,
+        UpdateProductoInput input,
+        [Service] IMediator mediator,          // scope de esta petición
+        CancellationToken ct = default)
+    {
+        var patch = new ProductoPatchDto { Nombre = input.Nombre, /* ...resto null = no tocar */ };
+        var result = await mediator.Send(new UpdateProductoPartialCommand(id, patch), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+        return result.Value;
+    }
+}
+```
+
+**La regla tiene dos partes**:
+
+1. **Inyección**: las dependencias scoped van por `[Service]`, nunca por constructor (lifetime singleton de HotChocolate).
+2. **Capas**: el mutation es una capa de traducción **delgada** - mapea el input y delega en el comando. La lectura previa, el merge de campos null y cualquier regla de negocio viven en el **handler** del comando (`UpdateProductoPartialCommandHandler` hace el read-before-write, exactamente como el endpoint REST PATCH). Un mutation que inyecta repositorios se está saltando la capa de negocio y duplica lógica entre REST y GraphQL.
+
 ---
 
 ## 21.18. Estado Actual del Proyecto ✅

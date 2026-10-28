@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TiendaApi.Api.Data.Interceptors;
 using TiendaApi.Api.Models;
@@ -6,9 +8,9 @@ namespace TiendaApi.Api.Data;
 
 /// <summary>
 /// DbContext de Entity Framework Core para PostgreSQL.
-/// Gestiona Categorías, Productos y Usuarios.
+/// Gestiona Categorías, Productos, Usuarios (Identity) y vinculaciones OAuth.
 /// </summary>
-public class TiendaDbContext : DbContext
+public class TiendaDbContext : IdentityDbContext<User, IdentityRole<long>, long>
 {
     private static readonly TimestampInterceptor _timestampInterceptor = new();
 
@@ -25,11 +27,12 @@ public class TiendaDbContext : DbContext
     /// <summary>DbSet de Productos.</summary>
     public DbSet<Producto> Productos { get; set; } = null!;
 
-    /// <summary>DbSet de Usuarios.</summary>
-    public DbSet<User> Users { get; set; } = null!;
+    /// <summary>DbSet de Usuarios (new: ocupa el Users heredado de IdentityDbContext).</summary>
+    public new DbSet<User> Users { get; set; } = null!;
 
-    /// <summary>DbSet de vinculaciones OAuth (logins externos).</summary>
-    public DbSet<UserLogin> UserLogins { get; set; } = null!;
+    /// <summary>DbSet de vinculaciones OAuth (logins externos). No confundir con
+    /// UserLogins de IdentityDbContext (AspNetUserLogins).</summary>
+    public DbSet<UserLogin> ExternalLogins { get; set; } = null!;
 
     /// <summary>DbSet de marcas de agua para la réplica de productos (job reparador).</summary>
     public DbSet<ReplicaMarca> ReplicaMarcas { get; set; } = null!;
@@ -91,17 +94,38 @@ public class TiendaDbContext : DbContext
             entity.ToTable("users");
             entity.HasKey(u => u.Id);
             entity.Property(u => u.Id).UseIdentityAlwaysColumn();
-            entity.Property(u => u.Username).IsRequired().HasMaxLength(50);
+            // UserName viene de IdentityUser (antes se llamaba Username)
+            entity.Property(u => u.UserName).IsRequired().HasMaxLength(50);
             entity.Property(u => u.Email).IsRequired().HasMaxLength(100);
-            entity.Property(u => u.PasswordHash).IsRequired();
+            // PasswordHash nullable: los usuarios OAuth pueden no tener contraseña
+            entity.Property(u => u.PasswordHash);
             entity.Property(u => u.Role).IsRequired().HasMaxLength(20);
             entity.Property(u => u.IsDeleted).HasDefaultValue(false);
             entity.Property(u => u.Avatar).HasMaxLength(500);
             entity.ConfigureTimestamps();
-            entity.HasIndex(u => u.Username).IsUnique();
+            entity.HasIndex(u => u.UserName).IsUnique();
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.Role);
             entity.HasQueryFilter(u => !u.IsDeleted);
+        });
+
+        modelBuilder.Entity<UserLogin>(entity =>
+        {
+            entity.ToTable("user_logins");
+            entity.HasKey(ul => ul.Id);
+            entity.Property(ul => ul.Id).UseIdentityAlwaysColumn();
+            entity.Property(ul => ul.LoginProvider).IsRequired().HasMaxLength(100);
+            entity.Property(ul => ul.ProviderKey).IsRequired().HasMaxLength(450);
+            entity.Property(ul => ul.ProviderDisplayName).HasMaxLength(200);
+            entity.ConfigureTimestamps();
+
+            // Un proveedor externo solo puede estar vinculado a un usuario local
+            entity.HasIndex(ul => new { ul.LoginProvider, ul.ProviderKey }).IsUnique();
+
+            entity.HasOne(ul => ul.User)
+                .WithMany()
+                .HasForeignKey(ul => ul.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ReplicaMarca>(entity =>

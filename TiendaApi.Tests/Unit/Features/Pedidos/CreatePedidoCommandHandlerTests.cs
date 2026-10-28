@@ -31,7 +31,7 @@ public class CreatePedidoCommandHandlerTests
         var transaction = new Mock<IDbContextTransaction>();
         var dto = new PedidoRequestDto { Destinatario = new DestinatarioDto(), Items = [new PedidoItemRequestDto { ProductoId = 1, Cantidad = 2 }] };
 
-        userRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, Username = "user", Email = "user@test.com" });
+        userRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, UserName = "user", Email = "user@test.com" });
         pedidoValidator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         itemValidator.Setup(v => v.ValidateAsync(It.IsAny<PedidoItemRequestDto>(), It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         productoRepository.Setup(r => r.BeginTransactionAsync(It.IsAny<System.Data.IsolationLevel>())).ReturnsAsync(transaction.Object);
