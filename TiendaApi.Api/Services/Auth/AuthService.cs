@@ -50,7 +50,7 @@ public class AuthService(
 
         var user = new User
         {
-            Username = dto.Username!,
+            UserName = dto.Username!,
             Email = dto.Email!,
             PasswordHash = passwordHash,
             Role = UserRoles.USER,
@@ -212,7 +212,7 @@ public class AuthService(
             var username = info.Name ?? info.Email.Split('@')[0];
             user = new User
             {
-                Username = username,
+                UserName = username,
                 Email = info.Email,
                 // Dummy hash: el login normal fallará, pero no hay NullReferenceException
                 PasswordHash = $"OAUTH-{info.LoginProvider}",
@@ -253,8 +253,8 @@ public class AuthService(
 
         var userDto = new UserDto(
             user.Id,
-            user.Username,
-            user.Email,
+            user.UserName ?? string.Empty,
+            user.Email ?? string.Empty,
             user.Avatar ?? string.Empty,
             user.Role,
             user.CreatedAt
