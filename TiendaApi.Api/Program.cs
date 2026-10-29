@@ -61,6 +61,8 @@ services.AddOAuthDoors(configuration);
 
 // Business
 services.AddRepositories(configuration);
+// Cassandra (series: histórico de precios y feed) - ISession singleton
+services.AddCassandra(configuration);
 services.AddMediatRHandlers();
 services.AddServices();
 
@@ -146,6 +148,9 @@ app.MapVersionEndpoint();
 
 await app.InitializeDatabaseAsync(isDevelopment);
 app.InitializeStorage(isDevelopment);
+
+// Cassandra: CREATE IF NOT EXISTS + espera al nodo (~60 s); si no despierta, modo degradado
+await app.InitializeCassandraAsync();
 
 PrintStartupInfo(isDevelopment, configuration);
 
