@@ -388,7 +388,7 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | --- | -------------------------------------------------- | -------------------- |
 | 07  | [Repository Pattern](doc/07-repository-pattern.md) | Abstracción de datos |
 | 08  | [EF Core PostgreSQL](doc/08-ef-core-postgresql.md) | ORM relacional       |
-| 09  | [MongoDB](doc/09-mongodb.md)                       | Base de documentos   |
+| 09  | [MongoDB](doc/09-mongodb-cassandra.md)    | Base de documentos   |
 | 10  | [Redis Caching](doc/10-redis-caching.md)           | Cache-Aside pattern  |
 
 ### Lógica de Negocio
