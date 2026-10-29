@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TiendaApi.Api.Services;
 using TiendaApi.Api.Services.Auth;
+using TiendaApi.Api.Services.Historial;
 using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Infrastructures;
@@ -23,6 +24,7 @@ public static class ServicesConfig
         return services
             .AddScoped<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
-            .AddScoped<IProductoService, ProductoService>();
+            .AddScoped<IProductoService, ProductoService>()
+            .AddScoped<IHistorialService, HistorialService>();
     }
 }

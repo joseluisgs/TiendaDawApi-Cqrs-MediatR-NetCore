@@ -15,6 +15,7 @@ using TiendaApi.Api.Infrastructures;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Realtime.Productos;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Historial;
 using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Email;
 using TiendaApi.Api.Services.Productos;
@@ -80,6 +81,17 @@ public class ProductoHandlerIntegrationTests
         services.AddFluentValidationServices();
         services.AddDatabases(configuration, Mock.Of<IWebHostEnvironment>());
         services.AddRepositories(configuration);
+        // IHistorialRepository: se SOBRESCRIBE con un mock (el ultimo registro del
+        // contenedor gana). AddRepositories registra el real, que exige ISession de
+        // Cassandra; estos tests prueban los handlers de productos, no Cassandra
+        // (la serie real se cubre en T14 con Testcontainers.Cassandra).
+        services.AddScoped<IHistorialRepository>(sp =>
+        {
+            var mockHistorial = new Mock<IHistorialRepository>();
+            mockHistorial.Setup(h => h.RegistrarPrecioAsync(It.IsAny<long>(), It.IsAny<double>()))
+                .Returns(Task.CompletedTask);
+            return mockHistorial.Object;
+        });
         services.AddMediatRHandlers();
         services.AddScoped<ICacheService, MemoryCacheService>();
         services.AddScoped<IEmailService, MemoryEmailService>();
