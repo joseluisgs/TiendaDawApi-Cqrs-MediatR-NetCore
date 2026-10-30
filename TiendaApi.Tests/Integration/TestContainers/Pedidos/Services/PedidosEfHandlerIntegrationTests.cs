@@ -86,6 +86,7 @@ public class PedidosEfHandlerIntegrationTests
         services.AddDatabases(configuration, Mock.Of<IWebHostEnvironment>());
         services.AddRepositories(configuration);
         services.AddMediatRHandlers();
+        services.AddOutputCacheConfig();
         services.AddScoped<ICacheService, MemoryCacheService>();
         services.AddScoped<IEmailService, MemoryEmailService>();
 

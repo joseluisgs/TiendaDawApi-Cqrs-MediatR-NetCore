@@ -6,6 +6,7 @@ using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -22,7 +23,8 @@ public record DeleteMyPedidoCommand(string Id, long UserId)
 public class DeleteMyPedidoCommandHandler(
     IPedidosRepository repository,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<DeleteMyPedidoCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -45,6 +47,7 @@ public class DeleteMyPedidoCommandHandler(
         await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
         return UnitResult.Success<DomainError>();
     }

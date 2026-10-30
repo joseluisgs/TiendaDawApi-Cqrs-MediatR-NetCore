@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.OutputCaching;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
@@ -27,7 +28,7 @@ public class UpdatePedidoAdminCommandHandlerTests
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { Estado = "Enviado", DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdatePedidoAdminCommand("PED-2024-0001", dto), CancellationToken.None);
 
@@ -44,7 +45,7 @@ public class UpdatePedidoAdminCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
 
         var dto = new UpdatePedidoDto { Estado = "Enviado" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdatePedidoAdminCommand("PED-9999-9999", dto), CancellationToken.None);
 

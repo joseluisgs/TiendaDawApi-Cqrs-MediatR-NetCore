@@ -8,6 +8,7 @@ using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -24,7 +25,8 @@ public record UpdatePedidoEstadoCommand(string Id, string NuevoEstado)
 public class UpdatePedidoEstadoCommandHandler(
     IPedidosRepository repository,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdatePedidoEstadoCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -48,6 +50,7 @@ public class UpdatePedidoEstadoCommandHandler(
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
         return Result.Success<PedidoDto, DomainError>(dto);
     }

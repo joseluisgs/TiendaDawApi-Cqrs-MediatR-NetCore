@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.OutputCaching;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
@@ -53,7 +54,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
-        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-2024-0001", PedidoEstado.ENVIADO), CancellationToken.None);
 
@@ -67,7 +68,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
 
-        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-2024-0001", "EstadoInvalido"), CancellationToken.None);
 
@@ -83,7 +84,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
 
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
 
-        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object);
+        var handler = new UpdatePedidoEstadoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdatePedidoEstadoCommand("PED-9999-9999", PedidoEstado.ENVIADO), CancellationToken.None);
 

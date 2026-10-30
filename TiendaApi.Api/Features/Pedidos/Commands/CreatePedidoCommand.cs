@@ -14,6 +14,7 @@ using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -34,7 +35,8 @@ public class CreatePedidoCommandHandler(
     IValidator<PedidoRequestDto> pedidoValidator,
     IValidator<PedidoItemRequestDto> pedidoItemValidator,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
 {
     /// <summary>Reintentos para conflictos de concurrencia al crear pedidos simultáneos.</summary>
@@ -92,6 +94,15 @@ public class CreatePedidoCommandHandler(
             var pedidoItems = new List<PedidoItem>();
             decimal total = 0;
 
+            // Precarga de una sola vez: los productos distintos del pedido se
+            // leen con UN SELECT (IDs unicos) en vez de una consulta por item.
+            // La categoria viene incluida para que UpdateAsync no tenga que
+            // recargarla item a item, y el tracking es el que hace valido el
+            // decremento de stock que viene despues.
+            var productosPorId = (await productoRepository
+                .FindByIdsAsync(request.Dto.Items.Select(i => i.ProductoId)))
+                .ToDictionary(p => p.Id);
+
             foreach (var itemDto in request.Dto.Items)
             {
                 var itemValidation = await pedidoItemValidator.ValidateAsync(itemDto, cancellationToken);
@@ -103,8 +114,7 @@ public class CreatePedidoCommandHandler(
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ValidacionConCampos(itemErrors));
                 }
 
-                var producto = await productoRepository.FindByIdAsync(itemDto.ProductoId);
-                if (producto is null)
+                if (!productosPorId.TryGetValue(itemDto.ProductoId, out var producto))
                 {
                     await transaction.RollbackAsync(cancellationToken);
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ProductoNoEncontrado(itemDto.ProductoId));
@@ -151,6 +161,7 @@ public class CreatePedidoCommandHandler(
             await mediator.Publish(new PedidoCreadoNotification(dto), cancellationToken);
 
             await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
             return Result.Success<PedidoDto, DomainError>(dto);
         }

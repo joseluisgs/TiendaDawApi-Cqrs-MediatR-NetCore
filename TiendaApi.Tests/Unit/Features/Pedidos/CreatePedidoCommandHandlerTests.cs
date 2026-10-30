@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.OutputCaching;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -35,9 +36,9 @@ public class CreatePedidoCommandHandlerTests
         pedidoValidator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         itemValidator.Setup(v => v.ValidateAsync(It.IsAny<PedidoItemRequestDto>(), It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         productoRepository.Setup(r => r.BeginTransactionAsync(It.IsAny<System.Data.IsolationLevel>())).ReturnsAsync(transaction.Object);
-        productoRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Nombre = "Laptop", Precio = 5m, Stock = 10, CategoriaId = 1 });
+        productoRepository.Setup(r => r.FindByIdsAsync(It.IsAny<IEnumerable<long>>())).ReturnsAsync(new[] { new Producto { Id = 1, Nombre = "Laptop", Precio = 5m, Stock = 10, CategoriaId = 1 } });
         pedidosRepository.Setup(r => r.SaveAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
-        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object);
+        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new CreatePedidoCommand(1, dto), CancellationToken.None);
 
@@ -56,7 +57,7 @@ public class CreatePedidoCommandHandlerTests
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
         userRepository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync((User?)null);
-        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object);
+        var handler = new CreatePedidoCommandHandler(pedidosRepository.Object, productoRepository.Object, userRepository.Object, pedidoValidator.Object, itemValidator.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new CreatePedidoCommand(1, new PedidoRequestDto()), CancellationToken.None);
 
