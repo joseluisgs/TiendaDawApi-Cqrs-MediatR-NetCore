@@ -52,7 +52,9 @@ public class UpdateProductoImageCommandHandler(
         var dto = updated.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
-        await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
+        // El precio NO cambia al cambiar solo la imagen: precioAnterior = precio
+        // actual -> el handler del historial no registrara punto (correcto).
+        await mediator.Publish(new ProductoActualizadoNotification(dto, dto.Precio), cancellationToken);
 
         await cacheService.RemoveAsync($"productos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
