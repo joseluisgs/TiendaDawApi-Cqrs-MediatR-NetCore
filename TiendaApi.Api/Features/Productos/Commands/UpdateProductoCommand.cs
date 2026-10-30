@@ -64,6 +64,7 @@ public class UpdateProductoCommandHandler(
         }
 
         var oldCategoriaId = producto.CategoriaId;
+        var precioAnterior = producto.Precio;   // ANTES de tocar el producto
         producto.Nombre = request.Dto.Nombre;
         producto.Descripcion = request.Dto.Descripcion;
         producto.Precio = request.Dto.Precio;
@@ -75,7 +76,7 @@ public class UpdateProductoCommandHandler(
         var dto = updated.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
-        await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
+        await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
 
         if (dto.Stock <= StockBajoUmbral)
         {

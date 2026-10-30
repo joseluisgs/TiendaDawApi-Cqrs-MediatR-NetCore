@@ -128,7 +128,7 @@ public class ProductoReadSyncIntegrationTests
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
         var actualizado = NuevoProducto(id) with { Precio = 499.99m, Stock = 3 };
-        await _handler.Handle(new ProductoActualizadoNotification(actualizado), CancellationToken.None);
+        await _handler.Handle(new ProductoActualizadoNotification(actualizado, actualizado.Precio), CancellationToken.None);
 
         var leido = await _readRepository!.FindByIdAsync(id);
         leido.Should().NotBeNull();
