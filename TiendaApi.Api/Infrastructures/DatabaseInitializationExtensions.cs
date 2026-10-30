@@ -59,8 +59,8 @@ public static class DatabaseInitializationExtensions
         }
         catch (Exception ex)
         {
-            // Tolera el fallo al arrancar (igual que el seeder de pedidos): MongoDB puede
-            // estar temporalmente caído. El error queda registrado para diagnóstico.
+            // La siembra del read model no bloquea el arranque (mismo criterio
+            // que el seeder de pedidos): es una proyección con log propio.
             Log.Error(ex, "Fallo al sembrar el read model de productos en MongoDB");
         }
 

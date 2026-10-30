@@ -14,7 +14,7 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Tests.Integration.TestContainers.Productos;
 
 /// <summary>
-/// Tests de integración de la Fase 13 (CQRS): las notificaciones que publican
+/// Tests de integración del read model CQRS: las notificaciones que publican
 /// los commands de Productos deben materializar el documento desnormalizado en
 /// MongoDB y quedar visibles para las queries (repositorio + fachada con caché).
 ///

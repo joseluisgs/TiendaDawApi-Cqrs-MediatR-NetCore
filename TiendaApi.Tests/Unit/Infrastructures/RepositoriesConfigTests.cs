@@ -92,7 +92,7 @@ public class RepositoriesConfigTests
         // Act
         _services.AddRepositories(_mockConfiguration.Object);
 
-        // Assert — Fase 13: el read model de Mongo no depende del switch de pedidos
+        // Assert - el read model de Mongo no depende del switch de pedidos
         var descriptor = _services.Should()
             .Contain(d => d.ServiceType == typeof(IProductoReadRepository)).Subject;
         descriptor.ImplementationType.Should().Be<ProductoReadRepository>();

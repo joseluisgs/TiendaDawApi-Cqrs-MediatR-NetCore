@@ -27,7 +27,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Pedidos.Services;
 /// <summary>
 /// Tests de integración de los handlers MediatR de Pedidos con DI completo y
 /// repositorio nativo MongoDB (PedidosNativeRepository), equivalentes a los
-/// <c>PedidosNativeServiceIntegrationTests</c> del origen (Fase 14).
+/// <c>PedidosNativeServiceIntegrationTests</c> del proyecto sin CQRS.
 /// 🎓 Flujo real: command → validaciones → transacción → decremento de stock → notificación.
 /// </summary>
 [TestFixture]

@@ -27,7 +27,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Pedidos.Services;
 /// <summary>
 /// Tests de integración de los handlers MediatR de Pedidos con DI completo y
 /// repositorio EF Core (PedidosEfCoreRepository), equivalentes a los
-/// <c>PedidosServiceIntegrationTests</c> del origen (Fase 14).
+/// <c>PedidosServiceIntegrationTests</c> del proyecto sin CQRS.
 /// 🎓 Flujo real: command → validaciones → transacción → decremento de stock → notificación.
 /// </summary>
 [TestFixture]

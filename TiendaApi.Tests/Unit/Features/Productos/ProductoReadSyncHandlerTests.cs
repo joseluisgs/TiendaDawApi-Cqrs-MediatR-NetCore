@@ -11,7 +11,7 @@ using TiendaApi.Api.Repositories.Productos;
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
 /// <summary>
-/// Tests unitarios de ProductoReadSyncHandler (Fase 13 — CQRS).
+/// Tests unitarios de ProductoReadSyncHandler (read model CQRS).
 ///
 /// 🎓 El sync handler es el puente entre el write model (PostgreSQL, vía
 /// notificaciones de los commands) y el read model (MongoDB). Estos tests
@@ -91,7 +91,8 @@ public class ProductoReadSyncHandlerTests
     [Test]
     public async Task Handle_FalloDeMongo_NoPropagaExcepcion()
     {
-        // PG ya commiteó: el handler debe registrar el error y no tumbar la respuesta.
+        // PG ya commiteó: la respuesta no depende del read model; el handler
+        // solo registra el resultado del upsert.
         _readRepository
             .Setup(r => r.UpsertAsync(It.IsAny<ProductoRead>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));

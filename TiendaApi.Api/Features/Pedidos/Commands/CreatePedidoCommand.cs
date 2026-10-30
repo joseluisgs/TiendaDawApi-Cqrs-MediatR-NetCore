@@ -61,11 +61,24 @@ public class CreatePedidoCommandHandler(
             return Result.Failure<PedidoDto, DomainError>(PedidoError.ValidacionConCampos(errors));
         }
 
+        return await ConReintentosDeSerializacionAsync(
+            () => CreateWithSerializableTransactionAsync(request, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// Ejecuta la operación con los reintentos de la transacción Serializable:
+    /// los conflictos de serialización (40001) son esperables con este nivel de
+    /// aislamiento, así que se reintentan con backoff creciente hasta MaxRetries.
+    /// Extraído de Handle para que ese método se quede con validar y delegar.
+    /// </summary>
+    private async Task<Result<PedidoDto, DomainError>> ConReintentosDeSerializacionAsync(
+        Func<Task<Result<PedidoDto, DomainError>>> operacion, CancellationToken cancellationToken)
+    {
         for (var attempt = 1; attempt <= MaxRetries; attempt++)
         {
             try
             {
-                return await CreateWithSerializableTransactionAsync(request, cancellationToken);
+                return await operacion();
             }
             catch (SerializationFailureException) when (attempt < MaxRetries)
             {

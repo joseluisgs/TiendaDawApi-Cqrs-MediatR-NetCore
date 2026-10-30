@@ -14,8 +14,8 @@ namespace TiendaApi.Tests.Unit.Features.Historial;
 
 /// <summary>
 /// Tests de RegistrarVistaCommandHandler. El 404 lo decide PostgreSQL (fuente
-/// de verdad) y la escritura en Cassandra es fail-open: con el nodo caido el
-/// command sigue devolviendo success (el POST /vista responde 204).
+/// de verdad) y la escritura en serie no cambia el resultado del command: su
+/// contrato es success siempre que el producto exista (el POST /vista, 204).
 /// </summary>
 public class RegistrarVistaCommandHandlerTests
 {
