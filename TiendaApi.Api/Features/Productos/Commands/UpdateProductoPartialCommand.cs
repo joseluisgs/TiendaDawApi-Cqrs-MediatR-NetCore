@@ -40,6 +40,7 @@ public class UpdateProductoPartialCommandHandler(
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
 
         var oldCategoriaId = producto.CategoriaId;
+        var precioAnterior = producto.Precio;   // ANTES de tocar el producto
 
         if (!string.IsNullOrWhiteSpace(request.Dto.Nombre)) producto.Nombre = request.Dto.Nombre;
         if (!string.IsNullOrWhiteSpace(request.Dto.Descripcion)) producto.Descripcion = request.Dto.Descripcion;
@@ -55,7 +56,7 @@ public class UpdateProductoPartialCommandHandler(
         var dto = updated.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
-        await mediator.Publish(new ProductoActualizadoNotification(dto), cancellationToken);
+        await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
 
         if (request.Dto.Stock.HasValue && dto.Stock <= StockBajoUmbral)
         {

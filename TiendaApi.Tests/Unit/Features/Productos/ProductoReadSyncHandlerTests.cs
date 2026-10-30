@@ -63,7 +63,7 @@ public class ProductoReadSyncHandlerTests
     [Test]
     public async Task Handle_ProductoActualizado_UpsertaDocumento()
     {
-        await _handler.Handle(new ProductoActualizadoNotification(Producto), CancellationToken.None);
+        await _handler.Handle(new ProductoActualizadoNotification(Producto, Producto.Precio), CancellationToken.None);
 
         _readRepository.Verify(r => r.UpsertAsync(It.Is<ProductoRead>(p =>
             p.Id == 1 && p.Precio == 1299.99m)), Times.Once);
