@@ -1,4 +1,4 @@
-﻿# 23. Email Services
+# 23. Email Services
 
 ## Índice
 
@@ -12,7 +12,7 @@
   - [23.7. Envío de Emails desde Servicios de Negocio](#237-envo-de-emails-desde-servicios-de-negocio)
   - [23.8. Configuración](#238-configuracin)
   - [23.9. docker-compose para Testing de Emails](#239-docker-compose-para-testing-de-emails)
-  - [23.10. Resiliencia con Polly (Fase 6)](#2310-resiliencia-con-polly-fase-6)
+  - [23.10. Resiliencia con Polly](#2310-resiliencia-con-polly)
   - [23.11. Resumen y Buenas Prácticas](#2311-resumen-y-buenas-prcticas)
 
 ---
@@ -949,7 +949,7 @@ services:
 
 ---
 
-## 23.10. Resiliencia con Polly (Fase 6)
+## 23.10. Resiliencia con Polly
 
 SMTP es el I/O externo clásico con **fallos transitorios**: servidor que se cae 10 segundos, red inestable, límite de conexiones. La política del proyecto es: **reintentar automáticamente en background, cortar el flujo si persiste, y nunca dejar que el email rompa un request HTTP**.
 
@@ -1050,7 +1050,7 @@ Los errores distinguen el motivo para dejar buenas trazas: `BrokenCircuitExcepti
 
 El pipeline está **detrás** de la cola (23.6): `EmailBackgroundService` desencola y llama a `SendEmailAsync` dentro de su propio `try/catch`. Si SMTP falla 4 veces y el circuito se abre, la excepción muere en el background service — el usuario que creó el pedido recibió su `201` hace rato.
 
-### Tests (Fase 6 → 1037 unit)
+### Tests (1037 unit)
 
 `Unit/Infrastructures/PollyConfigTests.cs`, 5 tests con `delay: TimeSpan.Zero` para que sean instantáneos:
 

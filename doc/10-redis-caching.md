@@ -1,4 +1,4 @@
-﻿# 10. Redis Caching
+# 10. Redis Caching
 
 ## Índice
 
@@ -1402,7 +1402,7 @@ public class CacheWithFallbackService : ICacheService
 
 ## 10.10. Caché HTTP con OutputCache y ETag
 
-> **Otra capa de caché, otro nivel del stack.** Todo lo visto hasta aquí en este módulo es **caché de datos** (`IMemoryCache`, `IDistributedCache`, cache-aside en los servicios). Esto es **caché de respuestas HTTP**: la guarda y la devuelve el middleware antes de que el controlador se entere. No hay `GetOrSet` en el código de negocio, solo atributos y tags. (Fase 4 del plan.)
+> **Otra capa de caché, otro nivel del stack.** Todo lo visto hasta aquí en este módulo es **caché de datos** (`IMemoryCache`, `IDistributedCache`, cache-aside en los servicios). Esto es **caché de respuestas HTTP**: la guarda y la devuelve el middleware antes de que el controlador se entere. No hay `GetOrSet` en el código de negocio, solo atributos y tags.
 
 ### Registro: Infrastructures/OutputCacheConfig.cs
 
@@ -1480,7 +1480,7 @@ Cada GET cacheable también firma su respuesta con ETag para que el navegador/pr
 Response.Headers.ETag = $"\"{Guid.NewGuid():n}\"";
 ```
 
-Flujo verificado en el smoke de la Fase 4:
+Flujo verificado en el smoke:
 
 ```mermaid
 sequenceDiagram

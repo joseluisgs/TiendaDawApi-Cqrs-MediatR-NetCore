@@ -1,4 +1,4 @@
-﻿# 15. Pedidos y Transacciones
+# 15. Pedidos y Transacciones
 
 ## Índice
 
@@ -611,7 +611,7 @@ public class CreatePedidoCommandHandler(
 }
 ```
 
-### Polly en este proyecto: dónde está y dónde NO (Fase 6)
+### Polly en este proyecto: dónde está y dónde NO
 
 El ejemplo de arriba usa la **API clásica de Polly v7** (`Policy.Handle<T>().WaitAndRetryAsync(...)`) con `DbUpdateConcurrencyException`. En este proyecto la realidad es distinta y conviene saber por qué:
 
@@ -646,9 +646,9 @@ return Result.Failure<PedidoDto, DomainError>(PedidoError.ErrorProcesando());
 
 Tres intentos y backoff lineal acotados con `when` a fallos de serialización… pero sin dependencia de Polly. ¿Por qué no envolverlo?
 
-**2. `EnableRetryOnFailure` de EF Core está deliberadamente OFF.** La transacción explícita de pedidos (`BeginTransactionAsync`, ver «Transacciones con EF Core en Handlers» — 15.3) es **incompatible** con la *retrying strategy* de EF: con retry activo, EF lanza `InvalidOperationException` al abrir una transacción manual. El patrón oficial (`CreateExecutionStrategy().ExecuteAsync(...)`) obligaría a reestructurar el flujo central `POST /api/pedidos/me` — riesgo alto sin beneficio demostrable. Documentado en la Fase 11.
+**2. `EnableRetryOnFailure` de EF Core está deliberadamente OFF.** La transacción explícita de pedidos (`BeginTransactionAsync`, ver «Transacciones con EF Core en Handlers» — 15.3) es **incompatible** con la *retrying strategy* de EF: con retry activo, EF lanza `InvalidOperationException` al abrir una transacción manual. El patrón oficial (`CreateExecutionStrategy().ExecuteAsync(...)`) obligaría a reestructurar el flujo central `POST /api/pedidos/me` — riesgo alto sin beneficio demostrable.
 
-**3. Polly SÍ está, pero sobre el email** (Fase 6, `Infrastructures/PollyConfig.cs`) — el otro I/O externo con fallos transitorios (SMTP). Pipeline v8 `ResiliencePipeline`: Retry(3, 2^n) → CircuitBreaker(3 fallos → 30 s) → Timeout(10 s), todo **en background** vía `EmailBackgroundService`, así que un SMTP caído nunca bloquea ni rompe una respuesta HTTP. Detalle completo en `23-email-services.md`.
+**3. Polly SÍ está, pero sobre el email** (`Infrastructures/PollyConfig.cs`) — el otro I/O externo con fallos transitorios (SMTP). Pipeline v8 `ResiliencePipeline`: Retry(3, 2^n) → CircuitBreaker(3 fallos → 30 s) → Timeout(10 s), todo **en background** vía `EmailBackgroundService`, así que un SMTP caído nunca bloquea ni rompe una respuesta HTTP. Detalle completo en `23-email-services.md`.
 
 | I/O externo | Estrategia elegida | Motivo |
 |---|---|---|

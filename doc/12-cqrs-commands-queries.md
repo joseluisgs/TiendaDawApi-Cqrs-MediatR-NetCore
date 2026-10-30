@@ -1,4 +1,4 @@
-﻿# 12. CQRS Commands Queries
+# 12. CQRS Commands Queries
 
 ## Índice
 
@@ -1527,7 +1527,7 @@ flowchart LR
     CMD -.->|invalida claves y tag| CACHE
 ```
 
-En este repositorio la separación write/read **existe para productos** (Fase 13):
+En este repositorio la separación write/read **existe para productos**:
 
 1. El **command** escribe en PostgreSQL y publica su notification (sección 12.7).
 2. `ProductoReadSyncHandler` replica el cambio en MongoDB `productos_read` (categoría embebida incluida).
@@ -1551,7 +1551,7 @@ Este proyecto utiliza un **enfoque híbrido**:
 - **MongoDB**: Pedidos con items embebidos y el read model `productos_read`, la réplica de productos que alimenta las lecturas.
 - **Redis / memoria**: caché de fachada (TTL 10 min) y OutputCache HTTP (60 s con tags).
 
-La separación CQRS se aplica **a nivel de código** en todos los módulos (Commands/Queries) y **a nivel de datos en productos**: desde la Fase 13 las lecturas de productos responden desde MongoDB mientras la escritura ocurre en PostgreSQL. No hay Event Sourcing ni CDC: la réplica la sostienen los propios eventos de MediatR (`ProductoReadSyncHandler`) y un seeder de arranque (`ProductoReadSeeder`).
+La separación CQRS se aplica **a nivel de código** en todos los módulos (Commands/Queries) y **a nivel de datos en productos**: desde que existe el read model las lecturas de productos responden desde MongoDB mientras la escritura ocurre en PostgreSQL. No hay Event Sourcing ni CDC: la réplica la sostienen los propios eventos de MediatR (`ProductoReadSyncHandler`) y un seeder de arranque (`ProductoReadSeeder`).
 
 ### La contrapartida: consistencia eventual
 
