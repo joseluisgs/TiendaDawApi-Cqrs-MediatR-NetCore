@@ -516,7 +516,7 @@ Aplicado en: `CategoriaRepository` (FindAllAsync, items de FindAllPagedAsync) ·
 
 **Lo que NO se toca** (y por qué): `FindByIdAsync` de producto/categoría/usuario, `FindByUsernameAsync`, `FindByEmailAsync`, `DeleteAsync` y las rutas de `Update` **siguen con tracking** — esos métodos devuelven la entidad para modificarla o borrarla, y sin tracking el `SaveChanges` no tendría nada que guardar. Pista de diseño: si el nombre del método es `Find*Async` y su resultado alimenta un PUT/DELETE, déjalo trackeando.
 
-> **Medido en esa optimización**: build 0/0 · 1032 tests · E2E con semillas frescas: Newman **95/95** · Automation **55/55** · Bruno **127/127** (listados y round-trips POST→PUT→DELETE). Es una optimización de perfil "casi gratis", pero solo si respetas la línea de "no escribo después".
+> **Medido en esa optimización**: build 0/0 · E2E con semillas frescas: Newman, Automation y Bruno en verde (listados y round-trips POST→PUT→DELETE). Es una optimización de perfil "casi gratis", pero solo si respetas la línea de "no escribo después".
 
 ---
 

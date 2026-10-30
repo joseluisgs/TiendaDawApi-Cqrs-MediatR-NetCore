@@ -1,4 +1,4 @@
-﻿# 24. Background Jobs
+# 24. Background Jobs
 
 ## Índice
 
@@ -674,7 +674,7 @@ _ = Task.Run(async () =>
 | Sitios `_ = Task.Run(...)` | **25** (Pedidos 7 · Productos 8 · Users 5 · Categoría 5) |
 | Endurecidos | 25 con `try/catch` + `Log.Warning` en el interior (caché/WS/SignalR) |
 | Sin endurecer | 0 — ninguno llegó sin `catch` |
-| Verificación | build 0/0 · 1032 tests · E2E 95/55/127 con logs de la API sin excepciones |
+| Verificación | build 0/0 · E2E en verde con logs de la API sin excepciones |
 
 **Reglas (las tres, siempre juntas):**
 
