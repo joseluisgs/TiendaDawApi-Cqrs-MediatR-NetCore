@@ -7,6 +7,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Productos;
@@ -31,6 +32,25 @@ public class UpdateProductoPartialCommandHandler(
 {
     private const int StockBajoUmbral = 10;
 
+    /// <summary>
+    /// Aplica el patch condicional: cada campo solo se toca si el DTO trae valor
+    /// (la semantica de PATCH). Metodo puro sin estado: extraido de Handle para
+    /// dejar el flujo lineal (leer -> capturar estado -> patch -> persistir ->
+    /// efectos).
+    /// </summary>
+    private static void AplicarPatch(Producto producto, ProductoPatchDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.Nombre)) producto.Nombre = dto.Nombre;
+        if (!string.IsNullOrWhiteSpace(dto.Descripcion)) producto.Descripcion = dto.Descripcion;
+        if (dto.Precio.HasValue && dto.Precio.Value > 0) producto.Precio = dto.Precio.Value;
+        if (dto.Stock.HasValue) producto.Stock = dto.Stock.Value;
+        if (!string.IsNullOrWhiteSpace(dto.Imagen)) producto.Imagen = dto.Imagen;
+        // Mover de categoria (PATCH y GraphQL updateProducto): id > 0 para
+        // distinguir "no tocar" de un envio explicito (nullable).
+        if (dto.CategoriaId.HasValue && dto.CategoriaId.Value > 0)
+            producto.CategoriaId = dto.CategoriaId.Value;
+    }
+
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoPartialCommand request, CancellationToken cancellationToken)
@@ -42,15 +62,7 @@ public class UpdateProductoPartialCommandHandler(
         var oldCategoriaId = producto.CategoriaId;
         var precioAnterior = producto.Precio;   // ANTES de tocar el producto
 
-        if (!string.IsNullOrWhiteSpace(request.Dto.Nombre)) producto.Nombre = request.Dto.Nombre;
-        if (!string.IsNullOrWhiteSpace(request.Dto.Descripcion)) producto.Descripcion = request.Dto.Descripcion;
-        if (request.Dto.Precio.HasValue && request.Dto.Precio.Value > 0) producto.Precio = request.Dto.Precio.Value;
-        if (request.Dto.Stock.HasValue) producto.Stock = request.Dto.Stock.Value;
-        if (!string.IsNullOrWhiteSpace(request.Dto.Imagen)) producto.Imagen = request.Dto.Imagen;
-        // Mover de categoría (PATCH y GraphQL updateProducto): id > 0 para
-        // distinguir "no tocar" de un envío explícito (nullable).
-        if (request.Dto.CategoriaId.HasValue && request.Dto.CategoriaId.Value > 0)
-            producto.CategoriaId = request.Dto.CategoriaId.Value;
+        AplicarPatch(producto, request.Dto);
 
         var updated = await repository.UpdateAsync(producto);
         var dto = updated.ToDto();

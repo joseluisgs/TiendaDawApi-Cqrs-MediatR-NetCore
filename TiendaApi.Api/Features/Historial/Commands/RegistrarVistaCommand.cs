@@ -15,8 +15,8 @@ public record RegistrarVistaCommand(long UsuarioId, long ProductoId)
 
 /// <summary>
 /// Handler de RegistrarVistaCommand. Delega en la fachada IHistorialService:
-/// el 404 lo decide PostgreSQL (fuente de verdad) y la escritura en Cassandra
-/// es fail-open (si el nodo cae, no se tumbe la petición).
+/// el 404 lo decide PostgreSQL (fuente de verdad) y la escritura de la fila
+/// Q-B queda en la fachada, sin lógica añadida en el handler.
 /// </summary>
 public class RegistrarVistaCommandHandler(IHistorialService service)
     : IRequestHandler<RegistrarVistaCommand, UnitResult<DomainError>>
