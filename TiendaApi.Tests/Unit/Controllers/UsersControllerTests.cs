@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Features.Historial.Queries;
 using TiendaApi.Api.Features.Users.Commands;
 using TiendaApi.Api.Features.Users.Queries;
 
@@ -151,5 +153,151 @@ public class UsersControllerTests
 
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
         _mediator.Verify(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ===== Matriz de resultados: cada accion cubre su par exito/error =====
+
+    [Test]
+    public async Task Update_Exitoso_RetornaOkConElUsuario()
+    {
+        var usuario = new UserDto(5, "admin", "admin@test.com", "", "ADMIN", DateTime.UtcNow);
+        _mediator.Setup(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
+
+        var result = await _controller.Update(5, new UserUpdateDto { });
+
+        result.Value.Should().BeSameAs(usuario);
+    }
+
+    [Test]
+    public async Task Update_NoExiste_RetornaNotFound()
+    {
+        _mediator.Setup(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserDto, DomainError>(new NotFoundError("no existe")));
+
+        var result = await _controller.Update(99, new UserUpdateDto { });
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Test]
+    public async Task UpdateAvatar_DeUnoMismo_RetornaOk()
+    {
+        // El claim es el propio id: el usuario edita SU avatar sin rol admin
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "7")], "Test"))
+            }
+        };
+        var usuario = new UserDto(7, "u", "u@test.com", "nuevo.png", "USER", DateTime.UtcNow);
+        _mediator.Setup(m => m.Send(It.IsAny<UpdateUserAvatarCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
+
+        var result = await _controller.UpdateAvatar(7, new AvatarUpdateDto { AvatarUrl = "nuevo.png" });
+
+        result.Value.Should().BeSameAs(usuario);
+    }
+
+    [Test]
+    public async Task UpdateAvatar_DeOtroUsuarioSinRolAdmin_Retorna403()
+    {
+        // Sin rol ADMIN no puede tocar el avatar de otro id: la accion corta
+        // con Forbid() antes de llegar al mediator
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "7")], "Test"))
+            }
+        };
+
+        var result = await _controller.UpdateAvatar(8, new AvatarUpdateDto { AvatarUrl = "x.png" });
+
+        result.Result.Should().BeOfType<ForbidResult>();
+        _mediator.Verify(m => m.Send(It.IsAny<UpdateUserAvatarCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Test]
+    public async Task Delete_Exitoso_Retorna204()
+    {
+        _mediator.Setup(m => m.Send(It.IsAny<DeleteUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<DomainError>());
+
+        var result = await _controller.Delete(3);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Test]
+    public async Task Delete_NoExiste_RetornaNotFound()
+    {
+        _mediator.Setup(m => m.Send(It.IsAny<DeleteUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));
+
+        var result = await _controller.Delete(99);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Test]
+    public async Task UpdateMyProfile_ConClaim_Exitoso_RetornaOk()
+    {
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
+            }
+        };
+        var usuario = new UserDto(42, "perfil", "perfil@test.com", "", "USER", DateTime.UtcNow);
+        _mediator.Setup(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
+
+        var result = await _controller.UpdateMyProfile(new UserUpdateDto { });
+
+        result.Value.Should().BeSameAs(usuario);
+        _mediator.Verify(m => m.Send(It.Is<UpdateUserCommand>(c => c.Id == 42), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task DeleteMyProfile_ConClaim_Retorna204()
+    {
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
+            }
+        };
+        _mediator.Setup(m => m.Send(It.IsAny<DeleteUserCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<DomainError>());
+
+        var result = await _controller.DeleteMyProfile();
+
+        result.Should().BeOfType<NoContentResult>();
+        _mediator.Verify(m => m.Send(It.Is<DeleteUserCommand>(c => c.Id == 42), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task GetMyFeed_ConClaim_RetornaElFeed()
+    {
+        // El feed viene directo (no como Result): particion vacia = lista vacia
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
+            }
+        };
+        var feed = new List<VistaFeedDto> { new(DateTime.UtcNow, 1, "Laptop") };
+        _mediator.Setup(m => m.Send(It.IsAny<GetFeedVistasQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feed);
+
+        var result = await _controller.GetMyFeed(10);
+
+        result.Value.Should().BeSameAs(feed);
+        _mediator.Verify(m => m.Send(It.Is<GetFeedVistasQuery>(q => q.UsuarioId == 42 && q.Limit == 10), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
