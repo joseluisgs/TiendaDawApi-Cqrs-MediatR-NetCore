@@ -22,7 +22,11 @@ public static class ServicesConfig
         // según Auth:Mode (Custom → AuthService / Identity → IdentityAuthService).
         // Un solo dueño = una sola fuente de verdad para el switch.
         return services
-            .AddScoped<IJwtService, JwtService>()
+            // JwtService es stateless (config + logger, sin estado por request):
+            // se registra como Singleton para poder inyectarlo en
+            // PedidosWebSocketHandler, que TAMBIÉN es singleton (guarda las
+            // conexiones activas) y un singleton no puede consumir scoped.
+            .AddSingleton<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
             .AddScoped<IProductoService, ProductoService>()
             .AddScoped<IHistorialService, HistorialService>();

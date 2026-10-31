@@ -7,6 +7,7 @@ using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Pedidos;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -23,7 +24,8 @@ public record UpdatePedidoAdminCommand(string Id, UpdatePedidoDto Dto)
 public class UpdatePedidoAdminCommandHandler(
     IPedidosRepository repository,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdatePedidoAdminCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -45,6 +47,7 @@ public class UpdatePedidoAdminCommandHandler(
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
         Log.Information("Notificación publicada para pedido actualizado por admin ID: {PedidoId}", dto.Id);
 

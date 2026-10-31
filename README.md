@@ -298,7 +298,13 @@ open coverage/index.html
 ### Tests E2E con Newman (Postman), Bruno y Automation
 
 Pruebas end-to-end de la API. **Requisito:** la API levantada en `http://localhost:5031`
-(rate limit `POST:*` = 20/min → los comandos llevan `--delay 3200` / `--delay-request 3200`).
+(rate limit `100/15s` general y `10/min` auth → los comandos llevan `--delay 250` / `--delay-request 250`).
+
+**Estado de BD:** en desarrollo la API **recrea las tres bases de datos al arrancar**
+(PostgreSQL, MongoDB y Cassandra) con sus datos de semilla — no hace falta ningún paso
+manual antes de la suite. Si repites la suite varias veces seguidas, **reinicia la API
+entre corridas** para volver al estado semilla (los datos se acumulan mientras la API
+siga viva). Para un reset total de contenedores queda `./Reset-Database.ps1`.
 
 #### Automation (Node)
 
@@ -325,7 +331,7 @@ start reports/report.html
 npm install -g newman
 newman run TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_collection.json \
   -e TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_environment.json \
-  --delay-request 3200 \
+  --delay-request 250 \
   -r cli,html,json,junit --reporter-html-export report.html \
   --reporter-json-export report.json \
   --reporter-junit-export junit-report.xml
@@ -355,7 +361,7 @@ cd TiendaApi.Tests.E2E/Bruno-Local
 bru run "0 - SETUP" "1 - AUTHENTICATION" "2 - CATEGORÍAS" "3 - PRODUCTOS" \
   "4 - PEDIDOS (Usuario)" "5 - PEDIDOS (Admin)" "6 - USUARIOS" "7 - STORAGE" \
   "10 - GRAPHQL CATEGORÍAS" "11 - GRAPHQL PRODUCTOS" "90 - TEARDOWN" \
-  --env-file "environments/TiendaApi__NET_-_Environment.json" --delay 3200
+  --env-file "environments/TiendaApi__NET_-_Environment.json" --delay 250
 # Ejecución completa sin fallos. Fuera de esta ejecución: "12 - WEBSOCKETS" (la CLI no
 # soporta WS y la variable basews no existe en el env → ENOTFOUND preexistentes)
 ```
@@ -1388,7 +1394,7 @@ Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` 
 2. Aplicar las migraciones pendientes (en desarrollo se aplican solas al arrancar; la migración `AddIdentity` crea las tablas `AspNet*` y renombra `Username`→`UserName`)
 3. Reiniciar - el seed crea los usuarios con el algoritmo correcto según el modo
 
-> **Contraseñas seed**: en modo Custom los usuarios seed usan `admin` / `userdaw`; en modo Identity usan `Admin123!` / `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. Ambas quedan en los logs al sembrar.
+> **Contraseñas seed (unificadas)**: en AMBOS modos (`Custom` e `Identity`) los usuarios seed son `admin` / `Admin123!` y `userdaw` / `Userdaw123!`. El modo solo cambia el algoritmo del hash (BCrypt vs PBKDF2), nunca las credenciales — definen `SeedCredentials.cs`, que consumen el seeder, el mensaje de arranque y los tests.
 
 > **Nota**: cambiar de modo **no invalida usuarios existentes**, pero los hashes no son intercambiables (un usuario creado en Custom no puede hacer login en Identity y viceversa, salvo que se re-hasheen las contraseñas).
 
@@ -1744,12 +1750,12 @@ WS ws://localhost:5031/graphql
 
 ## 👥 Usuarios Demo
 
-| Usuario | Email              | Password (Custom) | Password (Identity) | Rol   |
-| ------- | ------------------ | ----------------- | ------------------- | ----- |
-| admin   | admin@tienda.com   | admin             | Admin123!           | ADMIN |
-| userdaw | userdaw@tienda.com | userdaw           | Admin123!           | USER  |
+| Usuario | Email              | Password    | Rol   |
+| ------- | ------------------ | ----------- | ----- |
+| admin   | admin@tienda.com   | Admin123!   | ADMIN |
+| userdaw | userdaw@tienda.com | Userdaw123! | USER  |
 
-**Nota:** Las contraseñas del modo Custom son las mismas que los usernames para facilitar las pruebas. En modo Identity (`Auth:Mode = "Identity"`) usan `Admin123!` porque la política de password de Identity exige longitud ≥6, dígito y mayúscula. El seed crea los usuarios con el algoritmo correcto según el modo (ver [doc/17 §17.14.4](doc/17-jwt-authentication.md#17144-el-seed-condicional)).
+**Nota:** Credenciales **unificadas**: las MISMAS en modo Custom e Identity (`SeedCredentials.cs`) — cumplen la política de Identity (≥8, mayúscula, minúscula y dígito), así que el modo solo determina el algoritmo del hash, no quién puede entrar. El seed crea los usuarios con el algoritmo correcto según el modo (ver [doc/17 §17.14.4](doc/17-jwt-authentication.md#17144-el-seed-condicional)).
 
 **Login externo OAuth 2.0:** También puedes iniciar sesión con Google, GitHub o Microsoft (endpoints `/api/v1/auth/external/{provider}`). Los usuarios creados vía OAuth **no tienen contraseña**: en modo Custom se guarda un dummy hash `OAUTH-{Provider}` (el login normal fallará para ellos) y en modo Identity `PasswordHash` queda null. Ver [doc/17 §17.13](doc/17-jwt-authentication.md#1713-login-externo-con-oauth-20).
 

@@ -4,7 +4,7 @@ using TiendaApi.Api.Data.Abstractions;
 namespace TiendaApi.Api.Models;
 
 /// <summary>
-/// Entidad de dominio que representa un usuario.
+/// Entidad de usuario que representa un usuario.
 /// Hereda de IdentityUser&lt;long&gt; para soportar ASP.NET Core Identity.
 /// Autenticación con email/password (BCrypt en modo Custom, PBKDF2 en modo Identity).
 /// Roles: USER, ADMIN.
@@ -20,8 +20,8 @@ public class User : IdentityUser<long>, ITimestamped
     // ── Heredados de IdentityUser<long> (NO redeclarar aquí) ──
     // public long Id              ← ya lo tenemos de IdentityUser<long>
     // public string Email          ← ya lo tenemos de IdentityUser<long>
-    // public string PasswordHash   ← ya lo tenemos de IdentityUser<long>
-    // public string UserName       ← ya lo tenemos (antes se llamaba Username)
+    // public string PasswordHash   ← ya lo tenemos de IdentityUser<long> (nosotros usamos BCrypt encima)
+    // public string UserName       ← ya lo tenemos de IdentityUser<long>
 
     // ── Propiedades nuevas que Identity añade automáticamente ──
     // EmailConfirmed, PhoneNumber, PhoneNumberConfirmed, TwoFactorEnabled,

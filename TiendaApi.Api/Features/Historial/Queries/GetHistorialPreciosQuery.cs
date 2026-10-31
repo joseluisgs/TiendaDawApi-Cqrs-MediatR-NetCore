@@ -20,8 +20,8 @@ public record GetHistorialPreciosQuery(long ProductoId, DateTime? Desde, DateTim
 /// Handler de GetHistorialPreciosQuery.
 ///
 /// La lectura delega en la fachada IHistorialService (existencia en PostgreSQL
-/// + serie en Cassandra con fail-open). El handler conserva solo el mapeo de
-/// la petición al estilo de la casa.
+/// + serie en Cassandra). El handler conserva solo el mapeo de la petición
+/// al estilo de la casa.
 /// </summary>
 public class GetHistorialPreciosQueryHandler(IHistorialService service)
     : IRequestHandler<GetHistorialPreciosQuery, Result<IReadOnlyList<HistorialPrecioDto>, DomainError>>

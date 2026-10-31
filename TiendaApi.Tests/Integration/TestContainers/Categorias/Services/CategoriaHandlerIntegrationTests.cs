@@ -17,7 +17,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Categorias.Services;
 
 /// <summary>
 /// Tests de integración de los handlers MediatR de Categorías con DI completo,
-/// equivalentes a los <c>CategoriaServiceIntegrationTests</c> del origen (Fase 14).
+/// equivalentes a los <c>CategoriaServiceIntegrationTests</c> del proyecto sin CQRS.
 /// Verifica los handlers con PostgreSQL + MongoDB reales usando Testcontainers.
 /// 🎓 El Controller envía al Mediator; aquí se envía igual que en producción.
 /// </summary>

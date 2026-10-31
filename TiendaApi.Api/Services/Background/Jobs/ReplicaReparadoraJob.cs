@@ -13,8 +13,8 @@ namespace TiendaApi.Api.Services.Background.Jobs;
 /// Cada 5 minutos vuelca en MongoDB lo que PostgreSQL haya tocado desde la última pasada.
 /// Idempotente: repetir un upsert por id es inofensivo.
 ///
-/// 🎓 En una frase: "si el Publish en memoria falló (Mongo caído, app reiniciada),
-/// este job lo repara solo en minutos, no en el próximo arranque".
+/// 🎓 En una frase: este job reconcilia periódicamente el read model de
+/// MongoDB con PostgreSQL, sin esperar al próximo arranque.
 ///
 /// Flujo:
 /// 1. Leer marca de agua (cuándo pasé por última vez)

@@ -24,41 +24,21 @@ public static class DatabaseConfig
 
         // 🎓 Fail-fast: en producción, si falta la configuración, la app NO debe arrancar.
         // En desarrollo, se usan los fallbacks para poder trabajar localmente.
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            if (environment.IsDevelopment())
-            {
-                connectionString = "Host=localhost;Database=tienda;Username=admin;Password=admin123";
-                Log.Warning("⚠️ Usando credenciales por defecto de desarrollo (ConnectionStrings:DefaultConnection no definida)");
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    "ConnectionStrings:DefaultConnection no está definida. " +
-                    "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
-            }
-        }
+        var connectionString = ResolverCadenaObligatoria(
+            configuration.GetConnectionString("DefaultConnection"),
+            "Host=localhost;Database=tienda;Username=admin;Password=admin123",
+            "ConnectionStrings:DefaultConnection",
+            environment);
 
         services.AddDbContext<TiendaDbContext>(options => options.UseNpgsql(connectionString));
 
         // MongoDB: el cliente y la base de datos se registran SIEMPRE.
         Log.Information("Configurando MongoDB (cliente + base de datos)...");
-        var mongoConnectionString = configuration["MongoDbSettings:ConnectionString"];
-        if (string.IsNullOrEmpty(mongoConnectionString))
-        {
-            if (environment.IsDevelopment())
-            {
-                mongoConnectionString = "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin";
-                Log.Warning("⚠️ Usando credenciales por defecto de desarrollo (MongoDbSettings:ConnectionString no definida)");
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    "MongoDbSettings:ConnectionString no está definida. " +
-                    "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
-            }
-        }
+        var mongoConnectionString = ResolverCadenaObligatoria(
+            configuration["MongoDbSettings:ConnectionString"],
+            "mongodb://admin:admin123@localhost:27017/tienda?authSource=admin",
+            "MongoDbSettings:ConnectionString",
+            environment);
         var mongoDatabaseName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
 
         services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
@@ -100,5 +80,32 @@ public static class DatabaseConfig
         services.AddScoped<Data.Seed.Mongo.ProductoReadSeeder>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Resuelve una cadena de conexión obligatoria sin repetir el mismo
+    /// bloque if/else en cada almacén: en desarrollo cae al default local con
+    /// warning; en producción, si falta, lanza (fail-fast: la app NO arranca
+    /// con credenciales por defecto).
+    /// </summary>
+    /// <param name="valor">Valor de configuración (puede venir nulo/vacío).</param>
+    /// <param name="fallbackDesarrollo">Default local solo para Development.</param>
+    /// <param name="claveConfig">Nombre de la clave, para los mensajes (mismos textos que antes).</param>
+    /// <param name="environment">Entorno actual.</param>
+    private static string ResolverCadenaObligatoria(
+        string? valor, string fallbackDesarrollo, string claveConfig, IWebHostEnvironment environment)
+    {
+        if (!string.IsNullOrEmpty(valor))
+            return valor;
+
+        if (environment.IsDevelopment())
+        {
+            Log.Warning("⚠️ Usando credenciales por defecto de desarrollo ({Clave} no definida)", claveConfig);
+            return fallbackDesarrollo;
+        }
+
+        throw new InvalidOperationException(
+            $"{claveConfig} no está definida. " +
+            "En producción es obligatorio configurarla (appsettings.json o variables de entorno).");
     }
 }

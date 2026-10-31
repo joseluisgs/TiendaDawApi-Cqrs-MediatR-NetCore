@@ -5,6 +5,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Repositories.Pedidos;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -21,7 +22,8 @@ public record DeletePedidoAdminCommand(string Id)
 public class DeletePedidoAdminCommandHandler(
     IPedidosRepository repository,
     IMediator mediator,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<DeletePedidoAdminCommand, UnitResult<DomainError>>
 {
     /// <inheritdoc/>
@@ -46,6 +48,7 @@ public class DeletePedidoAdminCommandHandler(
         ), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
         Log.Information("Notificación publicada para pedido eliminado por admin ID: {PedidoId}", request.Id);
 

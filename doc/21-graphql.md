@@ -1561,51 +1561,64 @@ public class EventPublisher : IEventPublisher
 }
 ```
 
-### Integración en el Servicio
+### Integración en el comando (handler CQRS)
+
+En este proyecto **el servicio no publica**: quien crea el producto es el handler del
+command, y cada efecto (incluida la suscripción GraphQL) es otro handler que escucha la
+notification. El flujo completo del alta:
 
 ```csharp
-public class ProductoService(
-    // ... otros parámetros
-    IEventPublisher eventPublisher
-) : IProductoService
+// CreateProductoCommand.cs - handler
+public class CreateProductoCommandHandler(
+    IProductoRepository productoRepository,
+    ICategoriaRepository categoriaRepository,
+    IValidator<ProductoRequestDto> validator,
+    IMediator mediator,
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
+    : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>>
 {
-    public async Task<Result<ProductoDto, DomainError>> CreateAsync(ProductoRequestDto dto)
+    public async Task<Result<ProductoDto, DomainError>> Handle(
+        CreateProductoCommand request, CancellationToken cancellationToken)
     {
-        // ... lógica de creación
-        
-        return Result.Success<ProductoDto, DomainError>(resultDto)
-            .Tap( dto =>
-            {
-                // Efectos secundarios
-                InvalidarCacheProducto("productos:all");
-                NotificarWebSocketProductoCreado(dto);
-                EnviarEmailProductoCreado(saved);
-                
-                // 🚀 Publicar evento para GraphQL Subscription
-                EventoSuscripcionProductoCreado(dto);
-            });
+        // ... validar (validator + categoria)
+        var saved = await productoRepository.SaveAsync(request.Dto.ToEntity());
+        var dto = saved.ToDto();
+
+        // 🚀 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
+        // Si invalidamos antes, un lector puede repueblar la caché con el modelo de lectura viejo.
+        await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
+
+        await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
+        // 🚀 Invalidar caché de paginación por versión (clave versionada).
+        // Las claves viejas quedan huérfanas y mueren por TTL.
+        ProductoService.InvalidatePagedCache();
+
+        return Result.Success<ProductoDto, DomainError>(dto);
     }
-    
-    private void EventoSuscripcionProductoCreado(ProductoDto producto)
+}
+```
+
+La suscripción GraphQL es uno de los handlers que escuchan esa notification:
+
+```csharp
+// ProductoCreadoGraphQLHandler.cs - un handler por efecto (Observer via MediatR)
+public class ProductoCreadoGraphQLHandler(IEventPublisher eventPublisher)
+    : INotificationHandler<ProductoCreadoNotification>
+{
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
     {
-        _ = Task.Run(async () =>
+        await eventPublisher.PublishAsync("onProductoCreado", new ProductoCreadoEvent
         {
-            try
-            {
-                await eventPublisher.PublishAsync("onProductoCreado", new ProductoCreadoEvent
-                {
-                    ProductoId = producto.Id,
-                    Nombre = producto.Nombre,
-                    Precio = producto.Precio,
-                    Stock = producto.Stock,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Error publicando evento GraphQL Subscription");
-            }
+            ProductoId = notification.Producto.Id,
+            Nombre = notification.Producto.Nombre,
+            Precio = notification.Producto.Precio,
+            Stock = notification.Producto.Stock,
+            CreatedAt = DateTime.UtcNow
         });
+        Log.Information("🚀 [GRAPHQL] Evento Subscription enviado: Producto creado ID={ProductoId}", notification.Producto.Id);
     }
 }
 ```

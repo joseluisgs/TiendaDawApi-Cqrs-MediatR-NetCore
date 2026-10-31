@@ -27,7 +27,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Pedidos.Services;
 /// <summary>
 /// Tests de integración de los handlers MediatR de Pedidos con DI completo y
 /// repositorio nativo MongoDB (PedidosNativeRepository), equivalentes a los
-/// <c>PedidosNativeServiceIntegrationTests</c> del origen (Fase 14).
+/// <c>PedidosNativeServiceIntegrationTests</c> del proyecto sin CQRS.
 /// 🎓 Flujo real: command → validaciones → transacción → decremento de stock → notificación.
 /// </summary>
 [TestFixture]
@@ -86,6 +86,7 @@ public class PedidosHandlerIntegrationTests
         services.AddDatabases(configuration, Mock.Of<IWebHostEnvironment>());
         services.AddRepositories(configuration);
         services.AddMediatRHandlers();
+        services.AddOutputCacheConfig();
         services.AddScoped<ICacheService, MemoryCacheService>();
         services.AddScoped<IEmailService, MemoryEmailService>();
 
@@ -100,6 +101,9 @@ public class PedidosHandlerIntegrationTests
         mockJwtExtractor.Setup(x => x.ExtractUserId(It.IsAny<string>())).Returns(1L);
         services.AddSingleton(mockJwtExtractor.Object);
         services.AddScoped<PedidosWebSocketHandler>();
+        // El handler valida el JWT con IJwtService al aceptar la conexión:
+        // el contenedor de este test debe registrarlo igual que ServicesConfig.
+        services.AddSingleton<IJwtService, JwtService>();
 
         _provider = services.BuildServiceProvider();
 

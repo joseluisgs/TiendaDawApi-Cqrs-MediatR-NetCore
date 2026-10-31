@@ -15,7 +15,7 @@ namespace TiendaApi.Tests.Unit.Features.Productos;
 /// Antes había que mockear muchas dependencias y varios efectos laterales.
 /// Ahora el Handler se centra en delegar a la fachada y mapear errores.
 ///
-/// Fase 13 (CQRS): la lectura la hace IProductoService (caché + MongoDB).
+/// En CQRS, la lectura la hace IProductoService (caché + MongoDB).
 /// </summary>
 public class GetProductoByIdQueryHandlerTests
 {

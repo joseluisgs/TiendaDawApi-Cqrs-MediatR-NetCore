@@ -1,4 +1,4 @@
-﻿# 17. JWT Authentication
+# 17. JWT Authentication
 
 ## Indice
 
@@ -1934,6 +1934,13 @@ public static class AuthenticationConfig
     {
         var jwtKey = configuration["Jwt:Key"] 
             ?? throw new InvalidOperationException("JWT Key no configurada");
+
+        // ⚠ Educativo: en ESTE proyecto la clave vive en appsettings.json
+        // para que "clone y ejecuta" funcione sin configurar nada. En un proyecto
+        // real la clave NO se versiona: va en user-secrets
+        //   dotnet user-secrets set "Jwt:Key" "<clave>"
+        // o en la variable de entorno Jwt__Key - quien lea este archivo puede
+        // forjar tokens de cualquier usuario, admin incluido.
         
         // Solo JWT Bearer - sin Identity
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -2482,7 +2489,7 @@ Ambos caminos registran **exactamente lo mismo** para el middleware:
 ```mermaid
 flowchart TD
     A[SqlSeeder.SeedAsync] --> B{Auth:Mode?}
-    B -->|Custom| C[Crear User con<br/>PasswordHash = BCrypt hardcoded]
+    B -->|Custom| C[Crear User con<br/>PasswordHash = BCrypt de SeedCredentials]
     B -->|Identity| D[Crear User con<br/>userManager.CreateAsync user, password]
     C --> E[✅ Login funciona]
     D --> F[✅ Login funciona]
@@ -2490,7 +2497,7 @@ flowchart TD
 
 En modo Identity, el seeder usa `IServiceScopeFactory` para resolver `UserManager<User>` y `RoleManager<IdentityRole<long>>` (porque el seeder está en un scope diferente al del request), y crea los roles antes de asignarlos (`AddToRoleAsync` lanza excepción si el rol no existe).
 
-> ⚠️ **Las contraseñas seed difieren entre modos**. La política de password de Identity (≥6 chars, dígito, mayúscula) hace que `"admin"` sea rechazado, así que el seed Identity usa `Admin123!` mientras el modo Custom usa `admin`. Ambas quedan documentadas en los logs al sembrar.
+> ✅ **Credenciales unificadas**: AMBOS modos usan las mismas credenciales (`SeedCredentials.cs`: `admin`/`Admin123!` y `userdaw`/`Userdaw123!`). El modo solo cambia el algoritmo del hash (BCrypt vs PBKDF2), nunca quién puede entrar — así las suites E2E pasan igual en los dos modos.
 
 > 🔧 **Regla que enseñamos en clase**: no ocultes propiedades de una clase base que un framework genérico escribe por ti. `UserStore` escribe en la propiedad heredada `PasswordHash` de `IdentityUser`; si la redeclaramos con `new`, EF mapearía la nuestra y el hash real se perdería en una propiedad fantasma. En su lugar, `PasswordHash` es nullable (los usuarios OAuth no tienen contraseña) y quitamos el `IsRequired()` del mapeo.
 

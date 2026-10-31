@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.OutputCaching;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
@@ -45,7 +46,7 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
@@ -62,7 +63,7 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
@@ -79,7 +80,7 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object);
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 

@@ -7,6 +7,7 @@ using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
@@ -22,7 +23,8 @@ public record UpdateMyPedidoCommand(string Id, long UserId, UpdatePedidoDto Dto)
 /// </summary>
 public class UpdateMyPedidoCommandHandler(
     IPedidosRepository repository,
-    ICacheService cacheService)
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateMyPedidoCommand, Result<PedidoDto, DomainError>>
 {
     /// <inheritdoc/>
@@ -42,6 +44,7 @@ public class UpdateMyPedidoCommandHandler(
         var dto = updated.ToDto();
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
         return Result.Success<PedidoDto, DomainError>(dto);
     }

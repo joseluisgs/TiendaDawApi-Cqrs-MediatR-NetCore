@@ -16,10 +16,8 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 ///    eventos de edición - un update de solo stock o de imagen no genera
 ///    punto, y el informe Q-C solo cuenta cambios reales.
 ///
-/// ✅ Consistencia eventual en la práctica: la proyección es fail-open.
-/// Se AWAIT la escritura (no fire-and-forget: quien acaba de hacer el PATCH
-/// puede leer el punto recién escrito, y el E2E no depende de carreras), pero
-/// si Cassandra está caído el update de PostgreSQL NO se tumbe: solo warning.
+/// ✅ Se AWAIT la escritura (no fire-and-forget: quien acaba de hacer el PATCH
+/// puede leer el punto recién escrito, y el E2E no depende de carreras).
 /// </summary>
 public class PrecioHistoricoHandler(IHistorialRepository historialRepository)
     : INotificationHandler<ProductoCreadoNotification>
@@ -45,8 +43,8 @@ public class PrecioHistoricoHandler(IHistorialRepository historialRepository)
     }
 
     /// <summary>
-    /// Escritura fail-open compartida por ambos eventos: si Cassandra está
-    /// caído, solo warning (nunca tumba el create ni el update de PostgreSQL).
+    /// Escritura compartida por ambos eventos: crea el punto de precio en las
+    /// dos tablas de serie (Q-A histórico + Q-C informe del día).
     /// </summary>
     private async Task RegistrarPrecioAsync(long productoId, double precio)
     {

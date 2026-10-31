@@ -17,8 +17,8 @@ namespace TiendaApi.Tests.Unit.Features.Historial;
 /// Tests de GetHistorialPreciosQueryHandler. El handler SOLO delega en la
 /// fachada IHistorialService (mismo estilo que GetProductoByIdQueryHandler);
 /// aqui se cubren las dos capas: la delegacion pura y la cadena completa
-/// handler -> servicio -> repositorio mockeado, verificando que con
-/// Cassandra caido nada explota (fail-open).
+/// handler -> servicio -> repositorio mockeado, verificando que la cadena
+/// devuelve el Result de dominio sin excepciones.
 /// </summary>
 public class GetHistorialPreciosQueryHandlerTests
 {

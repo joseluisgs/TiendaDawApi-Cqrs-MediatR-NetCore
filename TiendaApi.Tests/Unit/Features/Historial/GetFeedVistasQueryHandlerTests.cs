@@ -10,8 +10,8 @@ using TiendaApi.Api.Services.Historial;
 namespace TiendaApi.Tests.Unit.Features.Historial;
 
 /// <summary>
-/// Tests de GetFeedVistasQueryHandler. Una particion vacia (o un nodo caido)
-/// es una respuesta valida: lista vacia, nunca un error.
+/// Tests de GetFeedVistasQueryHandler. Una particion vacia es una respuesta
+/// valida: lista vacia, nunca un error.
 /// </summary>
 public class GetFeedVistasQueryHandlerTests
 {

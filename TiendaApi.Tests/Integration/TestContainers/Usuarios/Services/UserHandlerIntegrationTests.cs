@@ -17,7 +17,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Usuarios.Services;
 
 /// <summary>
 /// Tests de integración de los handlers MediatR de Usuarios con DI completo,
-/// equivalentes a los <c>UserServiceIntegrationTests</c> del origen (Fase 14).
+/// equivalentes a los <c>UserServiceIntegrationTests</c> del proyecto sin CQRS.
 /// Verifica los handlers con PostgreSQL real usando Testcontainers.
 /// </summary>
 [TestFixture]

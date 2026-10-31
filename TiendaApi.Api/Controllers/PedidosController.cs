@@ -2,6 +2,7 @@ using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Mvc;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
@@ -27,6 +28,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     /// Obtiene el listado completo de todos los pedidos (solo administradores).
     /// </summary>
     [HttpGet]
+    [OutputCache(Duration = 60, Tags = new[] { "pedidos" })]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(IEnumerable<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -47,6 +49,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     /// <param name="sortBy">Campo de ordenación.</param>
     /// <param name="direction">Dirección de ordenación (asc/desc).</param>
     [HttpGet("paged")]
+    [OutputCache(Duration = 60, Tags = new[] { "pedidos" })]
     [Authorize(Roles = UserRoles.ADMIN)]
     [ProducesResponseType(typeof(PagedResult<PedidoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

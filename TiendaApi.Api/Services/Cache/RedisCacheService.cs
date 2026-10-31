@@ -8,8 +8,8 @@ namespace TiendaApi.Api.Services.Cache;
 /// Implementación de caché usando Redis.
 /// Implementa el patrón cache-aside.
 ///
-/// 🎓 Observabilidad: registra métricas de errores en CacheMetrics
-/// para poder distinguir "Redis caído" de "Redis perfecto".
+/// 🎓 Observabilidad: registra métricas de errores en CacheMetrics (tasa,
+/// último error y mensaje) para ver el estado de la caché sin rastrear logs.
 /// </summary>
 public class RedisCacheService(
     IDistributedCache cache,

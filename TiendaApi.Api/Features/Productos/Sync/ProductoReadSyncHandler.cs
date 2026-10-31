@@ -14,8 +14,8 @@ namespace TiendaApi.Api.Features.Productos.Sync;
 ///
 /// 🎓 PG = fuente de verdad: el comando ya está commiteado cuando se publica.
 /// Por eso cada Handle envuelve la operación en try/catch y solo registra el
-/// error — una indisponibilidad de MongoDB no debe tumbar una escritura
-/// exitosa (el seeder de arranque repara la réplica).
+/// resultado: el read model es una proyección del comando ya commiteado, con
+/// su propio ciclo de reparación (seeder de arranque + job reparador).
 ///
 /// Se registra automáticamente por el barrido de MediatR
 /// (RegisterServicesFromAssemblyContaining&lt;Program&gt;).

@@ -25,7 +25,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Productos.Services;
 
 /// <summary>
 /// Tests de integración de los handlers MediatR de Productos con DI completo,
-/// equivalentes a los <c>ProductoServiceIntegrationTests</c> del origen (Fase 14).
+/// equivalentes a los <c>ProductoServiceIntegrationTests</c> del proyecto sin CQRS.
 /// 🎓 Flujo real: command → PostgreSQL → notificación → read model MongoDB → query.
 /// </summary>
 [TestFixture]
@@ -84,7 +84,7 @@ public class ProductoHandlerIntegrationTests
         // IHistorialRepository: se SOBRESCRIBE con un mock (el ultimo registro del
         // contenedor gana). AddRepositories registra el real, que exige ISession de
         // Cassandra; estos tests prueban los handlers de productos, no Cassandra
-        // (la serie real se cubre en T14 con Testcontainers.Cassandra).
+        // (la serie real la cubren los tests de integración con Testcontainers.Cassandra).
         services.AddScoped<IHistorialRepository>(sp =>
         {
             var mockHistorial = new Mock<IHistorialRepository>();
