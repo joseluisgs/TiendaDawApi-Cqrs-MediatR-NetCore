@@ -37,6 +37,11 @@ escucha en el **8080 interno** y el puerto del host lo pone el compose.
 docker compose -f docker-compose.local.yml up -d      # infra de desarrollo
 docker compose -f docker-compose.prod.yml up -d --build   # producción (lee .env)
 docker compose -f docker-compose.prod.yml down -v     # ⚠ borra volúmenes (datos)
+
+> **Credenciales (criterio educativo)**: el `.env` raíz está **ignorado por
+> git** (credenciales reales del despliegue) y `.env.development` sí va
+> versionado con los defaults locales de clase. En un proyecto real, ninguna
+> credencial vive en el repositorio.
 ```
 
 También hay composes de **E2E en contenedor**:

@@ -22,11 +22,12 @@ services:
       --reporter-json-export /etc/newman/reports/report.json
       --timeout-request 30000
       --timeout-script 5000
-      --delay-request 3200
+      --delay-request 250
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # Rate limit de la API (RateLimitConfig.cs): POST:* 20/min -> --delay-request
-    # evita los 429. Si la API no está aún, reintenta (máx 3).
+    # Rate limit de la API (RateLimitConfig.cs): general 100/15s, auth 10/min.
+    # 250ms validado empíricamente (misma configuración que la API Normal).
+    # Si la API no está aún, reintenta (máx 3).
     restart: on-failure:3
 
 networks:

@@ -101,6 +101,9 @@ public class PedidosEfHandlerIntegrationTests
         mockJwtExtractor.Setup(x => x.ExtractUserId(It.IsAny<string>())).Returns(1L);
         services.AddSingleton(mockJwtExtractor.Object);
         services.AddScoped<PedidosWebSocketHandler>();
+        // El handler valida el JWT con IJwtService al aceptar la conexión:
+        // el contenedor de este test debe registrarlo igual que ServicesConfig.
+        services.AddSingleton<IJwtService, JwtService>();
 
         _provider = services.BuildServiceProvider();
 
