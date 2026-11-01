@@ -22,6 +22,7 @@ public class ProductoRepository(
         logger.LogDebug("Buscando todos los productos");
         return await context.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .OrderBy(p => p.Nombre)
             .AsNoTracking()
             .ToListAsync();
@@ -33,6 +34,7 @@ public class ProductoRepository(
         logger.LogDebug("Obteniendo productos como IQueryable");
         return context.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .OrderBy(p => p.Nombre)
             .AsNoTracking();
     }
@@ -43,8 +45,8 @@ public class ProductoRepository(
         logger.LogDebug("Buscando productos paginados con filtros");
 
         var query = filter.IsDeleted.HasValue
-            ? context.Productos.IgnoreQueryFilters().Include(p => p.Categoria).AsQueryable()
-            : context.Productos.Include(p => p.Categoria).AsQueryable();
+            ? context.Productos.IgnoreQueryFilters().Include(p => p.Categoria).Include(p => p.Proveedor).AsQueryable()
+            : context.Productos.Include(p => p.Categoria).Include(p => p.Proveedor).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Nombre))
             query = query.Where(p => EF.Functions.Like(p.Nombre, $"%{filter.Nombre}%"));
@@ -84,6 +86,7 @@ public class ProductoRepository(
     {
         return await context.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -99,6 +102,7 @@ public class ProductoRepository(
         // mismas instancias y las persiste con UpdateAsync.
         return await context.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .Where(p => lista.Contains(p.Id))
             .ToListAsync();
     }
@@ -109,6 +113,7 @@ public class ProductoRepository(
         logger.LogDebug("Buscando productos para categoría: {CategoriaId}", categoriaId);
         return await context.Productos
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .Where(p => p.CategoriaId == categoriaId)
             .OrderBy(p => p.Nombre)
             .AsNoTracking()
@@ -121,6 +126,7 @@ public class ProductoRepository(
         context.Productos.Add(producto);
         await context.SaveChangesAsync();
         await context.Entry(producto).Reference(p => p.Categoria).LoadAsync();
+        await context.Entry(producto).Reference(p => p.Proveedor).LoadAsync();
         logger.LogInformation("Producto guardado con ID: {Id}", producto.Id);
         return producto;
     }
@@ -131,6 +137,7 @@ public class ProductoRepository(
         context.Productos.Update(producto);
         await context.SaveChangesAsync();
         await context.Entry(producto).Reference(p => p.Categoria).LoadAsync();
+        await context.Entry(producto).Reference(p => p.Proveedor).LoadAsync();
         logger.LogInformation("Producto actualizado con ID: {Id}", producto.Id);
         return producto;
     }

@@ -10,24 +10,13 @@ public class ProductoNotificationHandlerTests
     [Test]
     public void ProductoCreadoNotification_ContieneDatosCorrectos()
     {
-        var producto = new ProductoDto(
-            1,
-            "Laptop",
-            "Laptop pro",
-            1000m,
-            10,
-            null,
-            1,
-            "Electrónica",
-            DateTime.UtcNow,
-            DateTime.UtcNow
-        );
+        var producto = new ProductoDto(1, "Laptop", "Laptop pro", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var notification = new ProductoCreadoNotification(producto);
 
         notification.Producto.Nombre.Should().Be("Laptop");
         notification.Producto.Precio.Should().Be(1000m);
-        notification.Producto.CategoriaNombre.Should().Be("Electrónica");
+        notification.Producto.Categoria.Nombre.Should().Be("Electrónica");
     }
 
     [Test]

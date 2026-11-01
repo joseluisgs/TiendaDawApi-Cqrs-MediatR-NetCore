@@ -29,7 +29,8 @@ public class ProductoReadSyncHandlerTests
 
     private static readonly ProductoDto Producto = new(
         1, "Laptop Dell XPS 15", "Laptop de alto rendimiento", 1299.99m, 10,
-        "/storage/uploads/productos/laptop.jpg", 1, "Electrónica",
+        "/storage/uploads/productos/laptop.jpg",
+        new CategoriaResumenDto(1, "Electrónica"), null,
         new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
         new DateTime(2026, 1, 15, 12, 30, 0, DateTimeKind.Utc));
 

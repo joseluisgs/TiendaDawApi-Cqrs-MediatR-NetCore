@@ -18,8 +18,10 @@ public static class ProductoMapper
             producto.Precio,
             producto.Stock,
             producto.Imagen,
-            producto.CategoriaId,
-            producto.Categoria?.Nombre ?? string.Empty,
+            new CategoriaResumenDto(producto.CategoriaId, producto.Categoria?.Nombre ?? string.Empty),
+            producto.Proveedor is null
+                ? null
+                : new ProveedorResumenDto(producto.Proveedor.Codigo, producto.Proveedor.Nombre),
             producto.CreatedAt,
             producto.UpdatedAt
         );
@@ -37,8 +39,10 @@ public static class ProductoMapper
             producto.Precio,
             producto.Stock,
             producto.Imagen,
-            producto.CategoriaId,
-            producto.Categoria?.Nombre ?? string.Empty,
+            new CategoriaResumenDto(producto.CategoriaId, producto.Categoria?.Nombre ?? string.Empty),
+            producto.Proveedor is null || string.IsNullOrEmpty(producto.Proveedor.Codigo)
+                ? null
+                : new ProveedorResumenDto(producto.Proveedor.Codigo, producto.Proveedor.Nombre),
             producto.CreatedAt,
             producto.UpdatedAt
         );
@@ -61,8 +65,12 @@ public static class ProductoMapper
         Stock = dto.Stock,
         Imagen = dto.Imagen,
         IsDeleted = false,
-        CategoriaId = dto.CategoriaId,
-        Categoria = new CategoriaRead { Id = dto.CategoriaId, Nombre = dto.CategoriaNombre },
+        CategoriaId = dto.Categoria.Id,
+        Categoria = new CategoriaRead { Id = dto.Categoria.Id, Nombre = dto.Categoria.Nombre },
+        ProveedorId = dto.Proveedor?.Codigo,
+        Proveedor = dto.Proveedor is null
+            ? new ProveedorRead()
+            : new ProveedorRead { Codigo = dto.Proveedor.Codigo, Nombre = dto.Proveedor.Nombre },
         CreatedAt = dto.CreatedAt,
         UpdatedAt = dto.UpdatedAt,
         SyncAt = DateTime.UtcNow
@@ -70,7 +78,7 @@ public static class ProductoMapper
 
     /// <summary>
     /// Proyecta la entidad de PostgreSQL al modelo de lectura de MongoDB.
-    /// Used por el seeder de arranque; requiere Categoria cargada (Include).
+    /// Used por el seeder de arranque; requiere Categoria y Proveedor cargados (Include).
     /// </summary>
     public static ProductoRead ToRead(this Producto producto) => new()
     {
@@ -87,6 +95,10 @@ public static class ProductoMapper
             Id = producto.CategoriaId,
             Nombre = producto.Categoria?.Nombre ?? string.Empty
         },
+        ProveedorId = producto.Proveedor?.Codigo,
+        Proveedor = producto.Proveedor is null
+            ? new ProveedorRead()
+            : new ProveedorRead { Codigo = producto.Proveedor.Codigo, Nombre = producto.Proveedor.Nombre },
         CreatedAt = producto.CreatedAt,
         UpdatedAt = producto.UpdatedAt,
         SyncAt = DateTime.UtcNow
@@ -101,6 +113,7 @@ public static class ProductoMapper
         Stock = dto.Stock,
         Imagen = dto.Imagen,
         CategoriaId = dto.CategoriaId,
+        ProveedorId = string.IsNullOrWhiteSpace(dto.ProveedorCodigo) ? null : dto.ProveedorCodigo,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };
@@ -113,6 +126,7 @@ public static class ProductoMapper
         producto.Precio = dto.Precio;
         producto.Stock = dto.Stock;
         producto.CategoriaId = dto.CategoriaId;
+        producto.ProveedorId = string.IsNullOrWhiteSpace(dto.ProveedorCodigo) ? null : dto.ProveedorCodigo;
         if (!string.IsNullOrEmpty(dto.Imagen))
             producto.Imagen = dto.Imagen;
     }

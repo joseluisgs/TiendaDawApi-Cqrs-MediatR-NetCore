@@ -20,8 +20,8 @@ public class GetAllProductosQueryHandlerTests
         {
             Items = new List<ProductoDto>
             {
-                new(1, "Laptop", "", 1000m, 10, null, 1, "Electrónica", DateTime.UtcNow, DateTime.UtcNow),
-                new(2, "Mouse", "", 25m, 50, null, 1, "Electrónica", DateTime.UtcNow, DateTime.UtcNow)
+                new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow),
+                new(2, "Mouse", "", 25m, 50, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow)
             },
             TotalCount = 2,
             Page = 1,

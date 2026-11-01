@@ -4,6 +4,7 @@ using TiendaApi.Api.Services;
 using TiendaApi.Api.Services.Auth;
 using TiendaApi.Api.Services.Historial;
 using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Services.Proveedores;
 
 namespace TiendaApi.Api.Infrastructures;
 
@@ -29,6 +30,7 @@ public static class ServicesConfig
             .AddSingleton<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
             .AddScoped<IProductoService, ProductoService>()
+            .AddScoped<IProveedorService, ProveedorService>()
             .AddScoped<IHistorialService, HistorialService>();
     }
 }

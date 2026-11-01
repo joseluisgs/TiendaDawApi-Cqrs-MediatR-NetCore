@@ -513,6 +513,17 @@ classDiagram
     +ICollection~Producto~ Productos
   }
 
+  class Proveedor {
+    +string Codigo
+    +string Nombre
+    +string? Descripcion
+    +string? Contacto
+    +bool IsDeleted
+    +DateTime CreatedAt
+    +DateTime UpdatedAt
+    +ICollection~Producto~ Productos
+  }
+
   class Producto {
     +long Id
     +string Nombre
@@ -521,11 +532,13 @@ classDiagram
     +int Stock
     +string? Imagen
     +long CategoriaId
+    +string? ProveedorId
     +bool IsDeleted
     +DateTime CreatedAt
     +DateTime UpdatedAt
     +byte[] RowVersion
     +Categoria Categoria
+    +Proveedor? Proveedor
     +IsLocalImage()
     +HasDefaultImage()
     +GetImagenUrl()
@@ -599,6 +612,8 @@ classDiagram
 User "1" --> "*" UserLogin : "vincula"
   Categoria "1" --> "*" Producto : "tiene"
   Producto "*" --> "1" Categoria : "pertenece"
+  Proveedor "1" --> "*" Producto : "tiene"
+  Producto "*" --> "1" Proveedor : "suministra"
   Pedido "1" *-- "1" Destinatario : "compone"
   Pedido "1" *-- "*" PedidoItem : "compone items"
   Destinatario "1" *-- "1" Direccion : "compone"
@@ -619,6 +634,7 @@ Distribución CQRS de los datos:
 ```mermaid
 erDiagram
     CATEGORIA ||--o{ PRODUCTO : "tiene"
+    PROVEEDOR ||--o{ PRODUCTO : "tiene"
     
     USER {
         bigint Id PK
@@ -653,6 +669,15 @@ erDiagram
         decimal Precio
         int Stock
         bigint CategoriaId FK
+        string ProveedorId FK
+        bool IsDeleted
+    }
+
+    PROVEEDOR {
+        string Codigo PK
+        string Nombre
+        string Descripcion
+        string Contacto
         bool IsDeleted
     }
 ```
@@ -731,7 +756,7 @@ erDiagram
 **Resumen:**
 | Base de Datos    | Rol en CQRS                                  | Entidades                                   | Tipo                 |
 | ---------------- | -------------------------------------------- | ------------------------------------------- | -------------------- |
-| **🐘 PostgreSQL** | Escrituras y queries de usuarios/categorías  | User, Categoria, Producto                   | Relacional (FK)      |
+| **🐘 PostgreSQL** | Escrituras y queries de usuarios/categorías  | User, Categoria, Producto, Proveedor                   | Relacional (FK)      |
 | **🍃 MongoDB**    | Read model de productos + pedidos            | productos_read; Pedido, PedidoItem, Destinatario, Direccion | Documentos embebidos |
 | **🗄️ Cassandra** | Escritura y lectura (series temporales) | Serie de precios por producto, feed de usuario | CassandraCSharpDriver (partición + clustering + TTL) |
 | **🔴 Redis**      | Caché de lectura (Cache-Aside)               | Claves por entidad/usuario                  | Key-value            |
@@ -769,7 +794,7 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 │   │   ├── Email/                    # Servicio de email (MailKit + pipeline Polly)
 │   │   ├── Productos/                # Fachada de lectura de productos (caché + MongoDB)
 │   │   └── Storage/                  # Servicios de almacenamiento de archivos
-│   ├── Repositories/                 # Acceso a datos (Categorias, Productos, Pedidos, Usuarios, Auth)
+│   ├── Repositories/                 # Acceso a datos (Categorias, Proveedor, Productos, Pedidos, Usuarios, Auth)
 │   ├── Models/                       # Modelos de dominio (User, UserLogin, Producto, Categoria, Pedido) + Models/Read
 │   ├── Dtos/                         # Data Transfer Objects (Request/Response, Auth)
 │   ├── Data/                         # DbContext, Seeders y configuración (Abstractions, Interceptors, Seed)
@@ -825,10 +850,10 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 
 | Carpeta               | Propósito                  | Contenido                                                                                     |
 | --------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
-| **Controllers**       | Entry points HTTP          | AuthController, CategoriasController, ProductosController, PedidosController, UsersController, StorageController |
+| **Controllers**       | Entry points HTTP          | AuthController, CategoriasController, ProveedoresController, ProductosController, PedidosController, UsersController, StorageController |
 | **Features**          | CQRS Handlers (MediatR)    | Commands (escritura), Queries (lectura), Notifications (eventos) y Sync del read model por dominio |
 | **Services**          | Infraestructura y fachadas | AuthService, CacheService (Redis/memoria), MailKitEmailService (con Polly), ProductoService (lectura Mongo), StorageService |
-| **Repositories**      | Abstracción de datos       | CategoriaRepository, ProductoRepository, UserRepository, PedidosRepository (EF/Native), ProductoReadRepository (MongoDB) |
+| **Repositories**      | Abstracción de datos       | CategoriaRepository, ProveedorRepository, ProductoRepository, UserRepository, PedidosRepository (EF/Native), ProductoReadRepository (MongoDB) |
 | **Models**            | Modelos de dominio         | User, Producto, Categoria, Pedido, Direccion, Destinatario + Models/Read (read model)         |
 | **Dtos**              | Transferencia de datos     | Request/Response para API                                                                     |
 | **Mappers**           | Modelos <-> DTO            | AutoMapper y funciones de extensión (incl. ToRead)                                            |
@@ -869,7 +894,7 @@ graph TB
 
     subgraph "🎯 Application Layer - API"
         subgraph "Controllers & Filters"
-            CTRL[Controllers<br/>Auth, Categorias,<br/>Productos, Pedidos, Users]
+            CTRL[Controllers<br/>Auth, Categorias,<br/>Proveedores, Productos, Pedidos, Users]
             FILT[Filters<br/>Auth, Validation,<br/>Exception]
         end
         subgraph "Middleware Pipeline"
@@ -920,7 +945,7 @@ graph TB
     end
 
     subgraph "💾 Data Stores"
-        PG[("🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos")]
+        PG[("🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos, Proveedores")]
         MONGO_DB[("🍃 MongoDB<br/>LECTURA (queries CQRS)<br/>productos_read + Pedidos")]
         REDIS_DB[(🔴 Redis<br/>Caché de lectura<br/>Cache-Aside)]
     end
@@ -1007,7 +1032,7 @@ graph TB
     end
 
     subgraph "🔵 Application Layer"
-        CTRL["🎯 Controllers<br/>Auth, Categorias, Productos<br/>Pedidos, Users, GraphQL"]
+        CTRL["🎯 Controllers<br/>Auth, Categorias, Productos<br/>Proveedores, Pedidos, Users, GraphQL"]
         FILT["🔍 Filters & Middleware<br/>Auth, Validation, Exception<br/>JWT, CORS, RateLimit"]
     end
 
@@ -1313,7 +1338,7 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 
 | Base de Datos    | Uso                                  | Entidades                                   | Tecnologías                                         |
 | ---------------- | ------------------------------------ | ------------------------------------------- | --------------------------------------------------- |
-| **🐘 PostgreSQL** | Escritura (commands) y queries de usuarios/categorías | User, Categoria, Producto                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
+| **🐘 PostgreSQL** | Escritura (commands) y queries de usuarios/categorías | User, Categoria, Producto, Proveedor                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
 | **🍃 MongoDB**    | Read model de queries de productos + pedidos transaccionales | productos_read; Pedido, PedidoItem, Destinatario, Direccion | MongoDB.Driver nativo (por defecto) + EF Core MongoDB (opcional) |
 | **🔴 Redis**      | Caché distribuida de lectura               | Sessions, consultas frecuentes              | StackExchange.Redis (Cache-Aside)                   |
 
@@ -1422,6 +1447,16 @@ Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` 
 | `/api/categorias`      | POST   | ADMIN | Crear categoría                   |
 | `/api/categorias/{id}` | PUT    | ADMIN | Actualizar categoría              |
 | `/api/categorias/{id}` | DELETE | ADMIN | Eliminar categoría                |
+
+### Proveedores
+
+| Endpoint                    | Método | Auth  | Descripción                                          |
+| --------------------------- | ------ | ----- | ---------------------------------------------------- |
+| `/api/proveedores`          | GET    | ADMIN | Obtener todos (paginado, filtros)                    |
+| `/api/proveedores/{codigo}` | GET    | ADMIN | Obtener por código (11 caracteres estilo YouTube)    |
+| `/api/proveedores`          | POST   | ADMIN | Crear proveedor (si no se envía código, lo genera)   |
+| `/api/proveedores/{codigo}` | PUT    | ADMIN | Actualizar proveedor (el código es la clave)         |
+| `/api/proveedores/{codigo}` | DELETE | ADMIN | Eliminar proveedor (422 si tiene productos asociados) |
 
 ### Productos
 

@@ -24,7 +24,7 @@ public class GetProductoByIdQueryHandlerTests
     {
         var service = new Mock<IProductoService>();
         service.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(
-            new ProductoDto(1, "Laptop", "", 12m, 5, null, 2, "Electrónica", DateTime.UtcNow, DateTime.UtcNow));
+            new ProductoDto(1, "Laptop", "", 12m, 5, null, new CategoriaResumenDto(2, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow));
 
         var handler = new GetProductoByIdQueryHandler(service.Object);
 

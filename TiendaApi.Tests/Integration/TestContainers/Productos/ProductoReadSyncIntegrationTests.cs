@@ -85,8 +85,8 @@ public class ProductoReadSyncIntegrationTests
 
     private static ProductoDto NuevoProducto(long id, string categoriaNombre = "Electrónica") =>
         new(id, $"Producto Sync {id}", "Descripción de prueba", 199.99m, 7,
-            $"/storage/uploads/productos/sync-{id}.jpg", 9, categoriaNombre,
-            DateTime.UtcNow, DateTime.UtcNow);
+            $"/storage/uploads/productos/sync-{id}.jpg",
+            new CategoriaResumenDto(9, categoriaNombre), null, DateTime.UtcNow, DateTime.UtcNow);
 
     [Test]
     public async Task NotificacionCreado_CreaDocumentoDesnormalizado_LegiblePorQueries()
@@ -118,7 +118,7 @@ public class ProductoReadSyncIntegrationTests
 
         dto.Should().NotBeNull();
         dto!.Id.Should().Be(id);
-        dto.CategoriaNombre.Should().Be("Electrónica");
+        dto.Categoria.Nombre.Should().Be("Electrónica");
     }
 
     [Test]
@@ -158,10 +158,10 @@ public class ProductoReadSyncIntegrationTests
         var idB = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idA) with { CategoriaId = categoriaId, CategoriaNombre = "Antigua" }),
+            NuevoProducto(idA) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
             CancellationToken.None);
         await _handler.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idB) with { CategoriaId = categoriaId, CategoriaNombre = "Antigua" }),
+            NuevoProducto(idB) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
             CancellationToken.None);
 
         await _handler.Handle(
@@ -199,10 +199,10 @@ public class ProductoReadSyncIntegrationTests
         var idCaro = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idBarato, "Cocina") with { CategoriaId = categoriaId, Precio = 10m }),
+            NuevoProducto(idBarato, "Cocina") with { Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 10m }),
             CancellationToken.None);
         await _handler.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idCaro, "Cocina") with { CategoriaId = categoriaId, Precio = 500m }),
+            NuevoProducto(idCaro, "Cocina") with { Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 500m }),
             CancellationToken.None);
 
         var (items, total) = await _readRepository!.FindAllPagedAsync(
