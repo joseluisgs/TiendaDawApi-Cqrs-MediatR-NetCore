@@ -130,6 +130,10 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 🏥 **Health Checks**: `GET /health` con sondeo de PostgreSQL y MongoDB (200 OK / 503)
 - 📄 **Paginación real en BD**: `Skip/Take` (EF) y `Skip/Limit` (Mongo) con metadatos
 - 🔁 **Result → HTTP**: extensión central `ToHttpResult()` para los errores de dominio
+- 🗃️ **Backup/Restore**: export e import de productos, categorías y proveedores en **zip, json o csv**, con `dryRun`, upsert por clave e informe de errores de fila que no abortan la operación (solo ADMIN, subida limitada a 10 MB)
+- 📊 **Estadísticas al vuelo**: 9 endpoints admin (resumen, serie temporal, rankings, embudo de estados, inventario y precios) calculados en cada petición sobre los datos existentes — sin tablas de agregados ni jobs
+- 🏷️ **Proveedor por producto**: entidad con relación 1:N, **ID estilo YouTube** de 11 caracteres generado en la aplicación y desnormalizado en el DTO de producto (junto a la categoría)
+- 🧪 **Pruebas de backup y estadísticas**: codecs CSV/ZIP con round-trip, protección anti zip-bomb y tests de la secuencia de identidad tras un restore
 - 🐳 **Docker**: Contenedores para desarrollo y producción
 - 🧪 **Testing**: Unit (NUnit + Moq), integración (Testcontainers) y E2E (Newman / Bruno / Automation)
 
@@ -161,6 +165,10 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - **Docker** - Containerización
 - **BackgroundService** - Tareas programadas y jobs en segundo plano
 - **Security Headers** - X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy
+- **System.IO.Compression (BCL)** - ZIP del backup sin dependencias externas, con límite de entradas y de tamaño descomprimido (anti zip-bomb)
+- **CSV RFC4180 propio** - Codificador/decodificador sin paquetes NuGet: comillas, comas dentro de campo, UTF-8 con BOM para Excel y cultura invariante
+- **Generador de IDs estilo YouTube** - `ValueGenerator` de EF Core + atributo `IdYouTube` de validación (Base64url de 11 caracteres, no correlativo)
+- **SQL con `OVERRIDING SYSTEM VALUE`** - Altas con ID explícito en el restore y re-sincronización de la secuencia de identidad
 
 ## 🏃‍♂️ Inicio Rápido
 
@@ -408,6 +416,8 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | 14  | [MediatR Eventos](doc/14-mediatr-cqrs-eventos.md)         | Pipeline Behaviors, Eventos      |
 | 15  | [Pedidos y Transacciones](doc/15-pedidos-transacciones.md) | Transacciones, CQRS en pedidos   |
 | 16  | [Mapeadores](doc/16-mapeadores.md)                         | AutoMapper vs extensiones         |
+| 33  | [Estadísticas](doc/33-estadisticas.md)                     | Cálculo al vuelo de los datos     |
+| 34  | [Backup y Restore](doc/34-backup-restore.md)               | Export/Import zip, json y csv     |
 
 ### Seguridad
 | #   | Documento                                          | Descripción              |
@@ -1092,28 +1102,6 @@ El proyecto implementa **Railway Oriented Programming (ROP)** usando la librerí
 
 #### Anatomía del Patrón (Two-Track Model)
 
-```mermaid
-flowchart TB
-    subgraph ROP["RAILWAY ORIENTED PROGRAMMING"]
-        INP["INPUT<br/>(Happy Path)"]
-        R1["RAIL 1<br/>(SUCCESS)"]
-        OUT_H["OUTPUT<br/>(Happy)"]
-        R2["RAIL 2<br/>(FAILURE)"]
-        OUT_E["OUTPUT<br/>(Error)"]
-        
-        INP --> R1
-        R1 --> OUT_H
-        R1 -.->|"SWITCH (error)"| R2
-        R2 --> OUT_E
-    end
-
-    style INP fill:#27ae60,color:#fff
-    style R1 fill:#27ae60,color:#fff
-    style OUT_H fill:#27ae60,color:#fff
-    style R2 fill:#e74c3c,color:#fff
-    style OUT_E fill:#e74c3c,color:#fff
-```
-
 #### Beneficios de ROP
 
 | Beneficio          | Descripción                                  |
@@ -1343,19 +1331,6 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 | **🔴 Redis**      | Caché distribuida de lectura               | Sessions, consultas frecuentes              | StackExchange.Redis (Cache-Aside)                   |
 
 
-```mermaid
-flowchart LR
-    CLI["Cliente / API"] --> PG["PostgreSQL<br/>fuente de verdad"]
-    PG -->|"update de precio"| EV["await + notificacion<br/>(handler o servicio)"]
-    EV --> CAS["Cassandra<br/>serie Q-A + feed Q-B"]
-    PG --> MONGO["MongoDB<br/>read model + pedidos"]
-    CLI -.cache.-> RED["Redis<br/>catalogo y sesiones"]
-    style PG fill:#336791,color:#fff
-    style MONGO fill:#47A248,color:#fff
-    style CAS fill:#1287B1,color:#fff
-    style RED fill:#DC382D,color:#fff
-```
-
 **Patrón de datos:**
 - PostgreSQL: Entidades normalizadas con Foreign Keys (fuente de verdad)
 - MongoDB: Documentos embebidos para mantener historial de precios (los items del pedido no cambian si el producto cambia)
@@ -1475,6 +1450,20 @@ Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` 
 | `/api/estadisticas/clientes`               | GET    | ADMIN | Clientes con más gasto y su producto favorito                       |
 | `/api/estadisticas/inventario`             | GET    | ADMIN | Valor del stock, agotados y productos con `stockMax` o menos        |
 | `/api/estadisticas/precios`                | GET    | ADMIN | Histórico de precios (mínimo, máximo, media y variación)            |
+
+### Backup
+
+> Exporta e importa datos completos en **zip, json o csv**. Es solo ADMIN y la
+> subida está limitada a 10 MB. El import hace **upsert por clave** (id en
+> categorías y productos, código en proveedores), admite `dryRun=true` para
+> validar sin escribir y devuelve un informe con los errores de fila — que no
+> abortan la operación.
+
+| Endpoint                  | Método | Auth  | Descripción                                                        |
+| ------------------------- | ------ | ----- | ------------------------------------------------------------------ |
+| `/api/backup/export`      | GET    | ADMIN | Descarga (`formato=zip\|json\|csv`, `entidades=...`, `incluirBorrados`) |
+| `/api/backup/import`      | POST   | ADMIN | Subida multipart con `dryRun` y `formato`; informe de la importación |
+| `/api/backup/formatos`    | GET    | ADMIN | Catálogo: formatos, entidades, límites y reglas                     |
 
 ### Productos
 
