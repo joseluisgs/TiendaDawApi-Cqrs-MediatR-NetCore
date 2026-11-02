@@ -35,6 +35,8 @@ public static class GraphQLConfig
             .AddType<ProductoType>()
             .AddType<CategoriaType>()
             .AddType<CategoriaReadType>()
+    .AddType<ProveedorType>()
+    .AddType<ProveedorReadType>()
             // 🛡️ Límite de profundidad de ejecución: evita queries anidadas
             // infinitas que consuman memoria/CPU. 10 niveles es más que
             // suficiente para cualquier consulta legítima de este proyecto.

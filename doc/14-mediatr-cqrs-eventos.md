@@ -1,4 +1,4 @@
-﻿# 14. MediatR Eventos
+# 14. MediatR Eventos
 
 ## Índice
 

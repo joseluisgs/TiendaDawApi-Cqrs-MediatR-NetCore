@@ -14,13 +14,9 @@ trim_trailing_whitespace = true
 indent_size = 2
 
 [*.md]
-# En este repo los .md de raíz van sin BOM; doc/*.md sí llevan BOM (ver más abajo)
+# Los .md de este repo van sin BOM; se admiten dobles espacios finales de párrafo
 charset = utf-8
 trim_trailing_whitespace = false
-
-[doc/*.md]
-# Convención histórica del repo: documentación con BOM UTF-8
-charset = utf-8-bom
 
 [*.cs]
 # Espacios en blanco (los aplica el whitespace formatter de dotnet format)

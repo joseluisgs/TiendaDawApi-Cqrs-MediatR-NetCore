@@ -45,6 +45,12 @@ public class ProductoRead
     /// <summary>Categoría embebida (sub-documento desnormalizado).</summary>
     public CategoriaRead Categoria { get; set; } = new();
 
+    /// <summary>Código del proveedor (null cuando el producto no tiene proveedor).</summary>
+    public string? ProveedorId { get; set; }
+
+    /// <summary>Proveedor embebido (sub-documento desnormalizado).</summary>
+    public ProveedorRead Proveedor { get; set; } = new();
+
     /// <summary>Fecha de creación en UTC (espejo del origen en PostgreSQL).</summary>
     public DateTime CreatedAt { get; set; }
 
@@ -65,5 +71,18 @@ public class CategoriaRead
     public long Id { get; set; }
 
     /// <summary>Nombre actual de la categoría (se actualiza con <c>updateMany</c> al renombrar).</summary>
+    public string Nombre { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Sub-documento de proveedor embebido en <see cref="ProductoRead"/>.
+/// Solo conserva lo mínimo: código y nombre. Codigo vacío cuando el producto no tiene proveedor.
+/// </summary>
+public class ProveedorRead
+{
+    /// <summary>Código de 11 caracteres del proveedor (FK a PostgreSQL).</summary>
+    public string Codigo { get; set; } = string.Empty;
+
+    /// <summary>Nombre actual del proveedor.</summary>
     public string Nombre { get; set; } = string.Empty;
 }

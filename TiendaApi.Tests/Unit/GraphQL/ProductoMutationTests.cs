@@ -36,8 +36,8 @@ public class ProductoMutationTests
     }
 
     private static ProductoDto NuevoProducto(long id = 1, string nombre = "Nuevo Producto") =>
-        new(id, nombre, "Descripción", 99.99m, 10, "image.jpg", 1, "Electrónica",
-            DateTime.UtcNow, DateTime.UtcNow);
+        new(id, nombre, "Descripción", 99.99m, 10, "image.jpg",
+            new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
 
     #region CreateProducto Tests
 

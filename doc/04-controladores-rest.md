@@ -1,4 +1,4 @@
-﻿# 4. Controladores REST
+# 4. Controladores REST
 
 ## Índice
 
