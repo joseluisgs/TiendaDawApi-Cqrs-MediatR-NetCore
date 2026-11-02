@@ -4,6 +4,7 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Dtos.Productos;
+using TiendaApi.Api.Dtos.Estadisticas;
 using TiendaApi.Api.Dtos.Proveedores;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Models;
@@ -21,6 +22,15 @@ namespace TiendaApi.Api;
 [JsonSerializable(typeof(List<ProveedorDto>))]
 [JsonSerializable(typeof(CategoriaResumenDto))]
 [JsonSerializable(typeof(ProveedorResumenDto))]
+[JsonSerializable(typeof(ResumenEstadisticasDto))]
+[JsonSerializable(typeof(VentasSerieDto))]
+[JsonSerializable(typeof(ProductosMasVendidosDto))]
+[JsonSerializable(typeof(CategoriasEstadisticasDto))]
+[JsonSerializable(typeof(ProveedoresEstadisticasDto))]
+[JsonSerializable(typeof(EstadosEstadisticasDto))]
+[JsonSerializable(typeof(ClientesEstadisticasDto))]
+[JsonSerializable(typeof(InventarioDto))]
+[JsonSerializable(typeof(PreciosEstadisticasDto))]
 [JsonSerializable(typeof(HistorialPrecioDto))]
 [JsonSerializable(typeof(VistaFeedDto))]
 [JsonSerializable(typeof(CambioPrecioDto))]

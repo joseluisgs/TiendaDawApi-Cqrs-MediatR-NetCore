@@ -12,6 +12,14 @@ public interface IPedidosRepository
     /// <returns>Colección de pedidos.</returns>
     Task<IEnumerable<Pedido>> FindAllAsync();
 
+    /// <summary>
+    /// Obtiene los pedidos creados en una ventana temporal para las estadísticas.
+    /// </summary>
+    /// <param name="desde">Fecha inicial inclusive (UTC).</param>
+    /// <param name="hasta">Fecha final exclusiva (UTC).</param>
+    /// <returns>Colección de pedidos de la ventana, ordenada por fecha.</returns>
+    Task<IEnumerable<Pedido>> FindByRangoFechasAsync(DateTime desde, DateTime hasta);
+
     /// <summary>Obtiene todos los pedidos paginados (página base 0).</summary>
     /// <param name="page">Número de página (base 0).</param>
     /// <param name="size">Elementos por página.</param>
