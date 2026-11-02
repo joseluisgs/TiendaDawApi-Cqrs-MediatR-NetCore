@@ -25,8 +25,8 @@ public class ProductoActualizadoSignalRHandler(IHubContext<ProductosHub> hubCont
             descripcion = notification.Producto.Descripcion,
             precio = notification.Producto.Precio,
             stock = notification.Producto.Stock,
-            categoriaId = notification.Producto.CategoriaId,
-            categoriaNombre = notification.Producto.CategoriaNombre,
+            categoria = notification.Producto.Categoria,
+            proveedor = notification.Producto.Proveedor,
             tipo = "PRODUCTO_ACTUALIZADO",
             timestamp = DateTime.UtcNow
         }, cancellationToken);

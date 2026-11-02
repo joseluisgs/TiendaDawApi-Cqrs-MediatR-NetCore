@@ -1,4 +1,4 @@
-﻿# 🐳 Docker y CI/CD en TiendaDawApi (CQRS)
+# 🐳 Docker y CI/CD en TiendaDawApi (CQRS)
 
 > Contenedores para desarrollo/producción + el pipeline de GitHub Actions real
 > del repositorio (`.github/workflows/ci.yml`). Todo tomado de los ficheros

@@ -81,10 +81,14 @@ public class ReplicaReparadoraJob(
 
         // 2. El interceptor de UpdatedAt toca la fila en CUALQUIER cambio:
         //    altas, ediciones Y borrados lógicos. Una sola consulta lo cubre todo.
+        // El proveedor viaja desnormalizado en el documento (proveedorCodigo/Proveedor), así
+        // que la réplica tiene que traerlo: sin el Include, el upsert escribiría el sub-documento
+        // vacío y borraría el proveedor de un producto que sí lo tiene en PostgreSQL.
         var pendientes = await db.Productos
             .IgnoreQueryFilters()  // incluir también los borrados lógicos (soft-delete)
             .Where(p => p.UpdatedAt > marca.UltimaPasada)
             .Include(p => p.Categoria)
+            .Include(p => p.Proveedor)
             .ToListAsync(ct);
 
         if (pendientes.Count == 0)

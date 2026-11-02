@@ -35,7 +35,7 @@ public class TiendaQueryTests
     {
         var productos = new List<ProductoDto>
         {
-            new(1, "Producto 1", "Desc", 10m, 5, null, 1, "Cat", DateTime.UtcNow, DateTime.UtcNow)
+            new(1, "Producto 1", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow)
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllProductosListQuery>(), It.IsAny<CancellationToken>()))
@@ -54,7 +54,7 @@ public class TiendaQueryTests
     [Test]
     public async Task GetProducto_WithId_ReturnsProducto()
     {
-        var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));

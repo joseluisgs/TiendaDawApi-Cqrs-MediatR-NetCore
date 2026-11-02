@@ -36,7 +36,7 @@ public class ProductosControllerTests
     [Test]
     public async Task GetById_ConProductoExistente_RetornaOk()
     {
-        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
@@ -67,7 +67,7 @@ public class ProductosControllerTests
         // next/last al header Link (lo construye PaginationLinksHelper)
         var pagina = new PagedResult<ProductoDto>
         {
-            Items = new[] { new ProductoDto(1, "Laptop", "", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow) },
+            Items = new[] { new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow) },
             TotalCount = 50,
             Page = 2,
             PageSize = 10
@@ -113,7 +113,7 @@ public class ProductosControllerTests
     {
         var productos = new List<ProductoDto>
         {
-            new(1, "Laptop", "", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow)
+            new(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow)
         };
         _mediator.Setup(m => m.Send(It.IsAny<GetProductosByCategoriaQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IEnumerable<ProductoDto>, DomainError>(productos));
@@ -127,7 +127,7 @@ public class ProductosControllerTests
     [Test]
     public async Task Create_Exitoso_Retorna201ConLocation()
     {
-        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoRequestDto { Nombre = "Laptop", Precio = 10m, Stock = 5, CategoriaId = 1 };
         _mediator.Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
@@ -155,7 +155,7 @@ public class ProductosControllerTests
     [Test]
     public async Task Update_Exitoso_RetornaOkConProducto()
     {
-        var producto = new ProductoDto(1, "Laptop v2", "", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop v2", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoRequestDto { Nombre = "Laptop v2", Precio = 10m, Stock = 5, CategoriaId = 1 };
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
@@ -214,7 +214,7 @@ public class ProductosControllerTests
     [Test]
     public async Task UpdateImage_Exitoso_RetornaOkConProducto()
     {
-        var producto = new ProductoDto(1, "Laptop", "nueva.png", 10m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "nueva.png", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
         var file = new Mock<IFormFile>();
         file.Setup(f => f.ContentType).Returns("image/png");
         file.Setup(f => f.Length).Returns(100);
@@ -229,7 +229,7 @@ public class ProductosControllerTests
     [Test]
     public async Task UpdatePartial_Exitoso_RetornaOk()
     {
-        var producto = new ProductoDto(1, "Laptop", "", 79.99m, 5, "", 1, "Cat", DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 79.99m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoPatchDto { Precio = 79.99m };
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoPartialCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));

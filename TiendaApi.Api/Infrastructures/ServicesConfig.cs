@@ -2,8 +2,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TiendaApi.Api.Services;
 using TiendaApi.Api.Services.Auth;
+using TiendaApi.Api.Services.Backup;
 using TiendaApi.Api.Services.Historial;
 using TiendaApi.Api.Services.Productos;
+using TiendaApi.Api.Services.Proveedores;
+using TiendaApi.Api.Services.Estadisticas;
 
 namespace TiendaApi.Api.Infrastructures;
 
@@ -29,6 +32,9 @@ public static class ServicesConfig
             .AddSingleton<IJwtService, JwtService>()
             .AddTransient<IJwtTokenExtractor, JwtTokenExtractor>()
             .AddScoped<IProductoService, ProductoService>()
+            .AddScoped<IProveedorService, ProveedorService>()
+            .AddScoped<IEstadisticasService, EstadisticasService>()
+            .AddScoped<IBackupService, BackupService>()
             .AddScoped<IHistorialService, HistorialService>();
     }
 }

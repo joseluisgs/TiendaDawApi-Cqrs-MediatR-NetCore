@@ -130,6 +130,10 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - 🏥 **Health Checks**: `GET /health` con sondeo de PostgreSQL y MongoDB (200 OK / 503)
 - 📄 **Paginación real en BD**: `Skip/Take` (EF) y `Skip/Limit` (Mongo) con metadatos
 - 🔁 **Result → HTTP**: extensión central `ToHttpResult()` para los errores de dominio
+- 🗃️ **Backup/Restore**: export e import de productos, categorías y proveedores en **zip, json o csv**, con `dryRun`, upsert por clave e informe de errores de fila que no abortan la operación (solo ADMIN, subida limitada a 10 MB)
+- 📊 **Estadísticas al vuelo**: 9 endpoints admin (resumen, serie temporal, rankings, embudo de estados, inventario y precios) calculados en cada petición sobre los datos existentes — sin tablas de agregados ni jobs
+- 🏷️ **Proveedor por producto**: entidad con relación 1:N, **ID estilo YouTube** de 11 caracteres generado en la aplicación y desnormalizado en el DTO de producto (junto a la categoría)
+- 🧪 **Pruebas de backup y estadísticas**: codecs CSV/ZIP con round-trip, protección anti zip-bomb y tests de la secuencia de identidad tras un restore
 - 🐳 **Docker**: Contenedores para desarrollo y producción
 - 🧪 **Testing**: Unit (NUnit + Moq), integración (Testcontainers) y E2E (Newman / Bruno / Automation)
 
@@ -161,6 +165,10 @@ TiendaDawApi es una serie de servicios backend desarrollados con .NET 10 ASP.NET
 - **Docker** - Containerización
 - **BackgroundService** - Tareas programadas y jobs en segundo plano
 - **Security Headers** - X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy
+- **System.IO.Compression (BCL)** - ZIP del backup sin dependencias externas, con límite de entradas y de tamaño descomprimido (anti zip-bomb)
+- **CSV RFC4180 propio** - Codificador/decodificador sin paquetes NuGet: comillas, comas dentro de campo, UTF-8 con BOM para Excel y cultura invariante
+- **Generador de IDs estilo YouTube** - `ValueGenerator` de EF Core + atributo `IdYouTube` de validación (Base64url de 11 caracteres, no correlativo)
+- **SQL con `OVERRIDING SYSTEM VALUE`** - Altas con ID explícito en el restore y re-sincronización de la secuencia de identidad
 
 ## 🏃‍♂️ Inicio Rápido
 
@@ -408,6 +416,8 @@ Para una comprensión profunda de la arquitectura y las tecnologías utilizadas,
 | 14  | [MediatR Eventos](doc/14-mediatr-cqrs-eventos.md)         | Pipeline Behaviors, Eventos      |
 | 15  | [Pedidos y Transacciones](doc/15-pedidos-transacciones.md) | Transacciones, CQRS en pedidos   |
 | 16  | [Mapeadores](doc/16-mapeadores.md)                         | AutoMapper vs extensiones         |
+| 33  | [Estadísticas](doc/33-estadisticas.md)                     | Cálculo al vuelo de los datos     |
+| 34  | [Backup y Restore](doc/34-backup-restore.md)               | Export/Import zip, json y csv     |
 
 ### Seguridad
 | #   | Documento                                          | Descripción              |
@@ -513,6 +523,17 @@ classDiagram
     +ICollection~Producto~ Productos
   }
 
+  class Proveedor {
+    +string Codigo
+    +string Nombre
+    +string? Descripcion
+    +string? Contacto
+    +bool IsDeleted
+    +DateTime CreatedAt
+    +DateTime UpdatedAt
+    +ICollection~Producto~ Productos
+  }
+
   class Producto {
     +long Id
     +string Nombre
@@ -521,11 +542,13 @@ classDiagram
     +int Stock
     +string? Imagen
     +long CategoriaId
+    +string? ProveedorId
     +bool IsDeleted
     +DateTime CreatedAt
     +DateTime UpdatedAt
     +byte[] RowVersion
     +Categoria Categoria
+    +Proveedor? Proveedor
     +IsLocalImage()
     +HasDefaultImage()
     +GetImagenUrl()
@@ -599,6 +622,8 @@ classDiagram
 User "1" --> "*" UserLogin : "vincula"
   Categoria "1" --> "*" Producto : "tiene"
   Producto "*" --> "1" Categoria : "pertenece"
+  Proveedor "1" --> "*" Producto : "tiene"
+  Producto "*" --> "1" Proveedor : "suministra"
   Pedido "1" *-- "1" Destinatario : "compone"
   Pedido "1" *-- "*" PedidoItem : "compone items"
   Destinatario "1" *-- "1" Direccion : "compone"
@@ -619,6 +644,7 @@ Distribución CQRS de los datos:
 ```mermaid
 erDiagram
     CATEGORIA ||--o{ PRODUCTO : "tiene"
+    PROVEEDOR ||--o{ PRODUCTO : "tiene"
     
     USER {
         bigint Id PK
@@ -653,6 +679,15 @@ erDiagram
         decimal Precio
         int Stock
         bigint CategoriaId FK
+        string ProveedorId FK
+        bool IsDeleted
+    }
+
+    PROVEEDOR {
+        string Codigo PK
+        string Nombre
+        string Descripcion
+        string Contacto
         bool IsDeleted
     }
 ```
@@ -731,7 +766,7 @@ erDiagram
 **Resumen:**
 | Base de Datos    | Rol en CQRS                                  | Entidades                                   | Tipo                 |
 | ---------------- | -------------------------------------------- | ------------------------------------------- | -------------------- |
-| **🐘 PostgreSQL** | Escrituras y queries de usuarios/categorías  | User, Categoria, Producto                   | Relacional (FK)      |
+| **🐘 PostgreSQL** | Escrituras y queries de usuarios/categorías  | User, Categoria, Producto, Proveedor                   | Relacional (FK)      |
 | **🍃 MongoDB**    | Read model de productos + pedidos            | productos_read; Pedido, PedidoItem, Destinatario, Direccion | Documentos embebidos |
 | **🗄️ Cassandra** | Escritura y lectura (series temporales) | Serie de precios por producto, feed de usuario | CassandraCSharpDriver (partición + clustering + TTL) |
 | **🔴 Redis**      | Caché de lectura (Cache-Aside)               | Claves por entidad/usuario                  | Key-value            |
@@ -769,7 +804,7 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 │   │   ├── Email/                    # Servicio de email (MailKit + pipeline Polly)
 │   │   ├── Productos/                # Fachada de lectura de productos (caché + MongoDB)
 │   │   └── Storage/                  # Servicios de almacenamiento de archivos
-│   ├── Repositories/                 # Acceso a datos (Categorias, Productos, Pedidos, Usuarios, Auth)
+│   ├── Repositories/                 # Acceso a datos (Categorias, Proveedor, Productos, Pedidos, Usuarios, Auth)
 │   ├── Models/                       # Modelos de dominio (User, UserLogin, Producto, Categoria, Pedido) + Models/Read
 │   ├── Dtos/                         # Data Transfer Objects (Request/Response, Auth)
 │   ├── Data/                         # DbContext, Seeders y configuración (Abstractions, Interceptors, Seed)
@@ -825,10 +860,10 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 
 | Carpeta               | Propósito                  | Contenido                                                                                     |
 | --------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
-| **Controllers**       | Entry points HTTP          | AuthController, CategoriasController, ProductosController, PedidosController, UsersController, StorageController |
+| **Controllers**       | Entry points HTTP          | AuthController, CategoriasController, ProveedoresController, ProductosController, PedidosController, UsersController, StorageController |
 | **Features**          | CQRS Handlers (MediatR)    | Commands (escritura), Queries (lectura), Notifications (eventos) y Sync del read model por dominio |
 | **Services**          | Infraestructura y fachadas | AuthService, CacheService (Redis/memoria), MailKitEmailService (con Polly), ProductoService (lectura Mongo), StorageService |
-| **Repositories**      | Abstracción de datos       | CategoriaRepository, ProductoRepository, UserRepository, PedidosRepository (EF/Native), ProductoReadRepository (MongoDB) |
+| **Repositories**      | Abstracción de datos       | CategoriaRepository, ProveedorRepository, ProductoRepository, UserRepository, PedidosRepository (EF/Native), ProductoReadRepository (MongoDB) |
 | **Models**            | Modelos de dominio         | User, Producto, Categoria, Pedido, Direccion, Destinatario + Models/Read (read model)         |
 | **Dtos**              | Transferencia de datos     | Request/Response para API                                                                     |
 | **Mappers**           | Modelos <-> DTO            | AutoMapper y funciones de extensión (incl. ToRead)                                            |
@@ -869,7 +904,7 @@ graph TB
 
     subgraph "🎯 Application Layer - API"
         subgraph "Controllers & Filters"
-            CTRL[Controllers<br/>Auth, Categorias,<br/>Productos, Pedidos, Users]
+            CTRL[Controllers<br/>Auth, Categorias,<br/>Proveedores, Productos, Pedidos, Users]
             FILT[Filters<br/>Auth, Validation,<br/>Exception]
         end
         subgraph "Middleware Pipeline"
@@ -920,7 +955,7 @@ graph TB
     end
 
     subgraph "💾 Data Stores"
-        PG[("🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos")]
+        PG[("🐘 PostgreSQL<br/>ESCRITURA (commands)<br/>Users, Categorias, Productos, Proveedores")]
         MONGO_DB[("🍃 MongoDB<br/>LECTURA (queries CQRS)<br/>productos_read + Pedidos")]
         REDIS_DB[(🔴 Redis<br/>Caché de lectura<br/>Cache-Aside)]
     end
@@ -1007,7 +1042,7 @@ graph TB
     end
 
     subgraph "🔵 Application Layer"
-        CTRL["🎯 Controllers<br/>Auth, Categorias, Productos<br/>Pedidos, Users, GraphQL"]
+        CTRL["🎯 Controllers<br/>Auth, Categorias, Productos<br/>Proveedores, Pedidos, Users, GraphQL"]
         FILT["🔍 Filters & Middleware<br/>Auth, Validation, Exception<br/>JWT, CORS, RateLimit"]
     end
 
@@ -1066,28 +1101,6 @@ El proyecto implementa **Railway Oriented Programming (ROP)** usando la librerí
 | **Ensure**  | Valida condiciones, retorna Failure si no se cumple | `result.Ensure(condition, error)`    |
 
 #### Anatomía del Patrón (Two-Track Model)
-
-```mermaid
-flowchart TB
-    subgraph ROP["RAILWAY ORIENTED PROGRAMMING"]
-        INP["INPUT<br/>(Happy Path)"]
-        R1["RAIL 1<br/>(SUCCESS)"]
-        OUT_H["OUTPUT<br/>(Happy)"]
-        R2["RAIL 2<br/>(FAILURE)"]
-        OUT_E["OUTPUT<br/>(Error)"]
-        
-        INP --> R1
-        R1 --> OUT_H
-        R1 -.->|"SWITCH (error)"| R2
-        R2 --> OUT_E
-    end
-
-    style INP fill:#27ae60,color:#fff
-    style R1 fill:#27ae60,color:#fff
-    style OUT_H fill:#27ae60,color:#fff
-    style R2 fill:#e74c3c,color:#fff
-    style OUT_E fill:#e74c3c,color:#fff
-```
 
 #### Beneficios de ROP
 
@@ -1313,23 +1326,10 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 
 | Base de Datos    | Uso                                  | Entidades                                   | Tecnologías                                         |
 | ---------------- | ------------------------------------ | ------------------------------------------- | --------------------------------------------------- |
-| **🐘 PostgreSQL** | Escritura (commands) y queries de usuarios/categorías | User, Categoria, Producto                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
+| **🐘 PostgreSQL** | Escritura (commands) y queries de usuarios/categorías | User, Categoria, Producto, Proveedor                   | EF Core SQL (System.ComponentModel.DataAnnotations) |
 | **🍃 MongoDB**    | Read model de queries de productos + pedidos transaccionales | productos_read; Pedido, PedidoItem, Destinatario, Direccion | MongoDB.Driver nativo (por defecto) + EF Core MongoDB (opcional) |
 | **🔴 Redis**      | Caché distribuida de lectura               | Sessions, consultas frecuentes              | StackExchange.Redis (Cache-Aside)                   |
 
-
-```mermaid
-flowchart LR
-    CLI["Cliente / API"] --> PG["PostgreSQL<br/>fuente de verdad"]
-    PG -->|"update de precio"| EV["await + notificacion<br/>(handler o servicio)"]
-    EV --> CAS["Cassandra<br/>serie Q-A + feed Q-B"]
-    PG --> MONGO["MongoDB<br/>read model + pedidos"]
-    CLI -.cache.-> RED["Redis<br/>catalogo y sesiones"]
-    style PG fill:#336791,color:#fff
-    style MONGO fill:#47A248,color:#fff
-    style CAS fill:#1287B1,color:#fff
-    style RED fill:#DC382D,color:#fff
-```
 
 **Patrón de datos:**
 - PostgreSQL: Entidades normalizadas con Foreign Keys (fuente de verdad)
@@ -1422,6 +1422,48 @@ Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` 
 | `/api/categorias`      | POST   | ADMIN | Crear categoría                   |
 | `/api/categorias/{id}` | PUT    | ADMIN | Actualizar categoría              |
 | `/api/categorias/{id}` | DELETE | ADMIN | Eliminar categoría                |
+
+### Proveedores
+
+| Endpoint                    | Método | Auth  | Descripción                                          |
+| --------------------------- | ------ | ----- | ---------------------------------------------------- |
+| `/api/proveedores`          | GET    | ADMIN | Obtener todos (paginado, filtros)                    |
+| `/api/proveedores/{codigo}` | GET    | ADMIN | Obtener por código (11 caracteres estilo YouTube)    |
+| `/api/proveedores`          | POST   | ADMIN | Crear proveedor (si no se envía código, lo genera)   |
+| `/api/proveedores/{codigo}` | PUT    | ADMIN | Actualizar proveedor (el código es la clave)         |
+| `/api/proveedores/{codigo}` | DELETE | ADMIN | Eliminar proveedor (422 si tiene productos asociados) |
+
+### Estadísticas
+
+> Cálculo al vuelo sobre los datos existentes: sin tablas de agregados ni trabajos
+> de fondo. Todas son de solo lectura y **solo ADMIN**, porque incluyen cifras de
+> negocio y datos de clientes.
+
+| Endpoint                                   | Método | Auth  | Descripción                                                        |
+| ------------------------------------------ | ------ | ----- | ------------------------------------------------------------------ |
+| `/api/estadisticas/resumen`                | GET    | ADMIN | Resumen general: ventas, estados, inventario y comparativa          |
+| `/api/estadisticas/ventas`                 | GET    | ADMIN | Serie temporal (`agrupar=dia\|semana\|mes`) con huecos a cero        |
+| `/api/estadisticas/productos-mas-vendidos` | GET    | ADMIN | Ranking por `orden=unidades\|recaudacion` (top 1-50)                 |
+| `/api/estadisticas/categorias`             | GET    | ADMIN | Rendimiento por categoría (incluye las que no venden)               |
+| `/api/estadisticas/proveedores`            | GET    | ADMIN | Rendimiento por proveedor                                           |
+| `/api/estadisticas/estados`                | GET    | ADMIN | Embudo de estados; los cancelados se reportan aparte                |
+| `/api/estadisticas/clientes`               | GET    | ADMIN | Clientes con más gasto y su producto favorito                       |
+| `/api/estadisticas/inventario`             | GET    | ADMIN | Valor del stock, agotados y productos con `stockMax` o menos        |
+| `/api/estadisticas/precios`                | GET    | ADMIN | Histórico de precios (mínimo, máximo, media y variación)            |
+
+### Backup
+
+> Exporta e importa datos completos en **zip, json o csv**. Es solo ADMIN y la
+> subida está limitada a 10 MB. El import hace **upsert por clave** (id en
+> categorías y productos, código en proveedores), admite `dryRun=true` para
+> validar sin escribir y devuelve un informe con los errores de fila — que no
+> abortan la operación.
+
+| Endpoint                  | Método | Auth  | Descripción                                                        |
+| ------------------------- | ------ | ----- | ------------------------------------------------------------------ |
+| `/api/backup/export`      | GET    | ADMIN | Descarga (`formato=zip\|json\|csv`, `entidades=...`, `incluirBorrados`) |
+| `/api/backup/import`      | POST   | ADMIN | Subida multipart con `dryRun` y `formato`; informe de la importación |
+| `/api/backup/formatos`    | GET    | ADMIN | Catálogo: formatos, entidades, límites y reglas                     |
 
 ### Productos
 

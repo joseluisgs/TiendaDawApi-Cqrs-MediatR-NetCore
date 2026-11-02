@@ -7,30 +7,35 @@ services:
     volumes:
       - .:/bruno:ro
       - ./reports:/reports
-    # Carpetas explícitas: los tests WS (12 - WEBSOCKETS) llevan tag
-    # desktop-only y --exclude-tags NO filtra peticiones type:ws en CLI,
-    # así que se excluyen por lista. Los comandos locales deben hacer lo mismo.
     command:
       - run
+      # Carpetas explícitas: `run .` no escanea la colección en la CLI actual
+      # (devuelve 0 peticiones). Mismas carpetas que documenta el README para
+      # bru run (sin "6 - USUARIOS" ni "12 - WEBSOCKETS": la CLI no soporta WS).
       - "0 - SETUP"
       - "1 - AUTHENTICATION"
       - "2 - CATEGORÍAS"
       - "3 - PRODUCTOS"
+      - "14 - PROVEEDORES"
+      - "15 - ESTADISTICAS"
+      - "16 - BACKUP"
       - "13 - HISTORIAL Y FEED"
       - "4 - PEDIDOS (Usuario)"
       - "5 - PEDIDOS (Admin)"
       # USUARIOS tiene subcarpetas anidadas: bru no recursa con la carpeta raíz,
-      # hay que pasarlas por separado (igual que en la API Normal).
+      # hay que listar las rutas completas
       - "6 - USUARIOS/Gestión Admin"
       - "6 - USUARIOS/Perfil Propio"
       - "7 - STORAGE"
       - "10 - GRAPHQL CATEGORÍAS"
       - "11 - GRAPHQL PRODUCTOS"
       - "90 - TEARDOWN"
+      # environments/docker.bru apunta a host.docker.internal (el localhost del
+      # entorno local.bru no es alcanzable desde dentro del contenedor)
       - --env-file
       - environments/docker.bru
       # Rate limit de la API (RateLimitConfig.cs): general 100/15s, auth 10/min.
-      # 250ms validado empíricamente (misma configuración que la API Normal):
+      # 250ms validado empíricamente (misma configuración que la API):
       # da colchón si la colección crece; por debajo de 100ms se acerca al
       # límite de ráfaga.
       - --delay

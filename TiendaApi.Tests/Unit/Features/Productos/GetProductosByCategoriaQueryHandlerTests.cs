@@ -23,7 +23,7 @@ public class GetProductosByCategoriaQueryHandlerTests
 
         service.Setup(s => s.GetByCategoriaIdAsync(1)).ReturnsAsync(new List<ProductoDto>
         {
-            new(1, "Laptop", "", 1000m, 10, null, 1, "Electrónica", DateTime.UtcNow, DateTime.UtcNow)
+            new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow)
         });
 
         var handler = new GetProductosByCategoriaQueryHandler(service.Object, categoriaRepo.Object);
