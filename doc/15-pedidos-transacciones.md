@@ -1490,18 +1490,42 @@ public record PedidoCanceladoNotification(
 ### Handlers de Notifications
 
 ```csharp
-// EmailHandler: envía email al cliente
+// EmailHandler: aviso de nuevo pedido AL ADMINISTRADOR
 public class PedidoCreadoEmailHandler
+    : INotificationHandler<PedidoCreadoNotification>
+{
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
+    
+    public Task Handle(PedidoCreadoNotification n, CancellationToken ct)
+    {
+        var adminEmail = _configuration["Smtp:AdminEmail"];
+        // ... encola el aviso "🛒 Nuevo Pedido #X" para adminEmail
+        return Task.CompletedTask;
+    }
+}
+
+// EmailHandler: confirmación AL CLIENTE que hizo el pedido
+// (antes no existía: el cliente no recibía ningún email)
+public class PedidoCreadoClienteEmailHandler
     : INotificationHandler<PedidoCreadoNotification>
 {
     private readonly IEmailService _emailService;
     
     public async Task Handle(PedidoCreadoNotification n, CancellationToken ct)
     {
-        await _emailService.SendAsync(
-            to: n.Pedido.Destinatario.Email,
-            subject: $"Tu pedido #{n.Pedido.Id} ha sido confirmado",
-            body: $"Gracias por tu compra. Total: {n.Pedido.Total:C}");
+        await _emailService.EnqueueEmailAsync(new EmailMessage
+        {
+            To = n.Pedido.Destinatario.Email,
+            Subject = $"✅ Pedido #{n.Pedido.Id} confirmado",
+            Body = EmailTemplates.CreateBase(
+                $"Pedido #{n.Pedido.Id} confirmado",
+                EmailTemplates.PedidoConfirmacionCliente(
+                    n.Pedido.Id, n.Pedido.Total,
+                    n.Pedido.Items?.Count ?? 0,
+                    n.Pedido.Destinatario.NombreCompleto)),
+            IsHtml = true
+        });
     }
 }
 
