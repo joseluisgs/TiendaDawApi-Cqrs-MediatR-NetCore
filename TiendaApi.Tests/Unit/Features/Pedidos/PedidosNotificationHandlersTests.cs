@@ -106,7 +106,7 @@ public class PedidosNotificationHandlersTests
     {
         var handler = new PedidoEliminadoSignalRHandler(_hubContext.Object);
 
-        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m), CancellationToken.None);
+        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
 
         VerificarGruposSelectivos("PedidoEliminado");
     }
@@ -116,9 +116,19 @@ public class PedidosNotificationHandlersTests
     {
         var handler = new PedidoCanceladoSignalRHandler(_hubContext.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null), CancellationToken.None);
 
         VerificarGruposSelectivos("PedidoEliminado");
+    }
+
+    [Test]
+    public async Task PedidoModificadoPorAdminSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
+    {
+        var handler = new PedidoModificadoPorAdminSignalRHandler(_hubContext.Object);
+
+        await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido()), CancellationToken.None);
+
+        VerificarGruposSelectivos("PedidoActualizado");
     }
 
     #endregion
@@ -169,7 +179,7 @@ public class PedidosNotificationHandlersTests
     {
         var handler = new PedidoEliminadoWebSocketHandler(_webSocket.Object);
 
-        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m), CancellationToken.None);
+        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
 
         _webSocket.Verify(h => h.NotifyUserAndAdminsAsync(UserId,
             It.Is<PedidoNotificacion>(n =>
@@ -182,12 +192,24 @@ public class PedidosNotificationHandlersTests
         // Antes no existía: los clientes WebSocket no recibían cancelaciones.
         var handler = new PedidoCanceladoWebSocketHandler(_webSocket.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null), CancellationToken.None);
 
         _webSocket.Verify(h => h.NotifyUserAndAdminsAsync(UserId,
             It.Is<PedidoNotificacion>(n =>
                 n.Tipo == PedidoNotificationType.ELIMINADO &&
                 n.Estado == "CANCELADO")), Times.Once);
+    }
+
+    [Test]
+    public async Task PedidoModificadoPorAdminWebSocketHandler_NotificaAlDueñoYAdmins()
+    {
+        var handler = new PedidoModificadoPorAdminWebSocketHandler(_webSocket.Object);
+
+        await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido()), CancellationToken.None);
+
+        _webSocket.Verify(h => h.NotifyUserAndAdminsAsync(UserId,
+            It.Is<PedidoNotificacion>(n =>
+                n.Tipo == PedidoNotificationType.ESTADO_ACTUALIZADO)), Times.Once);
     }
 
     #endregion

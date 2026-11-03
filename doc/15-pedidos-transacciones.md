@@ -1469,22 +1469,57 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
 
 Una de las ventajas de CQRS es cómo los efectos secundarios están completamente desacoplados del handler principal.
 
+### 📧 Matriz de destinatarios de emails de pedidos
+
+> **Regla de oro:** el **usuario recibe TODO** lo que pasa a SU pedido; el
+> **admin recibe solo lo que debe gestionar y no proviene de él** (creación
+> y cancelación por usuario). Las acciones que el admin realiza él mismo no
+> le generan email: las ve en el panel y en tiempo real. El tiempo real
+> (WebSocket + SignalR) sigue llegando **tanto al dueño como a todos los
+> administradores** en todos los eventos, sin excepción.
+
+| Evento | ¿Quién lo inicia? | → Usuario | → Admin | Handlers (CQRS) |
+| --- | --- | --- | --- | --- |
+| **Creación** | usuario | ✅ Confirmación | ✅ Aviso "nuevo pedido" | `PedidoCreadoClienteEmailHandler` + `PedidoCreadoEmailHandler` |
+| **Cambio de estado** | **admin** | ✅ "Tu pedido pasó de A a B" | ❌ lo provoca él | `EstadoPedidoActualizadoEmailHandler` (cliente) + WS/SignalR |
+| **Cancelación por el usuario** | usuario | ✅ "pedido cancelado" | ✅ "el usuario canceló #X" | `PedidoCanceladoClienteEmailHandler` + `PedidoCanceladoEmailHandler` |
+| **Eliminación por el admin** | admin | ✅ "pedido cancelado" | ❌ su propia acción | `PedidoEliminadoClienteEmailHandler` + WS/SignalR |
+| **Edición de datos sin cambiar estado** | admin | ✅ "pedido modificado" | ❌ su propia acción | `PedidoModificadoPorAdminEmailHandler` + WS/SignalR |
+| **Edición por el propio usuario** | usuario | ❌ (realtime basta) | ❌ | `PedidoActualizadoNotification` (solo WS/SignalR) |
+| **Tiempo real (WS + SignalR)** | — | ✅ sus pedidos | ✅ todos los pedidos | handlers `*WebSocketHandler` / `*SignalRHandler` con `SendPedidoToUserAndAdminsAsync` / `NotifyUserAndAdminsAsync` |
+
+Notas:
+
+- `UpdatePedidoAdminCommand` publica `EstadoPedidoActualizadoNotification`
+  **solo si el estado cambió de verdad**; en caso contrario publica
+  `PedidoModificadoPorAdminNotification`. Así ningún evento genera emails de
+  más y cada notification dispara exactamente un email por destinatario.
+- El email del destinatario viaja en la notification
+  (`DestinatarioDto? Destinatario`) para cancelaciones y eliminaciones.
+- La matriz canónica vive en
+  [doc/21-email-services.md](https://github.com/joseluisgs/TiendaDawApi-NetCore/blob/develop/doc/21-email-services.md)
+  del repo base (este repo lo enlaza desde `doc/23-email-services.md`).
+
 ### Notifications de Pedidos en Nuestro Proyecto
 
 ```csharp
 // 1. Notificación cuando se crea un pedido
 public record PedidoCreadoNotification(PedidoDto Pedido) : INotification;
 
-// 2. Notificación cuando se actualiza el estado
+// 2. Notificación cuando se actualiza el estado (solo si cambió)
 public record EstadoPedidoActualizadoNotification(
-    string PedidoId, 
-    string EstadoAnterior, 
-    string EstadoNuevo) : INotification;
+    PedidoDto Pedido, 
+    string NuevoEstado) : INotification;
 
-// 3. Notificación cuando se cancela un pedido
+// 3. Notificación cuando un usuario cancela su pedido
 public record PedidoCanceladoNotification(
     string PedidoId, 
-    string Motivo) : INotification;
+    long UserId,
+    decimal Total,
+    DestinatarioDto? Destinatario) : INotification;
+
+// 4. Notificación cuando un admin modifica datos sin cambiar estado
+public record PedidoModificadoPorAdminNotification(PedidoDto Pedido) : INotification;
 ```
 
 ### Handlers de Notifications
@@ -1558,16 +1593,19 @@ public class PedidoCreadoSignalRHandler
     }
 }
 
-// Estado actualizado: email + SignalR
+// Estado actualizado: email AL CLIENTE + SignalR (el admin no lo recibe:
+// los cambios de estado los provoca él desde el panel — ver matriz 15.10)
 public class EstadoPedidoActualizadoEmailHandler
     : INotificationHandler<EstadoPedidoActualizadoNotification>
 {
     public async Task Handle(EstadoPedidoActualizadoNotification n, CancellationToken ct)
     {
-        await _emailService.SendAsync(
-            to: "cliente@email.com",
-            subject: $"Tu pedido ha sido actualizado: {n.EstadoNuevo}",
-            body: $"El estado de tu pedido ahora es: {n.EstadoNuevo}");
+        await _emailService.EnqueueEmailAsync(new EmailMessage
+        {
+            To = n.Pedido.Destinatario.Email,
+            Subject = $"📦 Pedido #{n.Pedido.Id} - {n.NuevoEstado}",
+            Body = $"El estado de tu pedido ahora es: {n.NuevoEstado}"
+        });
     }
 }
 ```
@@ -1654,8 +1692,9 @@ flowchart TB
 | 5 | Crear pedido si todo OK | CreatePedidoCommandHandler |
 | 6 | Commit de transacción | CreatePedidoCommandHandler |
 | 7 | Publicar notification | CreatePedidoCommandHandler |
-| 8 | Email al cliente | PedidoCreadoEmailHandler |
-| 9 | Notificación SignalR | PedidoCreadoSignalRHandler |
+| 8 | Email al cliente (confirmación) | PedidoCreadoClienteEmailHandler |
+| 9 | Email al admin (nuevo pedido) | PedidoCreadoEmailHandler |
+| 10 | Notificación SignalR | PedidoCreadoSignalRHandler |
 
 ### Transición a CQRS: Resumen
 

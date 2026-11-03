@@ -23,7 +23,7 @@ public class PedidoCanceladoEmailHandler(
 
         var content = EmailTemplates.PedidoEliminadoAdmin(
             notification.PedidoId,
-            0,
+            notification.Total,
             notification.UserId
         );
         var body = EmailTemplates.CreateBase("Pedido Cancelado por Usuario", content);
