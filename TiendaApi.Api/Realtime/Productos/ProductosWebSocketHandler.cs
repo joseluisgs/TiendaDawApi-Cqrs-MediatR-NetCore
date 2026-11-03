@@ -96,7 +96,7 @@ public class ProductosWebSocketHandler(ILogger<ProductosWebSocketHandler> logger
 
     /// <summary>Notifica a todos los clientes.</summary>
     /// <param name="notificacion">Datos de la notificación.</param>
-    public async Task NotifyAsync(ProductoNotificacion notificacion)
+    public virtual async Task NotifyAsync(ProductoNotificacion notificacion)
     {
         var wrapper = new
         {

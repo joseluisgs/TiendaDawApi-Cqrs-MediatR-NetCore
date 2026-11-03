@@ -80,4 +80,51 @@ public class PedidoCreadoNotificationHandlerTests
         notification.Pedido.UserId.Should().Be(1);
         notification.Pedido.Total.Should().Be(10m);
     }
+
+    [Test]
+    public async Task PedidoCreadoClienteEmailHandler_EnviaConfirmacionAlCliente()
+    {
+        // 🎓 Antes solo se avisaba al admin (PedidoCreadoEmailHandler) y el
+        // cliente que hizo el pedido no recibía ningún email.
+        var emailService = new Mock<IEmailService>();
+
+        var destinatario = new DestinatarioDto
+        {
+            NombreCompleto = "María García",
+            Email = "maria@test.com",
+            Direccion = new DireccionDto { Calle = "Gran Vía", Ciudad = "Madrid", Pais = "España" }
+        };
+        var items = new List<PedidoItemDto> { new(1, "Laptop", 1, 1000m, 1000m) };
+        var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 1000m, "Pendiente", null, DateTime.UtcNow);
+
+        var handler = new PedidoCreadoClienteEmailHandler(emailService.Object);
+
+        await handler.Handle(new PedidoCreadoNotification(pedido), CancellationToken.None);
+
+        emailService.Verify(e => e.EnqueueEmailAsync(It.Is<EmailMessage>(m =>
+            m.To == "maria@test.com" &&
+            m.Subject.Contains("PED-2024-0001") &&
+            m.Subject.Contains("confirmado"))), Times.Once);
+    }
+
+    [Test]
+    public async Task PedidoCreadoClienteEmailHandler_NoEnviaSiElDestinatarioNoTieneEmail()
+    {
+        var emailService = new Mock<IEmailService>();
+
+        var destinatario = new DestinatarioDto
+        {
+            NombreCompleto = "María García",
+            Email = "",
+            Direccion = new DireccionDto { Calle = "Gran Vía", Ciudad = "Madrid", Pais = "España" }
+        };
+        var items = new List<PedidoItemDto> { new(1, "Laptop", 1, 1000m, 1000m) };
+        var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 1000m, "Pendiente", null, DateTime.UtcNow);
+
+        var handler = new PedidoCreadoClienteEmailHandler(emailService.Object);
+
+        await handler.Handle(new PedidoCreadoNotification(pedido), CancellationToken.None);
+
+        emailService.Verify(e => e.EnqueueEmailAsync(It.IsAny<EmailMessage>()), Times.Never);
+    }
 }

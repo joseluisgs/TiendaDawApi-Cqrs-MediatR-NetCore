@@ -93,6 +93,8 @@ public class PedidosHandlerIntegrationTests
         // Notificaciones de Pedidos: SignalR y WebSocket.
         var mockClients = new Mock<IHubClients>();
         mockClients.Setup(c => c.All).Returns(Mock.Of<IClientProxy>());
+        // Los handlers de pedidos envían por GRUPOS (dueño + admins), no a Clients.All.
+        mockClients.Setup(c => c.Group(It.IsAny<string>())).Returns(Mock.Of<IClientProxy>());
         var mockHubContext = new Mock<IHubContext<PedidosHub>>();
         mockHubContext.Setup(c => c.Clients).Returns(mockClients.Object);
         services.AddSingleton(mockHubContext.Object);

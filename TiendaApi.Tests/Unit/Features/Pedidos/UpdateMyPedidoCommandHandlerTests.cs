@@ -8,6 +8,7 @@ using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
+using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Services.Cache;
@@ -46,7 +47,7 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
@@ -63,7 +64,7 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
@@ -80,10 +81,35 @@ public class UpdateMyPedidoCommandHandlerTests
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
 
         var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_PedidoPropioEnPendiente_PublicaNotificacionDeTiempoReal()
+    {
+        // 🎓 Antes este comando no publicaba NADA: la actualización propia no
+        // llegaba ni por WebSocket ni por SignalR. Ahora debe publicarse la
+        // notificación que dispara ambos canales (dueño + admins).
+        var repository = new Mock<IPedidosRepository>();
+        var cacheService = new Mock<ICacheService>();
+        var mediator = new Mock<IMediator>();
+
+        var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
+        repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
+        repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
+
+        var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+
+        var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        mediator.Verify(m => m.Publish(
+            It.IsAny<PedidoActualizadoNotification>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -36,15 +36,23 @@ public class UpdatePedidoAdminCommandHandler(
         if (pedido is null)
             return Result.Failure<PedidoDto, DomainError>(PedidoError.NotFound(request.Id));
 
+        var estadoAnterior = pedido.Estado;
         if (!string.IsNullOrWhiteSpace(request.Dto.Estado)) pedido.Estado = request.Dto.Estado;
         if (!string.IsNullOrWhiteSpace(request.Dto.DireccionEnvio)) pedido.DireccionEnvio = request.Dto.DireccionEnvio;
 
         var updated = await repository.UpdateAsync(pedido);
         var dto = updated.ToDto();
 
-        
+        // 📧 Matriz de emails (doc/15): si el estado cambió → notificación de
+        // estado (email al cliente + tiempo real); si solo datos →
+        // modificación por admin (email de aviso al cliente + tiempo real).
+        var estadoCambiado = !string.IsNullOrWhiteSpace(request.Dto.Estado)
+            && !string.Equals(estadoAnterior, request.Dto.Estado, StringComparison.OrdinalIgnoreCase);
 
-        await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);
+        if (estadoCambiado)
+            await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, dto.Estado ?? ""), cancellationToken);
+        else
+            await mediator.Publish(new PedidoModificadoPorAdminNotification(dto), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
