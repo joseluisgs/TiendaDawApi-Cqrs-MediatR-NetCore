@@ -1289,16 +1289,26 @@ Las **Notifications** en MediatR son equivalentes a los **Domain Events** en DDD
 4. **Integraciones**: Sincronización con sistemas externos
 
 ```csharp
-// Publicar notificación (en un Handler)
+// Publicar notificación (en un Handler): UN Publish dispara TODOS los canales
 await _mediator.Publish(new PedidoCreadoNotification(pedido), cancellationToken);
 
-// Manejar notificación (múltiples handlers)
+// Manejar notificación (múltiples handlers, uno por canal)
 public class PedidoCreadoSignalRHandler : INotificationHandler<PedidoCreadoNotification>
 {
     public async Task Handle(PedidoCreadoNotification notification, CancellationToken ct)
     {
-        await _hubContext.Clients.User(notification.Pedido.UsuarioId)
-            .SendAsync("PedidoCreado", notification.Pedido, ct);
+        // Dueño (grupo user-{id}) + administradores (grupo admins):
+        // nunca Clients.All, para que nadie vea pedidos ajenos.
+        await _hubContext.SendPedidoToUserAndAdminsAsync(
+            notification.Pedido.UserId, "PedidoCreado", payload, ct);
+    }
+}
+
+public class PedidoCreadoWebSocketHandler : INotificationHandler<PedidoCreadoNotification>
+{
+    public async Task Handle(PedidoCreadoNotification notification, CancellationToken ct)
+    {
+        await _webSocketHandler.NotifyUserAndAdminsAsync(notification.Pedido.UserId, notificacion);
     }
 }
 
@@ -1306,7 +1316,7 @@ public class PedidoCreadoEmailHandler : INotificationHandler<PedidoCreadoNotific
 {
     public async Task Handle(PedidoCreadoNotification notification, CancellationToken ct)
     {
-        await _emailService.SendOrderConfirmationAsync(notification.Pedido, ct);
+        await _emailService.EnqueueEmailAsync(mensaje, ct);
     }
 }
 ```
@@ -1529,8 +1539,8 @@ Los modos 1/2 se eligen con `Auth:Mode`; los 3/4 con `Auth:{Proveedor}:Enabled` 
 
 | Endpoint                         | Auth | Descripción                             | Eventos                                              |
 | -------------------------------- | ---- | --------------------------------------- | ---------------------------------------------------- |
-| `ws://host/ws/productos`         | No   | Notificaciones de productos (broadcast) | PRODUCTO_CREATED, PRODUCTO_UPDATED, PRODUCTO_DELETED |
-| `ws://host/ws/pedidos?token=JWT` | JWT  | Notificaciones de pedidos (por rol)     | PEDIDO_CREATED, PEDIDO_ESTADO_UPDATED                |
+| `ws://host/ws/productos`         | No   | Notificaciones de productos (broadcast) | PRODUCTO_CREADO, PRODUCTO_ACTUALIZADO, PRODUCTO_ELIMINADO |
+| `ws://host/ws/pedidos?token=JWT` | JWT  | Notificaciones de pedidos (por rol)     | PEDIDO_CREADO, PEDIDO_ESTADO_ACTUALIZADO, PEDIDO_ELIMINADO |
 
 **WebSocket Productos:** Broadcast a todos los clientes conectados (sin autenticación).
 

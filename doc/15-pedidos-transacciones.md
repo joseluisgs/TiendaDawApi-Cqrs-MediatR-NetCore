@@ -1513,13 +1513,24 @@ public class PedidoCreadoSignalRHandler
     
     public async Task Handle(PedidoCreadoNotification n, CancellationToken ct)
     {
-        // Notificar al usuario específico
-        await _hubContext.Clients.User(n.Pedido.UsuarioId.ToString())
-            .SendAsync("PedidoCreado", n.Pedido);
-        
-        // Notificar a administradores
-        await _hubContext.Clients.Group("admins")
-            .SendAsync("NuevoPedido", n.Pedido);
+        // UNA sola función selectiva: dueño (grupo user-{id}) + todos los
+        // administradores (grupo admins). Nunca Clients.All, para que nadie
+        // vea pedidos ajenos. Es el equivalente SignalR de
+        // PedidosWebSocketHandler.NotifyUserAndAdminsAsync.
+        await _hubContext.SendPedidoToUserAndAdminsAsync(
+            n.Pedido.UserId,
+            "PedidoCreado",
+            new
+            {
+                pedidoId = n.Pedido.Id,
+                userId = n.Pedido.UserId,
+                estado = n.Pedido.Estado,
+                tipo = "PEDIDO_CREADO",
+                total = n.Pedido.Total,
+                itemsCount = n.Pedido.Items?.Count ?? 0,
+                timestamp = DateTime.UtcNow
+            },
+            ct);
     }
 }
 

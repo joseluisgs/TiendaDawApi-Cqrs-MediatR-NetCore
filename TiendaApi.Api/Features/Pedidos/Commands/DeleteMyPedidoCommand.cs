@@ -44,7 +44,7 @@ public class DeleteMyPedidoCommandHandler(
 
         
 
-        await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId), cancellationToken);
+        await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId, pedido.Total), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);

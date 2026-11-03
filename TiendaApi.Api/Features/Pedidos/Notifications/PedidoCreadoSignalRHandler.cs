@@ -16,7 +16,7 @@ public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoCreado para ID: {PedidoId}", notification.Pedido.Id);
 
-        await hubContext.Clients.All.SendAsync("PedidoCreado", new
+        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoCreado", new
         {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
@@ -27,6 +27,6 @@ public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 
-        Log.Information("📟 [SIGNALR] Evento enviado a todos los clientes: Pedido creado ID={PedidoId}", notification.Pedido.Id);
+        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido creado ID={PedidoId}", notification.Pedido.Id);
     }
 }
