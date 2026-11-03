@@ -18,7 +18,7 @@ public class PedidoEliminadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoEliminado para ID: {PedidoId}", notification.PedidoId);
 
-        await hubContext.Clients.All.SendAsync("PedidoEliminado", new
+        await hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new
         {
             pedidoId = notification.PedidoId,
             userId = notification.UserId,
@@ -28,6 +28,6 @@ public class PedidoEliminadoSignalRHandler(IHubContext<PedidosHub> hubContext)
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 
-        Log.Information("📟 [SIGNALR] Evento enviado a todos los clientes: Pedido eliminado ID={PedidoId}", notification.PedidoId);
+        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido eliminado ID={PedidoId}", notification.PedidoId);
     }
 }

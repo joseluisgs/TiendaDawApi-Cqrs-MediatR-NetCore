@@ -4,6 +4,7 @@ using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
+using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using Microsoft.AspNetCore.OutputCaching;
@@ -42,9 +43,11 @@ public class DeleteMyPedidoCommandHandler(
         pedido.IsDeleted = true;
         await repository.UpdateAsync(pedido);
 
-        
-
-        await mediator.Publish(new PedidoCanceladoNotification(request.Id, request.UserId), cancellationToken);
+        // 📧 Matriz de emails: el cliente recibe el aviso de cancelación y el
+        // admin el aviso de gestión (debe enterarse: es lo que debe gestionar
+        // y no proviene de él).
+        await mediator.Publish(new PedidoCanceladoNotification(
+            request.Id, request.UserId, pedido.Total, pedido.Destinatario?.ToDto()), cancellationToken);
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);

@@ -4,6 +4,7 @@ using Serilog;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
+using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
@@ -23,6 +24,7 @@ public record UpdateMyPedidoCommand(string Id, long UserId, UpdatePedidoDto Dto)
 /// </summary>
 public class UpdateMyPedidoCommandHandler(
     IPedidosRepository repository,
+    IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateMyPedidoCommand, Result<PedidoDto, DomainError>>
@@ -45,6 +47,10 @@ public class UpdateMyPedidoCommandHandler(
 
         await cacheService.RemoveAsync($"pedidos:{request.Id}");
         await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
+
+        // Tiempo real por WebSocket Y SignalR (dueño + admins): antes no se
+        // publicaba nada y la actualización propia no llegaba a ningún canal.
+        await mediator.Publish(new PedidoActualizadoNotification(dto), cancellationToken);
 
         return Result.Success<PedidoDto, DomainError>(dto);
     }

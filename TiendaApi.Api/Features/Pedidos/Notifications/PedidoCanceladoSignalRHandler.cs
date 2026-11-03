@@ -14,12 +14,13 @@ public class PedidoCanceladoSignalRHandler(IHubContext<PedidosHub> hubContext)
 {
     /// <inheritdoc/>
     public Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("PedidoEliminado", new
+        hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new
         {
             pedidoId = notification.PedidoId,
             userId = notification.UserId,
             estado = "CANCELADO",
             tipo = "PEDIDO_ELIMINADO",
+            total = notification.Total,
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 }
