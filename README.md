@@ -336,9 +336,12 @@ docker compose up --build
 start reports/report.html
 
 # Opción 2: Con Newman local (API ya levantada en :5031)
+# OJO: ejecutar desde el directorio de la colección: newman resuelve los
+# ficheros adjuntos (test-image.png, backup-ejemplo.json) relativos al CWD
 npm install -g newman
-newman run TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_collection.json \
-  -e TiendaApi.Tests.E2E/Postman-Cli/TiendaApi.NetCore.postman_environment.json \
+cd TiendaApi.Tests.E2E/Postman-Cli
+newman run TiendaApi.NetCore.postman_collection.json \
+  -e TiendaApi.NetCore.postman_environment.json \
   --delay-request 250 \
   -r cli,html,json,junit --reporter-html-export report.html \
   --reporter-json-export report.json \
@@ -367,11 +370,14 @@ start reports/report.html
 npm install -g @usebruno/cli
 cd TiendaApi.Tests.E2E/Bruno-Local
 bru run "0 - SETUP" "1 - AUTHENTICATION" "2 - CATEGORÍAS" "3 - PRODUCTOS" \
-  "4 - PEDIDOS (Usuario)" "5 - PEDIDOS (Admin)" "6 - USUARIOS" "7 - STORAGE" \
-  "10 - GRAPHQL CATEGORÍAS" "11 - GRAPHQL PRODUCTOS" "90 - TEARDOWN" \
+  "4 - PEDIDOS (Usuario)" "5 - PEDIDOS (Admin)" \
+  "6 - USUARIOS/Gestión Admin" "6 - USUARIOS/Perfil Propio" "7 - STORAGE" \
+  "10 - GRAPHQL CATEGORÍAS" "11 - GRAPHQL PRODUCTOS" "17 - GRAPHQL PEDIDOS" \
+  "90 - TEARDOWN" \
   --env-file "environments/TiendaApi__NET_-_Environment.json" --delay 250
-# Ejecución completa sin fallos. Fuera de esta ejecución: "12 - WEBSOCKETS" (la CLI no
-# soporta WS y la variable basews no existe en el env → ENOTFOUND preexistentes)
+# Ejecución completa sin fallos (la raíz "6 - USUARIOS" no recursa en bru: hay
+# que pasar las subcarpetas, igual que el docker-compose). Fuera de esta
+# ejecución: "12 - WEBSOCKETS" (la CLI no soporta WS → ENOTFOUND preexistente)
 ```
 
 **Tests disponibles en:** `TiendaApi.Tests.E2E/{Bruno-Cli, Bruno-Local}/`
