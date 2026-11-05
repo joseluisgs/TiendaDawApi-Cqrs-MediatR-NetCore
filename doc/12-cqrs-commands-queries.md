@@ -407,7 +407,7 @@ sequenceDiagram
     participant Cache as Cache Service
     participant DB as PostgreSQL
     
-    Client->>Controller: GET /api/productos/5
+    Client->>Controller: GET /api/v1/productos/5
     Controller->>MediatR: Send(GetProductoByIdQuery(5))
     MediatR->>Handler: Handle(GetProductoByIdQuery)
     
@@ -768,7 +768,7 @@ sequenceDiagram
     participant Cache as CacheHandler
 
     %% Flujo principal
-    Client->>Controller: POST /api/productos
+    Client->>Controller: POST /api/v1/productos
     Controller->>MediatR: Send(CreateProductoCommand)
     
     rect rgb(200, 240, 200)
@@ -932,7 +932,7 @@ sequenceDiagram
     participant Repo as Repositorio
     participant Notif as Notifications
     
-    Client->>Controller: POST /api/productos {datos}
+    Client->>Controller: POST /api/v1/productos {datos}
     Controller->>MediatR: Send(CreateProductoCommand)
     MediatR->>Handler: Handle(command)
     

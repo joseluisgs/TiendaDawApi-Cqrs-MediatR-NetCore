@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using MediatR;
@@ -20,7 +21,8 @@ namespace TiendaApi.Api.Controllers;
 /// Separa endpoints para administradores (todos los pedidos) y usuarios (sus pedidos).
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
 [Produces("application/json")]
 public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase
 {

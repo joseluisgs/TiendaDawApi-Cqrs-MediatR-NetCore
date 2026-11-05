@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using MediatR;
@@ -21,7 +22,8 @@ namespace TiendaApi.Api.Controllers;
 /// Endpoints: CRUD paginado, solo accesibles por administradores.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
 [Produces("application/json")]
 public class UsersController(IMediator mediator, ILogger<UsersController> logger) : ControllerBase
 {

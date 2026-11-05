@@ -938,6 +938,7 @@ public static partial class Errors
 ## 17.8. AuthController - Endpoints de Autenticación
 
 ```csharp
+using Asp.Versioning;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -951,7 +952,8 @@ namespace TiendaApi.Apis.Controllers;
 /// Controlador de autenticación - JWT
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
 public class AuthController : ControllerBase
 {
     private readonly JwtService _jwtService;
@@ -972,7 +974,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/register
+    /// POST /api/v1/auth/register
     /// Registrar un nuevo usuario
     /// </summary>
     [HttpPost("register")]
@@ -1034,7 +1036,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/login
+    /// POST /api/v1/auth/login
     /// Iniciar sesión y obtener tokens JWT
     /// </summary>
     [HttpPost("login")]
@@ -1089,7 +1091,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/refresh
+    /// POST /api/v1/auth/refresh
     /// Renovar access token usando refresh token
     /// </summary>
     [HttpPost("refresh")]
@@ -1118,7 +1120,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/logout
+    /// POST /api/v1/auth/logout
     /// Cerrar sesión (invalidar refresh token)
     /// </summary>
     [HttpPost("logout")]
@@ -1147,7 +1149,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/auth/me
+    /// GET /api/v1/auth/me
     /// Obtener información del usuario actual
     /// </summary>
     [HttpGet("me")]
@@ -1186,7 +1188,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/change-password
+    /// POST /api/v1/auth/change-password
     /// Cambiar contraseña del usuario
     /// </summary>
     [HttpPost("change-password")]
@@ -1415,7 +1417,7 @@ sequenceDiagram
     
     Note over U: Cliente almacena tokens
     
-    U->>A: GET /api/productos (Bearer token)
+    U->>A: GET /api/v1/productos (Bearer token)
     A->>J: ValidateAccessToken(token)
     J-->>A: Claims principal
     A->>DB: Consultar productos
@@ -1669,8 +1671,8 @@ sequenceDiagram
     participant M as Middleware JWT
     participant DB as PostgreSQL
     
-    U->>C: GET /api/productos
-    C->>A: GET /api/productos
+    U->>C: GET /api/v1/productos
+    C->>A: GET /api/v1/productos
     
     Note over C,A: Header: Bearer jwt-token
     

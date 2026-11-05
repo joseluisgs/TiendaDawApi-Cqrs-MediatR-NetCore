@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,7 +27,8 @@ namespace TiendaApi.Api.Controllers;
 /// Solo sabe que puede "enviar" peticiones al Mediator.
 /// </remarks>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
 [Produces("application/json")]
 public class CategoriasController(IMediator mediator) : ControllerBase
 {

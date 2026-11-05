@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using MediatR;
@@ -29,7 +30,8 @@ namespace TiendaApi.Api.Controllers;
 /// extremadamente delgado y fácil de testear.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
 [Produces("application/json")]
 public class ProductosController(IMediator mediator) : ControllerBase
 {
