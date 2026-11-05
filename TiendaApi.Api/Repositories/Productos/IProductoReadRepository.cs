@@ -48,8 +48,9 @@ public interface IProductoReadRepository
     /// <param name="id">ID del producto.</param>
     Task SoftDeleteAsync(long id);
 
-    /// <summary>Actualiza el nombre de categoría embebido en todos sus productos (updateMany).</summary>
-    /// <param name="categoriaId">ID de la categoría renombrada.</param>
+    /// <summary>Actualiza el nombre y la descripción de categoría embebidos en todos sus productos (updateMany).</summary>
+    /// <param name="categoriaId">ID de la categoría actualizada.</param>
     /// <param name="nombre">Nuevo nombre de la categoría.</param>
-    Task UpdateCategoriaNombreAsync(long categoriaId, string nombre);
+    /// <param name="descripcion">Nueva descripción de la categoría (null si no tiene).</param>
+    Task UpdateCategoriaNombreAsync(long categoriaId, string nombre, string? descripcion);
 }

@@ -1580,10 +1580,10 @@ await connection.start();
 
 ### GraphQL
 
-| Endpoint    | Método | Descripción        |
-| ----------- | ------ | ------------------ |
-| `/graphql`  | POST   | Endpoint GraphQL   |
-| `/graphiql` | GET    | Playground GraphQL |
+| Endpoint   | Método | Descripción                                       |
+| ---------- | ------ | ------------------------------------------------- |
+| `/graphql` | POST   | Endpoint GraphQL (ejecución de queries/mutations) |
+| `/graphql` | GET    | Playground (GraphiQL) servido por HotChocolate    |
 
 **Queries disponibles:**
 
@@ -1591,13 +1591,35 @@ await connection.start();
 # Productos
 productos                    # Todos los productos
 producto(id: Long!)          # Producto por ID
-productos(first: Int, after: String) # Productos paginados
+productosPaged(page: Int = 1, size: Int = 10)  # Productos paginados
 
 # Categorías
 categorias                   # Todas las categorías
 categoria(id: Long!)         # Categoría por ID
-categorias(first: Int, after: String) # Categorías paginadas
+categoriasPaged(page: Int = 1, size: Int = 10) # Categorías paginadas
+
+# Pedidos (solo queries: sin mutations ni subscriptions)
+pedidos                      # Todos los pedidos → SOLO ADMIN
+misPedidos                   # Los pedidos del usuario autenticado (claim JWT)
 ```
+
+**Pedidos en GraphQL (vía MediatR, igual que REST):**
+
+| Query | Auth | Handler CQRS |
+| ----- | ---- | ------------ |
+| `pedidos` | **ADMIN** (`AdminOnly`) | `GetAllPedidosListQuery` |
+| `misPedidos` | Cualquier autenticado | `GetMyPedidosQuery(userId)` — userId del claim `NameIdentifier`, nunca pedidos ajenos |
+
+```graphql
+# Admin: todos los pedidos
+query { pedidos { id userId estado total createdAt } }
+
+# Usuario: solo los suyos
+query { misPedidos { id estado total items { nombreProducto cantidad } } }
+```
+
+> ⚠️ Los pedidos **solo se leen** por GraphQL (consultas). Crear, actualizar
+> y cancelar pedidos es cosa de REST (`POST/PUT /api/pedidos...`).
 
 **Ejemplo de Query: Obtener producto con solo nombre de categoría**
 
