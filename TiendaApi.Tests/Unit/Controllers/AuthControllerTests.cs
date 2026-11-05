@@ -119,14 +119,14 @@ public class AuthControllerTests
             .ReturnsAsync(new AuthenticationScheme("Google", "Google", typeof(IAuthenticationHandler)));
         var urlHelper = new Mock<IUrlHelper>();
         urlHelper.Setup(u => u.Action(It.IsAny<UrlActionContext>()))
-            .Returns("/api/auth/external-callback");
+            .Returns("/api/v1/auth/external-callback");
         _controller.Url = urlHelper.Object;
 
         var result = await _controller.ExternalLogin("Google");
 
         var challenge = result.Should().BeOfType<ChallengeResult>().Subject;
         challenge.AuthenticationSchemes.Should().Contain("Google");
-        challenge.Properties!.RedirectUri.Should().Be("/api/auth/external-callback");
+        challenge.Properties!.RedirectUri.Should().Be("/api/v1/auth/external-callback");
     }
 
     [Test]

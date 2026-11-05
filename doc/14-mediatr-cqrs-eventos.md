@@ -472,7 +472,7 @@ sequenceDiagram
     participant Repo as Repositorio
     participant Notif as INotification
     
-    Client->>Ctrl: POST /api/pedidos
+    Client->>Ctrl: POST /api/v1/pedidos
     Ctrl->>Handler: Send(CreatePedidoCommand)
     
     Handler->>Repo: SaveAsync(pedido)
@@ -948,7 +948,7 @@ sequenceDiagram
     participant M as MongoDB productos_read
     participant O as Email / SignalR / WS
 
-    C->>H: POST /api/productos
+    C->>H: POST /api/v1/productos
     H->>PG: SaveAsync + commit
     Note over PG: t0 — el producto ya existe en la fuente de verdad
     H->>Cache: Task.Run: borra claves y tag "productos"
@@ -958,7 +958,7 @@ sequenceDiagram
         H->>O: EmailHandler / SignalRHandler / WebSocketHandler
     end
     H-->>C: 201 Created (con el DTO montado desde PostgreSQL)
-    C->>H: GET /api/productos
+    C->>H: GET /api/v1/productos
     H->>Cache: consulta (miss tras invalidar)
     Cache->>M: FindAllPagedAsync
     M-->>C: 200 — lista con el producto nuevo
@@ -981,8 +981,8 @@ sequenceDiagram
     participant M as MongoDB read model
     participant B as Cliente B (lector)
 
-    A->>PG: PUT /api/productos/7 — precio 19,99 → 24,99 (t0)
-    Note over B: t1 — GET /api/productos/7
+    A->>PG: PUT /api/v1/productos/7 — precio 19,99 → 24,99 (t0)
+    Note over B: t1 — GET /api/v1/productos/7
     B->>M: consulta
     M-->>B: precio 19,99 (estado anterior)
     Note over PG,M: ventana de inconsistencia (t0 → t1)
@@ -1335,7 +1335,7 @@ sequenceDiagram
     participant SignalRHandler
     participant CacheHandler
     
-    Client->>Controller: POST /api/productos
+    Client->>Controller: POST /api/v1/productos
     Controller->>CommandHandler: Send(CreateProductoCommand)
     
     CommandHandler->>Repository: SaveAsync(producto)

@@ -222,10 +222,10 @@ static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
     Log.Information("=================================================================");
     Log.Information("ENDPOINTS REST:");
     Log.Information("  Auth:       POST {BaseUrl}/api/v1/auth/signup, /api/v1/auth/signin", baseUrl);
-    Log.Information("  Categorias: GET/POST/PUT/DELETE {BaseUrl}/api/categorias", baseUrl);
-    Log.Information("  Productos:  GET/POST/PUT/DELETE {BaseUrl}/api/productos", baseUrl);
-    Log.Information("  Pedidos:    GET/POST {BaseUrl}/api/pedidos", baseUrl);
-    Log.Information("  Usuarios:   GET/POST/PUT/DELETE {BaseUrl}/api/users", baseUrl);
+    Log.Information("  Categorias: GET/POST/PUT/DELETE {BaseUrl}/api/v1/categorias", baseUrl);
+    Log.Information("  Productos:  GET/POST/PUT/DELETE {BaseUrl}/api/v1/productos", baseUrl);
+    Log.Information("  Pedidos:    GET/POST {BaseUrl}/api/v1/pedidos", baseUrl);
+    Log.Information("  Usuarios:   GET/POST/PUT/DELETE {BaseUrl}/api/v1/users", baseUrl);
     Log.Information("=================================================================");
     Log.Information("DATOS SEMBRADOS (Seed):");
     Log.Information("  PostgreSQL: {Admin} ({AdminEmail}), {User} ({UserEmail})",

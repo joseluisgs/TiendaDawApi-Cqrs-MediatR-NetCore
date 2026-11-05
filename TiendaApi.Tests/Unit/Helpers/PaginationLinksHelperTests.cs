@@ -24,7 +24,7 @@ public class PaginationLinksHelperTests
         var context = new DefaultHttpContext();
         context.Request.Scheme = "http";
         context.Request.Host = new HostString("api.local", 8080);
-        context.Request.Path = "/api/productos";
+        context.Request.Path = "/api/v1/productos";
         context.Request.QueryString = new QueryString(query);
         return context.Request;
     }
