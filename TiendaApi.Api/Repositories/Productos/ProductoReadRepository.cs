@@ -169,15 +169,16 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task UpdateCategoriaNombreAsync(long categoriaId, string nombre)
+    public async Task UpdateCategoriaNombreAsync(long categoriaId, string nombre, string? descripcion)
     {
         var result = await Collection.UpdateManyAsync(
             p => p.Categoria.Id == categoriaId,
             Builders<ProductoRead>.Update
                 .Set(p => p.Categoria!.Nombre, nombre)
+                .Set(p => p.Categoria!.Descripcion, descripcion)
                 .Set(p => p.SyncAt, DateTime.UtcNow));
         logger.LogDebug(
-            "Nombre de categoría actualizado en {Count} productos de la categoría {CategoriaId}",
+            "Datos de categoría actualizados en {Count} productos de la categoría {CategoriaId}",
             result.ModifiedCount, categoriaId);
     }
 

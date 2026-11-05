@@ -18,10 +18,16 @@ public static class ProductoMapper
             producto.Precio,
             producto.Stock,
             producto.Imagen,
-            new CategoriaResumenDto(producto.CategoriaId, producto.Categoria?.Nombre ?? string.Empty),
+            new CategoriaResumenDto(
+                producto.CategoriaId,
+                producto.Categoria?.Nombre ?? string.Empty,
+                producto.Categoria?.Descripcion),
             producto.Proveedor is null
                 ? null
-                : new ProveedorResumenDto(producto.Proveedor.Codigo, producto.Proveedor.Nombre),
+                : new ProveedorResumenDto(
+                    producto.Proveedor.Codigo,
+                    producto.Proveedor.Nombre,
+                    producto.Proveedor.Descripcion),
             producto.CreatedAt,
             producto.UpdatedAt
         );
@@ -39,10 +45,16 @@ public static class ProductoMapper
             producto.Precio,
             producto.Stock,
             producto.Imagen,
-            new CategoriaResumenDto(producto.CategoriaId, producto.Categoria?.Nombre ?? string.Empty),
+            new CategoriaResumenDto(
+                producto.CategoriaId,
+                producto.Categoria?.Nombre ?? string.Empty,
+                producto.Categoria?.Descripcion),
             producto.Proveedor is null || string.IsNullOrEmpty(producto.Proveedor.Codigo)
                 ? null
-                : new ProveedorResumenDto(producto.Proveedor.Codigo, producto.Proveedor.Nombre),
+                : new ProveedorResumenDto(
+                    producto.Proveedor.Codigo,
+                    producto.Proveedor.Nombre,
+                    producto.Proveedor.Descripcion),
             producto.CreatedAt,
             producto.UpdatedAt
         );
@@ -66,11 +78,21 @@ public static class ProductoMapper
         Imagen = dto.Imagen,
         IsDeleted = false,
         CategoriaId = dto.Categoria.Id,
-        Categoria = new CategoriaRead { Id = dto.Categoria.Id, Nombre = dto.Categoria.Nombre },
+        Categoria = new CategoriaRead
+        {
+            Id = dto.Categoria.Id,
+            Nombre = dto.Categoria.Nombre,
+            Descripcion = dto.Categoria.Descripcion
+        },
         ProveedorId = dto.Proveedor?.Codigo,
         Proveedor = dto.Proveedor is null
             ? new ProveedorRead()
-            : new ProveedorRead { Codigo = dto.Proveedor.Codigo, Nombre = dto.Proveedor.Nombre },
+            : new ProveedorRead
+            {
+                Codigo = dto.Proveedor.Codigo,
+                Nombre = dto.Proveedor.Nombre,
+                Descripcion = dto.Proveedor.Descripcion
+            },
         CreatedAt = dto.CreatedAt,
         UpdatedAt = dto.UpdatedAt,
         SyncAt = DateTime.UtcNow
@@ -93,12 +115,18 @@ public static class ProductoMapper
         Categoria = new CategoriaRead
         {
             Id = producto.CategoriaId,
-            Nombre = producto.Categoria?.Nombre ?? string.Empty
+            Nombre = producto.Categoria?.Nombre ?? string.Empty,
+            Descripcion = producto.Categoria?.Descripcion
         },
         ProveedorId = producto.Proveedor?.Codigo,
         Proveedor = producto.Proveedor is null
             ? new ProveedorRead()
-            : new ProveedorRead { Codigo = producto.Proveedor.Codigo, Nombre = producto.Proveedor.Nombre },
+            : new ProveedorRead
+            {
+                Codigo = producto.Proveedor.Codigo,
+                Nombre = producto.Proveedor.Nombre,
+                Descripcion = producto.Proveedor.Descripcion
+            },
         CreatedAt = producto.CreatedAt,
         UpdatedAt = producto.UpdatedAt,
         SyncAt = DateTime.UtcNow

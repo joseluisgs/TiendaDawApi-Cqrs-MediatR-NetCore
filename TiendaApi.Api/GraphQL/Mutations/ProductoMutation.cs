@@ -43,7 +43,8 @@ public class ProductoMutation
             Precio = input.Precio,
             Stock = input.Stock,
             Imagen = input.Imagen,
-            CategoriaId = input.CategoriaId
+            CategoriaId = input.CategoriaId,
+            ProveedorCodigo = input.ProveedorCodigo
         };
 
         var result = await mediator.Send(new CreateProductoCommand(dto), ct);
@@ -75,7 +76,8 @@ public class ProductoMutation
             Precio = input.Precio,
             Stock = input.Stock,
             Imagen = input.Imagen,
-            CategoriaId = input.CategoriaId
+            CategoriaId = input.CategoriaId,
+            ProveedorCodigo = input.ProveedorCodigo
         };
 
         var result = await mediator.Send(new UpdateProductoPartialCommand(id, patch), ct);
