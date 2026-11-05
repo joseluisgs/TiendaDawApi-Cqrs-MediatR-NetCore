@@ -1,12 +1,16 @@
+using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using HotChocolate;
+using HotChocolate.Authorization;
 using HotChocolate.Data;
 using HotChocolate.Types;
 using MediatR;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Features.Productos.Queries;
 
 namespace TiendaApi.Api.GraphQL.Queries;
@@ -141,5 +145,50 @@ public class TiendaQuery
 
         // GraphQL devuelve Page = parámetro recibido (1-based)
         return result.Value with { Page = page };
+    }
+
+    /// <summary>
+    /// Obtiene TODOS los pedidos. Solo administradores.
+    /// </summary>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Lista de pedidos (DTOs, no entidades).</returns>
+    [Authorize(policy: "AdminOnly")]
+    public async Task<IReadOnlyList<PedidoDto>> GetPedidos(
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetAllPedidosListQuery(), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        return result.Value.ToList();
+    }
+
+    /// <summary>
+    /// Obtiene MIS pedidos: los del usuario autenticado (cualquier usuario
+    /// logueado). El userId sale del claim del JWT (inyectado por
+    /// HotChocolate como parámetro) y la query CQRS filtra por él: nunca se
+    /// devuelven pedidos de otros usuarios.
+    /// </summary>
+    /// <param name="user">Usuario autenticado (claims del JWT).</param>
+    /// <param name="mediator">Mediator para enviar queries CQRS.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Lista de pedidos del usuario autenticado.</returns>
+    [Authorize]
+    public async Task<IReadOnlyList<PedidoDto>> GetMisPedidos(
+        ClaimsPrincipal user,
+        [Service] IMediator mediator,
+        CancellationToken ct = default)
+    {
+        var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (claim is null || !long.TryParse(claim, out var userId))
+            throw new GraphQLException("No se pudo identificar al usuario autenticado (falta el claim NameIdentifier).");
+
+        var result = await mediator.Send(new GetMyPedidosQuery(userId), ct);
+        if (result.IsFailure)
+            throw new Exception(result.Error.Message);
+
+        return result.Value.ToList();
     }
 }

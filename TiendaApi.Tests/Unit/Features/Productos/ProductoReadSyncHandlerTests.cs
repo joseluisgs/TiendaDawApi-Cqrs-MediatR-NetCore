@@ -81,12 +81,14 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaActualizada_PropagaNombreEmbebido()
+    public async Task Handle_CategoriaActualizada_PropagaNombreYDescripcionEmbebidos()
     {
-        await _handler.Handle(new CategoriaActualizadaNotification(7, "Tecnología"), CancellationToken.None);
+        await _handler.Handle(
+            new CategoriaActualizadaNotification(7, "Tecnología", "Electrónica y periféricos"),
+            CancellationToken.None);
 
         _readRepository.Verify(
-            r => r.UpdateCategoriaNombreAsync(7, "Tecnología"), Times.Once);
+            r => r.UpdateCategoriaNombreAsync(7, "Tecnología", "Electrónica y periféricos"), Times.Once);
     }
 
     [Test]
@@ -121,7 +123,7 @@ public class ProductoReadSyncHandlerTests
     public async Task Handle_FalloDeMongoEnCategoria_NoPropagaExcepcion()
     {
         _readRepository
-            .Setup(r => r.UpdateCategoriaNombreAsync(It.IsAny<long>(), It.IsAny<string>()))
+            .Setup(r => r.UpdateCategoriaNombreAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string?>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));
 
         var act = async () => await _handler.Handle(

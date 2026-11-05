@@ -82,10 +82,10 @@ public class ProductoReadSyncHandler(
         try
         {
             logger.LogDebug(
-                "Sync: categoría {Id} renombrada a '{Nombre}' → updateMany en MongoDB",
+                "Sync: categoría {Id} actualizada a '{Nombre}' → updateMany en MongoDB",
                 notification.CategoriaId, notification.NuevoNombre);
             await readRepository.UpdateCategoriaNombreAsync(
-                notification.CategoriaId, notification.NuevoNombre);
+                notification.CategoriaId, notification.NuevoNombre, notification.NuevaDescripcion);
         }
         catch (Exception ex)
         {

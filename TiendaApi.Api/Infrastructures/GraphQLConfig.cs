@@ -34,9 +34,16 @@ public static class GraphQLConfig
             .AddInMemorySubscriptions()
             .AddType<ProductoType>()
             .AddType<CategoriaType>()
-            .AddType<CategoriaReadType>()
-    .AddType<ProveedorType>()
-    .AddType<ProveedorReadType>()
+            .AddType<ProveedorType>()
+            .AddType<PedidoType>()
+            .AddType<DestinatarioType>()
+            .AddType<DireccionType>()
+            .AddType<PedidoItemType>()
+            // 🎓 Opción "un solo contrato": los types se construyen sobre los
+            // DTOs y RemoveUnreachableTypes elimina del esquema cualquier tipo
+            // registrado al que ninguna operación pueda llegar (antes: types
+            // entidad y de read model inalcanzables en la introspección).
+            .ModifyOptions(options => options.RemoveUnreachableTypes = true)
             // 🛡️ Límite de profundidad de ejecución: evita queries anidadas
             // infinitas que consuman memoria/CPU. 10 niveles es más que
             // suficiente para cualquier consulta legítima de este proyecto.

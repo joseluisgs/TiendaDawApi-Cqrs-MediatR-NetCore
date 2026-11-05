@@ -1,13 +1,17 @@
+using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
+using HotChocolate;
 using MediatR;
 using Moq;
 using NUnit.Framework;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.GraphQL.Queries;
 
@@ -190,6 +194,70 @@ public class TiendaQueryTests
         capturedFilter.Should().NotBeNull();
         capturedFilter!.Page.Should().Be(0);
         capturedFilter.Size.Should().Be(10);
+    }
+
+    #endregion
+
+    #region GetPedidos / GetMisPedidos Tests
+
+    private static PedidoDto UnPedidoDto(long userId) => new(
+        Id: "PED-2024-0001",
+        UserId: userId,
+        Destinatario: null!,
+        Items: new List<PedidoItemDto>(),
+        Total: 10m,
+        Estado: "Pendiente",
+        DireccionEnvio: null,
+        CreatedAt: DateTime.UtcNow);
+
+    [Test]
+    public async Task GetPedidos_ReturnsAllAsDtos()
+    {
+        // pedidos = solo ADMIN: la resolver delega en la query CQRS que
+        // lista todos los pedidos.
+        var pedidos = new List<PedidoDto> { UnPedidoDto(1), UnPedidoDto(2) };
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos));
+
+        var result = await _query.GetPedidos(_mediatorMock.Object);
+
+        result.Should().HaveCount(2);
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task GetMisPedidos_ConClaim_FiltraPorElUsuarioAutenticado()
+    {
+        // El userId SIEMPRE sale del claim del JWT: la query CQRS filtra por
+        // él y un usuario jamás ve pedidos ajenos por GraphQL.
+        var pedidos = new List<PedidoDto> { UnPedidoDto(7) };
+        _mediatorMock.Setup(m => m.Send(It.IsAny<GetMyPedidosQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos));
+
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "test"));
+
+        var result = await _query.GetMisPedidos(user, _mediatorMock.Object);
+
+        result.Should().HaveCount(1);
+        result![0].UserId.Should().Be(7);
+        _mediatorMock.Verify(m => m.Send(
+            It.Is<GetMyPedidosQuery>(q => q.UserId == 7), It.IsAny<CancellationToken>()), Times.Once);
+        _mediatorMock.Verify(m => m.Send(
+            It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()), Times.Never,
+            "misPedidos jamás debe listar todos los pedidos");
+    }
+
+    [Test]
+    public async Task GetMisPedidos_SinClaim_LanzaError()
+    {
+        var sinClaims = new ClaimsPrincipal(new ClaimsIdentity()); // anónimo
+
+        var act = () => _query.GetMisPedidos(sinClaims, _mediatorMock.Object);
+
+        await act.Should().ThrowAsync<GraphQLException>()
+            .WithMessage("*NameIdentifier*");
+        _mediatorMock.Verify(m => m.Send(It.IsAny<GetMyPedidosQuery>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion

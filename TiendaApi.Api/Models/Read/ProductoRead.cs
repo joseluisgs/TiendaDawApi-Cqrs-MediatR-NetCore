@@ -63,7 +63,7 @@ public class ProductoRead
 
 /// <summary>
 /// Sub-documento de categoría embebido en <see cref="ProductoRead"/>.
-/// Solo conserva lo mínimo: id y nombre (el contrato GraphQL necesita el nombre).
+/// Conserva lo mínimo que sirve REST/GraphQL: id, nombre y descripción.
 /// </summary>
 public class CategoriaRead
 {
@@ -72,11 +72,18 @@ public class CategoriaRead
 
     /// <summary>Nombre actual de la categoría (se actualiza con <c>updateMany</c> al renombrar).</summary>
     public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Descripción de la categoría (null en documentos antiguos: campo
+    /// aditivo, se rellena en cada sincronización con PostgreSQL).
+    /// </summary>
+    public string? Descripcion { get; set; }
 }
 
 /// <summary>
 /// Sub-documento de proveedor embebido en <see cref="ProductoRead"/>.
-/// Solo conserva lo mínimo: código y nombre. Codigo vacío cuando el producto no tiene proveedor.
+/// Conserva lo mínimo que sirve REST/GraphQL: código, nombre y descripción.
+/// Codigo vacío cuando el producto no tiene proveedor.
 /// </summary>
 public class ProveedorRead
 {
@@ -85,4 +92,10 @@ public class ProveedorRead
 
     /// <summary>Nombre actual del proveedor.</summary>
     public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Descripción del proveedor (null en documentos antiguos: campo
+    /// aditivo, se rellena en cada sincronización con PostgreSQL).
+    /// </summary>
+    public string? Descripcion { get; set; }
 }

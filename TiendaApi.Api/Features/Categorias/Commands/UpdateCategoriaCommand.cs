@@ -58,7 +58,7 @@ public class UpdateCategoriaCommandHandler(
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a Mongo), DESPUÉS invalidar.
         // El Publish renombra categoriaNombre embebido en productos_read.
         await mediator.Publish(
-            new CategoriaActualizadaNotification(request.Id, dto.Nombre), cancellationToken);
+            new CategoriaActualizadaNotification(request.Id, dto.Nombre, dto.Descripcion), cancellationToken);
 
         await cacheService.RemoveAsync($"categorias:{request.Id}");
         // Invalidar también productos (los DTO llevan categoriaNombre)
