@@ -47,7 +47,7 @@ public class ProductoReportTask(
     }
 
     /// <summary>
-    /// Obtiene productos creados en los ǧltimos X d��as.
+    /// Obtiene productos creados en los últimos X días.
     /// </summary>
     private async Task<Result<IEnumerable<ProductoRead>, DomainError>> GetRecentlyCreatedProductsAsync()
     {
@@ -60,7 +60,7 @@ public class ProductoReportTask(
     }
 
     /// <summary>
-    /// Env��a emails a todos los usuarios activos con los productos nuevos.
+    /// Envía emails a todos los usuarios activos con los productos nuevos.
     /// </summary>
     private async Task<UnitResult<DomainError>> SendEmailsToActiveUsersAsync(IEnumerable<ProductoRead> productos)
     {

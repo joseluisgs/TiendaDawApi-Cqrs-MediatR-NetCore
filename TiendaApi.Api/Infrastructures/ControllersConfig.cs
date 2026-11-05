@@ -7,12 +7,12 @@ using Serilog;
 namespace TiendaApi.Api.Infrastructures;
 
 /// <summary>
-/// Extensiones de configuraciÃ³n de controladores MVC y validaciÃ³n FluentValidation.
+/// Extensiones de configuración de controladores MVC y validación FluentValidation.
 /// </summary>
 public static class ControllersConfig
 {
     /// <summary>
-    /// Configura los controladores MVC con negociaciÃ³n de contenido.
+    /// Configura los controladores MVC con negociación de contenido.
     /// </summary>
     public static IMvcBuilder AddMvcControllers(this IServiceCollection services)
     {
@@ -30,18 +30,18 @@ public static class ControllersConfig
     }
 
     /// <summary>
-    /// Registra validadores y configura auto-validaciÃ³n en el pipeline MVC.
+    /// Registra validadores y configura auto-validación en el pipeline MVC.
     /// </summary>
     /// <remarks>
-    /// Data Annotations valida formato bÃ¡sico (requerido, rango, email). FluentValidation complementa
-    /// con reglas de negocio complejas (condicionales, mÃºltiples campos). Ambos se ejecutan antes del controller.
+    /// Data Annotations valida formato básico (requerido, rango, email). FluentValidation complementa
+    /// con reglas de negocio complejas (condicionales, múltiples campos). Ambos se ejecutan antes del controller.
     /// </remarks>
     public static IServiceCollection AddFluentValidationServices(this IServiceCollection services)
     {
         Log.Information("âœ“ Configurando FluentValidation...");
         return services
             .AddValidatorsFromAssemblyContaining<Program>()  // Busca validadores en el ensamblado
-            .AddFluentValidationAutoValidation()            // Auto-evalÃºa en cada request (ahorra validaciÃ³n manual en servicio)
+            .AddFluentValidationAutoValidation()            // Auto-evalúa en cada request (ahorra validación manual en servicio)
             .AddFluentValidationClientsideAdapters();         // Genera scripts JS para cliente (opcional para REST)
     }
 }
