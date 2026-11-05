@@ -181,9 +181,9 @@ public class SqlSeeder
 
     private async Task SeedProveedoresAsync()
     {
-        // Los cÃ³digos son fijos y no aleatorios: la semilla debe ser determinista para que
-        // los tests E2E puedan referenciarlos. La generaciÃ³n aleatoria estilo YouTube es el
-        // camino por defecto cuando un cliente crea un proveedor sin enviar cÃ³digo.
+        // Los códigos son fijos y no aleatorios: la semilla debe ser determinista para que
+        // los tests E2E puedan referenciarlos. La generación aleatoria estilo YouTube es el
+        // camino por defecto cuando un cliente crea un proveedor sin enviar código.
         var proveedores = new List<Proveedor>
             {
                 new()
@@ -200,7 +200,7 @@ public class SqlSeeder
                 {
                     Codigo = "Distribuc01",
                     Nombre = "Distribuciones DAW",
-                    Descripcion = "Distribuidor general de electrÃ³nica y perifÃ©ricos",
+                    Descripcion = "Distribuidor general de electrónica y periféricos",
                     Contacto = "pedidos@distribucionesdaw.example",
                     IsDeleted = false,
                     CreatedAt = DateTime.UtcNow,
@@ -209,8 +209,8 @@ public class SqlSeeder
                 new()
                 {
                     Codigo = "Editorial01",
-                    Nombre = "Editorial CÃ³digo Limpio",
-                    Descripcion = "LibrerÃ­a tÃ©cnica especializada",
+                    Nombre = "Editorial Código Limpio",
+                    Descripcion = "Librería técnica especializada",
                     Contacto = "ventas@editorialcodigolimpio.example",
                     IsDeleted = false,
                     CreatedAt = DateTime.UtcNow,
