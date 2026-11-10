@@ -858,7 +858,7 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 ├── TiendaApi.Clients/                # Clientes frontend de ejemplo
 │   └── ClientBlazor/                 # Cliente Blazor (ClientBlazor.Cliente, .E2E, .Tests)
 │
-├── doc/                              # Documentación técnica (32 guías)
+├── doc/                              # Documentación técnica (34 guías)
 └── README.md                         # Este archivo
 ```
 
