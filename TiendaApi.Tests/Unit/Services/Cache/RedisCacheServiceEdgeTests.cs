@@ -8,15 +8,13 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Services.Cache;
 
-public class RedisCacheServiceEdgeTests
-{
+public class RedisCacheServiceEdgeTests {
     private Mock<IDistributedCache> _mockCache = null!;
     private Mock<ILogger<RedisCacheService>> _mockLogger = null!;
     private RedisCacheService _cacheService = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mockCache = new Mock<IDistributedCache>();
         _mockLogger = new Mock<ILogger<RedisCacheService>>();
         _cacheService = new RedisCacheService(
@@ -28,8 +26,7 @@ public class RedisCacheServiceEdgeTests
     #region GetAsync Edge Cases
 
     [Test]
-    public async Task GetAsync_CacheMiss_RetornaNull()
-    {
+    public async Task GetAsync_CacheMiss_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Returns((byte[]?)null);
 
@@ -39,8 +36,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task GetAsync_ArrayVacio_RetornaNull()
-    {
+    public async Task GetAsync_ArrayVacio_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Returns(Array.Empty<byte>());
 
@@ -50,8 +46,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task GetAsync_ConExcepcion_RetornaNull()
-    {
+    public async Task GetAsync_ConExcepcion_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Throws(new Exception("Cache error"));
 
@@ -65,15 +60,13 @@ public class RedisCacheServiceEdgeTests
     #region SetAsync Edge Cases
 
     [Test]
-    public async Task SetAsync_ConKeyVacio_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConKeyVacio_NoLanzaExcepcion() {
         var act = async () => await _cacheService.SetAsync("", "value");
         await act.Should().NotThrowAsync();
     }
 
     [Test]
-    public async Task SetAsync_ConExpiracionNegativa_UsaExpiracionPorDefecto()
-    {
+    public async Task SetAsync_ConExpiracionNegativa_UsaExpiracionPorDefecto() {
         var key = "test-key";
         var value = "test-value";
         var negativeExpiration = TimeSpan.FromMinutes(-1);
@@ -83,8 +76,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConExpiracionCero_UsaExpiracionPorDefecto()
-    {
+    public async Task SetAsync_ConExpiracionCero_UsaExpiracionPorDefecto() {
         var key = "test-key";
         var value = "test-value";
 
@@ -93,8 +85,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConExpiracionMuyLarga_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConExpiracionMuyLarga_NoLanzaExcepcion() {
         var key = "test-key";
         var value = "test-value";
         var longExpiration = TimeSpan.FromDays(365);
@@ -104,15 +95,13 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConObjetoVacio_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConObjetoVacio_NoLanzaExcepcion() {
         var act = async () => await _cacheService.SetAsync("key", new EmptyCacheData());
         await act.Should().NotThrowAsync();
     }
 
     [Test]
-    public async Task SetAsync_ConPropiedadesNulas_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConPropiedadesNulas_NoLanzaExcepcion() {
         var data = new CacheTestDataWithNulls { Id = 1, Name = null };
 
         var act = async () => await _cacheService.SetAsync("key", data);
@@ -120,15 +109,13 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConColeccionVacia_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConColeccionVacia_NoLanzaExcepcion() {
         var act = async () => await _cacheService.SetAsync("key", new List<string>());
         await act.Should().NotThrowAsync();
     }
 
     [Test]
-    public async Task SetAsync_ConDiccionario_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConDiccionario_NoLanzaExcepcion() {
         var dict = new Dictionary<string, int> { { "key1", 1 }, { "key2", 2 } };
 
         var act = async () => await _cacheService.SetAsync("key", dict);
@@ -136,8 +123,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConCaracteresEspeciales_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConCaracteresEspeciales_NoLanzaExcepcion() {
         var specialChars = "value with \"quotes\" & <brackets>";
         var key = "key:with:special:chars";
 
@@ -146,8 +132,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task SetAsync_ConUnicode_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConUnicode_NoLanzaExcepcion() {
         var unicodeValue = "Value with áéí characters 🎉";
 
         var act = async () => await _cacheService.SetAsync("key", unicodeValue);
@@ -159,15 +144,13 @@ public class RedisCacheServiceEdgeTests
     #region RemoveAsync Edge Cases
 
     [Test]
-    public async Task RemoveAsync_ConKeyVacio_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConKeyVacio_NoLanzaExcepcion() {
         var act = async () => await _cacheService.RemoveAsync("");
         await act.Should().NotThrowAsync();
     }
 
     [Test]
-    public async Task RemoveAsync_ConKeyMuyLargo_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConKeyMuyLargo_NoLanzaExcepcion() {
         var longKey = new string('A', 10000);
 
         var act = async () => await _cacheService.RemoveAsync(longKey);
@@ -175,8 +158,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task RemoveAsync_ConKeyInexistente_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConKeyInexistente_NoLanzaExcepcion() {
         _mockCache.Setup(c => c.RemoveAsync("non-existent", It.IsAny<CancellationToken>()))
             .Throws(new Exception("Key not found"));
 
@@ -185,8 +167,7 @@ public class RedisCacheServiceEdgeTests
     }
 
     [Test]
-    public async Task RemoveAsync_ConExcepcion_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConExcepcion_NoLanzaExcepcion() {
         _mockCache.Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Throws(new Exception("Cache error"));
 
@@ -197,29 +178,24 @@ public class RedisCacheServiceEdgeTests
     #endregion
 }
 
-public class CacheTestData
-{
+public class CacheTestData {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
 }
 
-public class NestedCacheData
-{
+public class NestedCacheData {
     public int Id { get; set; }
     public NestedCacheObject? Nested { get; set; }
 }
 
-public class NestedCacheObject
-{
+public class NestedCacheObject {
     public string Value { get; set; } = string.Empty;
 }
 
-public class EmptyCacheData
-{
+public class EmptyCacheData {
 }
 
-public class CacheTestDataWithNulls
-{
+public class CacheTestDataWithNulls {
     public int Id { get; set; }
     public string? Name { get; set; }
 }

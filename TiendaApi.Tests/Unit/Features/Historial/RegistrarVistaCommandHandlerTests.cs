@@ -17,19 +17,16 @@ namespace TiendaApi.Tests.Unit.Features.Historial;
 /// de verdad) y la escritura en serie no cambia el resultado del command: su
 /// contrato es success siempre que el producto exista (el POST /vista, 204).
 /// </summary>
-public class RegistrarVistaCommandHandlerTests
-{
+public class RegistrarVistaCommandHandlerTests {
     private readonly Mock<IHistorialService> _service = new();
     private readonly RegistrarVistaCommandHandler _handler;
 
-    public RegistrarVistaCommandHandlerTests()
-    {
+    public RegistrarVistaCommandHandlerTests() {
         _handler = new RegistrarVistaCommandHandler(_service.Object);
     }
 
     [Test]
-    public async Task Handle_RegistroOk_DevuelveSuccess()
-    {
+    public async Task Handle_RegistroOk_DevuelveSuccess() {
         _service.Setup(s => s.RegistrarVistaAsync(2, 1)).ReturnsAsync(UnitResult.Success<DomainError>());
 
         var result = await _handler.Handle(new RegistrarVistaCommand(2, 1), CancellationToken.None);
@@ -38,8 +35,7 @@ public class RegistrarVistaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_DevuelveNotFoundDePostgres()
-    {
+    public async Task Handle_ProductoNoExiste_DevuelveNotFoundDePostgres() {
         _service.Setup(s => s.RegistrarVistaAsync(2, 999))
             .ReturnsAsync(UnitResult.Failure<DomainError>(ProductoError.NotFound(999)));
 
@@ -50,8 +46,7 @@ public class RegistrarVistaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_CassandraCaida_NoLanza_DevuelveSuccess()
-    {
+    public async Task Handle_CassandraCaida_NoLanza_DevuelveSuccess() {
         // Cadena completa: command -> HistorialService REAL -> repo que REVIENTA.
         var productoRepository = new Mock<IProductoRepository>();
         productoRepository.Setup(r => r.FindByIdAsync(1))

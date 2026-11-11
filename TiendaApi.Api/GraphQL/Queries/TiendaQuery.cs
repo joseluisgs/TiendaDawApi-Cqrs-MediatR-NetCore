@@ -23,16 +23,14 @@ namespace TiendaApi.Api.GraphQL.Queries;
 ///
 /// 🎓 Seguridad: GraphQL solo expone DTOs, nunca entidades del modelo de escritura.
 /// </summary>
-public class TiendaQuery
-{
+public class TiendaQuery {
     /// <summary>Obtiene todos los productos.</summary>
     /// <param name="mediator">Mediator para enviar queries CQRS.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Lista de productos (DTOs).</returns>
     public async Task<IReadOnlyList<ProductoDto>> GetProductos(
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new GetAllProductosListQuery(), ct);
         if (result.IsFailure)
             throw new Exception(result.Error.Message);
@@ -48,8 +46,7 @@ public class TiendaQuery
     public async Task<ProductoDto?> GetProducto(
         long id,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new GetProductoByIdQuery(id), ct);
         if (result.IsFailure)
             return null;
@@ -67,8 +64,7 @@ public class TiendaQuery
         [Service] IMediator mediator,
         int page = 1,
         int size = 10,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         // GraphQL expone paginación base 1; el repositorio trabaja con base 0
         var filter = new ProductoFilterDto(
             Nombre: null,
@@ -93,8 +89,7 @@ public class TiendaQuery
     /// <returns>Lista de categorías (DTOs).</returns>
     public async Task<IReadOnlyList<CategoriaDto>> GetCategorias(
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new GetAllCategoriasListQuery(), ct);
         if (result.IsFailure)
             throw new Exception(result.Error.Message);
@@ -110,8 +105,7 @@ public class TiendaQuery
     public async Task<CategoriaDto?> GetCategoria(
         long id,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new GetCategoriaByIdQuery(id), ct);
         if (result.IsFailure)
             return null;
@@ -129,11 +123,9 @@ public class TiendaQuery
         [Service] IMediator mediator,
         int page = 1,
         int size = 10,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         // GraphQL expone paginación base 1; el repositorio trabaja con base 0
-        var filter = new CategoriaFilterDto
-        {
+        var filter = new CategoriaFilterDto {
             Nombre = null,
             Page = Math.Max(page - 1, 0),
             Size = size
@@ -156,8 +148,7 @@ public class TiendaQuery
     [Authorize(policy: "AdminOnly")]
     public async Task<IReadOnlyList<PedidoDto>> GetPedidos(
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new GetAllPedidosListQuery(), ct);
         if (result.IsFailure)
             throw new Exception(result.Error.Message);
@@ -179,8 +170,7 @@ public class TiendaQuery
     public async Task<IReadOnlyList<PedidoDto>> GetMisPedidos(
         ClaimsPrincipal user,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (claim is null || !long.TryParse(claim, out var userId))
             throw new GraphQLException("No se pudo identificar al usuario autenticado (falta el claim NameIdentifier).");

@@ -10,12 +10,10 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// 🎓 OPEN/CLOSED: el comando no necesita conocer cómo se notifica la cancelación.
 /// </summary>
 public class PedidoCanceladoSignalRHandler(IHubContext<PedidosHub> hubContext)
-    : INotificationHandler<PedidoCanceladoNotification>
-{
+    : INotificationHandler<PedidoCanceladoNotification> {
     /// <inheritdoc/>
     public Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new
-        {
+        hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new {
             pedidoId = notification.PedidoId,
             userId = notification.UserId,
             estado = "CANCELADO",

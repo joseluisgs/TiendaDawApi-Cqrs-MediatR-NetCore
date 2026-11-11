@@ -17,26 +17,22 @@ using TiendaApi.Api.Features.Users.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
-public class UsersControllerTests
-{
+public class UsersControllerTests {
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
     private UsersController _controller = null!;
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _mediator = new Mock<IMediator>();
         _controller = new UsersController(_mediator.Object, Mock.Of<ILogger<UsersController>>());
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
     }
 
     [Test]
-    public async Task GetAll_ConUsuarios_RetornaOk()
-    {
-        var response = new PagedResult<UserDto>
-        {
+    public async Task GetAll_ConUsuarios_RetornaOk() {
+        var response = new PagedResult<UserDto> {
             Items = [new UserDto(1, "user", "user@test.com", "", "USER", DateTime.UtcNow)],
             TotalCount = 1,
             Page = 1,
@@ -52,8 +48,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task GetMyProfile_SinClaim_RetornaUnauthorized()
-    {
+    public async Task GetMyProfile_SinClaim_RetornaUnauthorized() {
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
         var result = await _controller.GetMyProfile();
@@ -62,12 +57,9 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task UpdateMyAvatar_ConClaimValido_RetornaOk()
-    {
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+    public async Task UpdateMyAvatar_ConClaimValido_RetornaOk() {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "1")], "Test"))
             }
         };
@@ -83,8 +75,7 @@ public class UsersControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task GetById_Exitoso_RetornaOkConElUsuario()
-    {
+    public async Task GetById_Exitoso_RetornaOkConElUsuario() {
         var usuario = new UserDto(5, "admin", "admin@test.com", "", "ADMIN", DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<GetUserByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
@@ -95,8 +86,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task GetById_NoExiste_RetornaNotFound()
-    {
+    public async Task GetById_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<GetUserByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<UserDto, DomainError>(new NotFoundError("no existe")));
 
@@ -106,8 +96,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task Create_Exitoso_Retorna201ConLocation()
-    {
+    public async Task Create_Exitoso_Retorna201ConLocation() {
         var usuario = new UserDto(7, "nuevo", "nuevo@test.com", "", "USER", DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<CreateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
@@ -120,14 +109,11 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task GetMyProfile_ConClaim_RetornaElPerfilDelClaim()
-    {
+    public async Task GetMyProfile_ConClaim_RetornaElPerfilDelClaim() {
         // El id viene del claim de la sesión, no de la URL: el command debe
         // llevar el 42 del claim
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
             }
         };
@@ -143,8 +129,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task UpdateMyProfile_SinClaim_RetornaUnauthorized_SinLlamarAlMediator()
-    {
+    public async Task UpdateMyProfile_SinClaim_RetornaUnauthorized_SinLlamarAlMediator() {
         // Sin claim no hay "yo" que actualizar: el controller lo resuelve solo
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         var dto = new UserUpdateDto { };
@@ -158,8 +143,7 @@ public class UsersControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task Update_Exitoso_RetornaOkConElUsuario()
-    {
+    public async Task Update_Exitoso_RetornaOkConElUsuario() {
         var usuario = new UserDto(5, "admin", "admin@test.com", "", "ADMIN", DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserDto, DomainError>(usuario));
@@ -170,8 +154,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task Update_NoExiste_RetornaNotFound()
-    {
+    public async Task Update_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<UpdateUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<UserDto, DomainError>(new NotFoundError("no existe")));
 
@@ -181,13 +164,10 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task UpdateAvatar_DeUnoMismo_RetornaOk()
-    {
+    public async Task UpdateAvatar_DeUnoMismo_RetornaOk() {
         // El claim es el propio id: el usuario edita SU avatar sin rol admin
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "7")], "Test"))
             }
         };
@@ -201,14 +181,11 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task UpdateAvatar_DeOtroUsuarioSinRolAdmin_Retorna403()
-    {
+    public async Task UpdateAvatar_DeOtroUsuarioSinRolAdmin_Retorna403() {
         // Sin rol ADMIN no puede tocar el avatar de otro id: la accion corta
         // con Forbid() antes de llegar al mediator
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "7")], "Test"))
             }
         };
@@ -220,8 +197,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task Delete_Exitoso_Retorna204()
-    {
+    public async Task Delete_Exitoso_Retorna204() {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
@@ -231,8 +207,7 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task Delete_NoExiste_RetornaNotFound()
-    {
+    public async Task Delete_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteUserCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));
 
@@ -242,12 +217,9 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task UpdateMyProfile_ConClaim_Exitoso_RetornaOk()
-    {
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+    public async Task UpdateMyProfile_ConClaim_Exitoso_RetornaOk() {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
             }
         };
@@ -262,12 +234,9 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task DeleteMyProfile_ConClaim_Retorna204()
-    {
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+    public async Task DeleteMyProfile_ConClaim_Retorna204() {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
             }
         };
@@ -281,13 +250,10 @@ public class UsersControllerTests
     }
 
     [Test]
-    public async Task GetMyFeed_ConClaim_RetornaElFeed()
-    {
+    public async Task GetMyFeed_ConClaim_RetornaElFeed() {
         // El feed viene directo (no como Result): particion vacia = lista vacia
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "42")], "Test"))
             }
         };

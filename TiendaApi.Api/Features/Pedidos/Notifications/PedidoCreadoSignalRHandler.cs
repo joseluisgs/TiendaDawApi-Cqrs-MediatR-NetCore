@@ -9,15 +9,12 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// Handler que emite por SignalR el alta de un pedido.
 /// </summary>
 public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
-    : INotificationHandler<PedidoCreadoNotification>
-{
+    : INotificationHandler<PedidoCreadoNotification> {
     /// <inheritdoc/>
-    public async Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken) {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoCreado para ID: {PedidoId}", notification.Pedido.Id);
 
-        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoCreado", new
-        {
+        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoCreado", new {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
             estado = notification.Pedido.Estado,

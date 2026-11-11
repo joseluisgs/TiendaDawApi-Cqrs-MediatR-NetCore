@@ -8,18 +8,14 @@ using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
-public class GetAllProductosQueryHandlerTests
-{
+public class GetAllProductosQueryHandlerTests {
     [Test]
-    public async Task Handle_ProductosExisten_DevuelvePagedResult()
-    {
+    public async Task Handle_ProductosExisten_DevuelvePagedResult() {
         var service = new Mock<IProductoService>();
         var filter = new ProductoFilterDto(null, null, null, null, null, 0, 10, "id", "asc");
 
-        service.Setup(s => s.GetPagedAsync(filter)).ReturnsAsync(new PagedResult<ProductoDto>
-        {
-            Items = new List<ProductoDto>
-            {
+        service.Setup(s => s.GetPagedAsync(filter)).ReturnsAsync(new PagedResult<ProductoDto> {
+            Items = new List<ProductoDto> {
                 new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow),
                 new(2, "Mouse", "", 25m, 50, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow)
             },
@@ -38,13 +34,11 @@ public class GetAllProductosQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinProductos_DevuelveListaVacia()
-    {
+    public async Task Handle_SinProductos_DevuelveListaVacia() {
         var service = new Mock<IProductoService>();
         var filter = new ProductoFilterDto(null, null, null, null, null, 0, 10, "id", "asc");
 
-        service.Setup(s => s.GetPagedAsync(filter)).ReturnsAsync(new PagedResult<ProductoDto>
-        {
+        service.Setup(s => s.GetPagedAsync(filter)).ReturnsAsync(new PagedResult<ProductoDto> {
             Items = Enumerable.Empty<ProductoDto>(),
             TotalCount = 0,
             Page = 1,

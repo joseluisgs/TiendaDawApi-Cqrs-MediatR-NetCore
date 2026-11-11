@@ -18,8 +18,7 @@ namespace TiendaApi.Tests.Unit.Features.Pedidos;
 /// dueño + admins. Regresión del bug de broadcast (cualquier usuario autenticado
 /// veía todos los pedidos) y de los eventos que solo tenían un canal.
 /// </summary>
-public class PedidosNotificationHandlersTests
-{
+public class PedidosNotificationHandlersTests {
     private const long UserId = 1;
 
     private Mock<IHubContext<PedidosHub>> _hubContext = null!;
@@ -29,8 +28,7 @@ public class PedidosNotificationHandlersTests
     private Mock<PedidosWebSocketHandler> _webSocket = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _userProxy = new Mock<IClientProxy>();
         _adminsProxy = new Mock<IClientProxy>();
         _clients = new Mock<IHubClients>();
@@ -62,8 +60,7 @@ public class PedidosNotificationHandlersTests
         CreatedAt: DateTime.UtcNow);
 
     /// <summary>Auxiliar: verifica que el envío fue a los dos grupos y jamás a Clients.All.</summary>
-    private void VerificarGruposSelectivos(string metodo)
-    {
+    private void VerificarGruposSelectivos(string metodo) {
         _userProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
         _adminsProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
         _clients.Verify(c => c.All, Times.Never);
@@ -72,8 +69,7 @@ public class PedidosNotificationHandlersTests
     #region SignalR: grupos selectivos (nunca Clients.All)
 
     [Test]
-    public async Task PedidoCreadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task PedidoCreadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoCreadoSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new PedidoCreadoNotification(UnPedido()), CancellationToken.None);
@@ -82,8 +78,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task EstadoPedidoActualizadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task EstadoPedidoActualizadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new EstadoPedidoActualizadoSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new EstadoPedidoActualizadoNotification(UnPedido(), "Enviado"), CancellationToken.None);
@@ -92,8 +87,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoActualizadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task PedidoActualizadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoActualizadoSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new PedidoActualizadoNotification(UnPedido()), CancellationToken.None);
@@ -102,8 +96,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoEliminadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task PedidoEliminadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoEliminadoSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
@@ -112,8 +105,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoCanceladoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task PedidoCanceladoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoCanceladoSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null), CancellationToken.None);
@@ -122,8 +114,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoModificadoPorAdminSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast()
-    {
+    public async Task PedidoModificadoPorAdminSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoModificadoPorAdminSignalRHandler(_hubContext.Object);
 
         await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido()), CancellationToken.None);
@@ -136,8 +127,7 @@ public class PedidosNotificationHandlersTests
     #region WebSocket: dueño + admins en TODOS los eventos
 
     [Test]
-    public async Task PedidoCreadoWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task PedidoCreadoWebSocketHandler_NotificaAlDueñoYAdmins() {
         var handler = new PedidoCreadoWebSocketHandler(_webSocket.Object);
 
         await handler.Handle(new PedidoCreadoNotification(UnPedido()), CancellationToken.None);
@@ -149,8 +139,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task EstadoPedidoActualizadoWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task EstadoPedidoActualizadoWebSocketHandler_NotificaAlDueñoYAdmins() {
         // Antes no existía: los clientes WebSocket no recibían cambios de estado.
         var handler = new EstadoPedidoActualizadoWebSocketHandler(_webSocket.Object);
 
@@ -163,8 +152,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoActualizadoWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task PedidoActualizadoWebSocketHandler_NotificaAlDueñoYAdmins() {
         var handler = new PedidoActualizadoWebSocketHandler(_webSocket.Object);
 
         await handler.Handle(new PedidoActualizadoNotification(UnPedido()), CancellationToken.None);
@@ -175,8 +163,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoEliminadoWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task PedidoEliminadoWebSocketHandler_NotificaAlDueñoYAdmins() {
         var handler = new PedidoEliminadoWebSocketHandler(_webSocket.Object);
 
         await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
@@ -187,8 +174,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoCanceladoWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task PedidoCanceladoWebSocketHandler_NotificaAlDueñoYAdmins() {
         // Antes no existía: los clientes WebSocket no recibían cancelaciones.
         var handler = new PedidoCanceladoWebSocketHandler(_webSocket.Object);
 
@@ -201,8 +187,7 @@ public class PedidosNotificationHandlersTests
     }
 
     [Test]
-    public async Task PedidoModificadoPorAdminWebSocketHandler_NotificaAlDueñoYAdmins()
-    {
+    public async Task PedidoModificadoPorAdminWebSocketHandler_NotificaAlDueñoYAdmins() {
         var handler = new PedidoModificadoPorAdminWebSocketHandler(_webSocket.Object);
 
         await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido()), CancellationToken.None);

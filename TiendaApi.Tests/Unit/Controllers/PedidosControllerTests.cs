@@ -15,24 +15,21 @@ using TiendaApi.Api.Features.Pedidos.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
-public class PedidosControllerTests
-{
+public class PedidosControllerTests {
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
     private PedidosController _controller = null!;
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _mediator = new Mock<IMediator>();
         _controller = new PedidosController(_mediator.Object, Mock.Of<ILogger<PedidosController>>());
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
     }
 
     [Test]
-    public async Task GetAllPedidos_Admin_RetornaOk()
-    {
+    public async Task GetAllPedidos_Admin_RetornaOk() {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IEnumerable<PedidoDto>, DomainError>([]));
 
@@ -42,8 +39,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidos_SinAutenticacion_RetornaUnauthorized()
-    {
+    public async Task GetMyPedidos_SinAutenticacion_RetornaUnauthorized() {
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
         var result = await _controller.GetMyPedidos();
@@ -52,12 +48,9 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task CreateMyPedido_ConClaimValido_RetornaCreated()
-    {
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+    public async Task CreateMyPedido_ConClaimValido_RetornaCreated() {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "1")], "Test"))
             }
         };
@@ -73,8 +66,7 @@ public class PedidosControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task GetPedidoById_Exitoso_RetornaOkConElPedido()
-    {
+    public async Task GetPedidoById_Exitoso_RetornaOkConElPedido() {
         var pedido = new PedidoDto("123", 1, new DestinatarioDto(), [], 10m, "PENDIENTE", null, DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<GetPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
@@ -85,8 +77,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetPedidoById_NoExiste_RetornaNotFound()
-    {
+    public async Task GetPedidoById_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<GetPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
@@ -96,8 +87,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetAllPedidos_ConErrorDelHandler_Retorna500()
-    {
+    public async Task GetAllPedidos_ConErrorDelHandler_Retorna500() {
         // El listado admin no tiene errores de usuario: cualquier failure del
         // handler se traduce en 500 con el mensaje
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()))
@@ -110,8 +100,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task DeletePedidoAdmin_Exitoso_Retorna204()
-    {
+    public async Task DeletePedidoAdmin_Exitoso_Retorna204() {
         _mediator.Setup(m => m.Send(It.IsAny<DeletePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
@@ -121,8 +110,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task DeletePedidoAdmin_NoExiste_RetornaNotFound()
-    {
+    public async Task DeletePedidoAdmin_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<DeletePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));
 
@@ -137,12 +125,9 @@ public class PedidosControllerTests
     /// Pone la sesion del usuario en el context del controller (mismo patron
     /// que los tests inline de "me/": claim NameIdentifier numerico).
     /// </summary>
-    private void AutenticarComo(long userId)
-    {
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
+    private void AutenticarComo(long userId) {
+        _controller.ControllerContext = new ControllerContext {
+            HttpContext = new DefaultHttpContext {
                 User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
             }
         };
@@ -152,11 +137,9 @@ public class PedidosControllerTests
         new(id, 1, new DestinatarioDto(), [], 10m, "PENDIENTE", null, DateTime.UtcNow);
 
     [Test]
-    public async Task GetAllPedidosPaged_Exitoso_RetornaPaginaConLinkHeader()
-    {
+    public async Task GetAllPedidosPaged_Exitoso_RetornaPaginaConLinkHeader() {
         // Pagina 2 de 5: el controller anade el header Link de navegacion
-        var pagina = new PagedResult<PedidoDto>
-        {
+        var pagina = new PagedResult<PedidoDto> {
             Items = [UnPedido()],
             TotalCount = 50,
             Page = 2,
@@ -172,8 +155,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetAllPedidosPaged_ErrorDelHandler_Retorna500()
-    {
+    public async Task GetAllPedidosPaged_ErrorDelHandler_Retorna500() {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PagedResult<PedidoDto>, DomainError>(new NotFoundError("fallo")));
 
@@ -184,8 +166,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task UpdatePedidoAdmin_Exitoso_RetornaOkConElPedido()
-    {
+    public async Task UpdatePedidoAdmin_Exitoso_RetornaOkConElPedido() {
         var pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
@@ -196,8 +177,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task UpdatePedidoAdmin_NoExiste_RetornaNotFound()
-    {
+    public async Task UpdatePedidoAdmin_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
@@ -207,8 +187,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task UpdatePedidoEstado_Exitoso_RetornaOkConElPedido()
-    {
+    public async Task UpdatePedidoEstado_Exitoso_RetornaOkConElPedido() {
         var pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoEstadoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
@@ -220,8 +199,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task UpdatePedidoEstado_NoExiste_RetornaNotFound()
-    {
+    public async Task UpdatePedidoEstado_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoEstadoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
@@ -231,8 +209,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidos_ConClaim_RetornaLista()
-    {
+    public async Task GetMyPedidos_ConClaim_RetornaLista() {
         AutenticarComo(1);
         var pedidos = new List<PedidoDto> { UnPedido() };
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidosQuery>(), It.IsAny<CancellationToken>()))
@@ -246,11 +223,9 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidosPaged_ConClaim_RetornaPaginaConLink()
-    {
+    public async Task GetMyPedidosPaged_ConClaim_RetornaPaginaConLink() {
         AutenticarComo(1);
-        var pagina = new PagedResult<PedidoDto>
-        {
+        var pagina = new PagedResult<PedidoDto> {
             Items = [UnPedido()],
             TotalCount = 50,
             Page = 2,
@@ -266,8 +241,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidosPaged_SinClaim_Retorna401_SinLlamarAlMediator()
-    {
+    public async Task GetMyPedidosPaged_SinClaim_Retorna401_SinLlamarAlMediator() {
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
         var result = await _controller.GetMyPedidosPaged();
@@ -277,8 +251,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidoById_ConClaim_RetornaOk()
-    {
+    public async Task GetMyPedidoById_ConClaim_RetornaOk() {
         AutenticarComo(1);
         var pedido = UnPedido("77");
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
@@ -291,8 +264,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task GetMyPedidoById_ConClaimNoExiste_RetornaNotFound()
-    {
+    public async Task GetMyPedidoById_ConClaimNoExiste_RetornaNotFound() {
         AutenticarComo(1);
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
@@ -303,8 +275,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task UpdateMyPedido_ConClaim_RetornaOk()
-    {
+    public async Task UpdateMyPedido_ConClaim_RetornaOk() {
         AutenticarComo(1);
         var pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdateMyPedidoCommand>(), It.IsAny<CancellationToken>()))
@@ -317,8 +288,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task DeleteMyPedido_ConClaim_Retorna204()
-    {
+    public async Task DeleteMyPedido_ConClaim_Retorna204() {
         AutenticarComo(1);
         _mediator.Setup(m => m.Send(It.IsAny<DeleteMyPedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
@@ -330,8 +300,7 @@ public class PedidosControllerTests
     }
 
     [Test]
-    public async Task DeleteMyPedido_ConClaimNoExiste_RetornaNotFound()
-    {
+    public async Task DeleteMyPedido_ConClaimNoExiste_RetornaNotFound() {
         AutenticarComo(1);
         _mediator.Setup(m => m.Send(It.IsAny<DeleteMyPedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));

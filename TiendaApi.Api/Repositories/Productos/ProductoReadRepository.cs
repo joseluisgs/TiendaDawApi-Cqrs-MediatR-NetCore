@@ -18,8 +18,7 @@ public class ProductoReadRepository(
     IMongoDatabase database,
     IConfiguration configuration,
     ILogger<ProductoReadRepository> logger
-) : IProductoReadRepository
-{
+) : IProductoReadRepository {
     private readonly string _collectionName =
         configuration["MongoDbSettings:ProductosCollection"] ?? "productos_read";
 
@@ -27,8 +26,7 @@ public class ProductoReadRepository(
         database.GetCollection<ProductoRead>(_collectionName);
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<ProductoRead>> FindAllAsync()
-    {
+    public async Task<IEnumerable<ProductoRead>> FindAllAsync() {
         logger.LogDebug("Buscando todos los productos (read model)");
         return await Collection
             .Find(Builders<ProductoRead>.Filter.Eq(p => p.IsDeleted, false))
@@ -37,8 +35,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<(IEnumerable<ProductoRead> Items, int TotalCount)> FindAllPagedAsync(ProductoFilterDto filter)
-    {
+    public async Task<(IEnumerable<ProductoRead> Items, int TotalCount)> FindAllPagedAsync(ProductoFilterDto filter) {
         logger.LogDebug("Buscando productos paginados (read model): {@Filter}", filter);
 
         var builder = Builders<ProductoRead>.Filter;
@@ -82,8 +79,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<ProductoRead?> FindByIdAsync(long id)
-    {
+    public async Task<ProductoRead?> FindByIdAsync(long id) {
         logger.LogDebug("Buscando producto por ID (read model): {Id}", id);
         return await Collection
             .Find(p => p.Id == id && !p.IsDeleted)
@@ -91,8 +87,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<ProductoRead>> FindByCategoriaIdAsync(long categoriaId)
-    {
+    public async Task<IEnumerable<ProductoRead>> FindByCategoriaIdAsync(long categoriaId) {
         logger.LogDebug("Buscando productos por categoría (read model): {CategoriaId}", categoriaId);
         return await Collection
             .Find(p => p.CategoriaId == categoriaId && !p.IsDeleted)
@@ -100,8 +95,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<ProductoRead>> GetRecentlyCreatedAsync(int days)
-    {
+    public async Task<IEnumerable<ProductoRead>> GetRecentlyCreatedAsync(int days) {
         var since = DateTime.UtcNow.AddDays(-days);
         logger.LogDebug("Buscando productos recientes (read model) desde: {Since}", since);
         return await Collection
@@ -111,8 +105,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task UpsertAsync(ProductoRead producto)
-    {
+    public async Task UpsertAsync(ProductoRead producto) {
         producto.SyncAt = DateTime.UtcNow;
 
         // 🎓 Guardia de versión: solo aplicar si el dato entrante es más reciente
@@ -126,26 +119,20 @@ public class ProductoReadRepository(
         var filter = Builders<ProductoRead>.Filter.Eq(p => p.Id, producto.Id)
                    & Builders<ProductoRead>.Filter.Lte(p => p.UpdatedAt, producto.UpdatedAt);
 
-        try
-        {
+        try {
             var result = await Collection.ReplaceOneAsync(
                 filter,
                 producto,
                 new ReplaceOptions { IsUpsert = true });
 
-            if (result.MatchedCount == 0 && result.UpsertedId is null)
-            {
+            if (result.MatchedCount == 0 && result.UpsertedId is null) {
                 logger.LogDebug(
                     "Upsert omitido (dato más reciente ya presente): {Id}, UpdatedAt entrante={UpdatedAt}",
                     producto.Id, producto.UpdatedAt);
-            }
-            else
-            {
+            } else {
                 logger.LogDebug("Producto sincronizado en MongoDB (upsert): {Id}", producto.Id);
             }
-        }
-        catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
-        {
+        } catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000) {
             // E11000: el documento existente tiene UpdatedAt más reciente,
             // el filtro no coincide y el upsert intenta insertar con _id duplicado.
             // Es el comportamiento esperado de la guardia de versión — omitir a propósito.
@@ -156,8 +143,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task SoftDeleteAsync(long id)
-    {
+    public async Task SoftDeleteAsync(long id) {
         var now = DateTime.UtcNow;
         await Collection.UpdateOneAsync(
             p => p.Id == id,
@@ -169,8 +155,7 @@ public class ProductoReadRepository(
     }
 
     /// <inheritdoc/>
-    public async Task UpdateCategoriaNombreAsync(long categoriaId, string nombre, string? descripcion)
-    {
+    public async Task UpdateCategoriaNombreAsync(long categoriaId, string nombre, string? descripcion) {
         var result = await Collection.UpdateManyAsync(
             p => p.Categoria.Id == categoriaId,
             Builders<ProductoRead>.Update
@@ -183,14 +168,12 @@ public class ProductoReadRepository(
     }
 
     /// <summary>Whitelist de orden — idéntico a ApplySorting del repositorio de PostgreSQL.</summary>
-    private static SortDefinition<ProductoRead> ApplySorting(string sortBy, string direction)
-    {
+    private static SortDefinition<ProductoRead> ApplySorting(string sortBy, string direction) {
         var isDescending = direction.Equals("desc", StringComparison.OrdinalIgnoreCase);
 
         // Nombres de elemento BSON (convención por defecto: nombre de la propiedad;
         // el Id con [BsonId] se serializa como "_id"; Categoria.Nombre es un camino anidado).
-        var field = sortBy.ToLowerInvariant() switch
-        {
+        var field = sortBy.ToLowerInvariant() switch {
             "nombre" => "Nombre",
             "precio" => "Precio",
             "stock" => "Stock",

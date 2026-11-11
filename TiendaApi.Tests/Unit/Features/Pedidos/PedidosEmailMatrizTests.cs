@@ -12,10 +12,8 @@ namespace TiendaApi.Tests.Unit.Features.Pedidos;
 /// el USUARIO recibe todo lo que pasa a su pedido y el ADMIN solo lo que
 /// debe gestionar y no proviene de él (creación y cancelación por usuario).
 /// </summary>
-public class PedidosEmailMatrizTests
-{
-    private static DestinatarioDto UnDestinatario(string email = "cliente@test.com") => new()
-    {
+public class PedidosEmailMatrizTests {
+    private static DestinatarioDto UnDestinatario(string email = "cliente@test.com") => new() {
         NombreCompleto = "María García",
         Email = email,
         Direccion = new DireccionDto { Calle = "Gran Vía", Ciudad = "Madrid", Pais = "España" }
@@ -32,8 +30,7 @@ public class PedidosEmailMatrizTests
         CreatedAt: DateTime.UtcNow);
 
     [Test]
-    public async Task CancelacionPorUsuario_AvisoAlCliente()
-    {
+    public async Task CancelacionPorUsuario_AvisoAlCliente() {
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoCanceladoClienteEmailHandler(emailService.Object);
 
@@ -46,8 +43,7 @@ public class PedidosEmailMatrizTests
     }
 
     [Test]
-    public async Task CancelacionPorUsuario_AvisoDeGestionAlAdmin()
-    {
+    public async Task CancelacionPorUsuario_AvisoDeGestionAlAdmin() {
         var emailService = new Mock<IEmailService>();
         var configuration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
         configuration.Setup(c => c["Smtp:AdminEmail"]).Returns("admin@tienda.com");
@@ -61,8 +57,7 @@ public class PedidosEmailMatrizTests
     }
 
     [Test]
-    public async Task EliminacionPorAdmin_AvisoAlCliente()
-    {
+    public async Task EliminacionPorAdmin_AvisoAlCliente() {
         // El admin no se notifica su propia acción: solo recibe el cliente.
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoEliminadoClienteEmailHandler(emailService.Object);
@@ -77,8 +72,7 @@ public class PedidosEmailMatrizTests
     }
 
     [Test]
-    public async Task ModificacionPorAdmin_AvisoAlCliente()
-    {
+    public async Task ModificacionPorAdmin_AvisoAlCliente() {
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoModificadoPorAdminEmailHandler(emailService.Object);
 
@@ -90,8 +84,7 @@ public class PedidosEmailMatrizTests
     }
 
     [Test]
-    public async Task ModificacionPorAdmin_SinEmailDeDestinatario_NoEnvia()
-    {
+    public async Task ModificacionPorAdmin_SinEmailDeDestinatario_NoEnvia() {
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoModificadoPorAdminEmailHandler(emailService.Object);
 

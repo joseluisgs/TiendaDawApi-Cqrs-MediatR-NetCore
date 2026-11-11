@@ -115,13 +115,10 @@ app.UseSecurityHeaders();
 app.UseRateLimiting();
 
 // HTTPS + HSTS - Solo en producción (para desarrollo/testing local, permitir HTTP)
-if (!isDevelopment)
-{
+if (!isDevelopment) {
     app.UseHsts();
     app.UseHttpsRedirection();
-}
-else
-{
+} else {
     Log.Information("🔓 Modo desarrollo: HTTP permitido (sin redirección HTTPS)");
 }
 app.UseCorsPolicy();
@@ -158,8 +155,7 @@ await app.InitializeCassandraAsync(isDevelopment);
 // Seed de Cassandra (solo desarrollo): serie histórica de precios y feed de
 // ejemplo. Va DESPUÉS del esquema y con scope propio: son datos de ejemplo,
 // no un prerequisito del arranque (mismo criterio que el resto de seeders).
-if (isDevelopment)
-{
+if (isDevelopment) {
     using var cassandraScope = app.Services.CreateScope();
     var cassandraSeeder = cassandraScope.ServiceProvider.GetService<CassandraSeeder>();
     if (cassandraSeeder != null)
@@ -172,17 +168,12 @@ PrintStartupInfo(isDevelopment, configuration);
 // ▶️ ARRANQUE DE LA APLICACIÓN
 // ============================================================================
 
-try
-{
+try {
     app.Run();
-}
-catch (Exception ex)
-{
+} catch (Exception ex) {
     Log.Fatal(ex, "💥 La aplicación falló al iniciar");
     throw;
-}
-finally
-{
+} finally {
     Log.CloseAndFlush();
 }
 
@@ -192,8 +183,7 @@ finally
 // </summary>
 // <param name="isDevelopment">Indica si el entorno es de desarrollo.</param>
 // <param name="configuration">La configuración de la aplicación.</param>
-static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration)
-{
+static void PrintStartupInfo(bool isDevelopment, IConfiguration configuration) {
     var urls = configuration["ASPNETCORE_URLS"]?.Split(';') ?? new[] { "http://localhost:5000" };
     var firstUrl = urls.FirstOrDefault() ?? "http://localhost:5000";
     var protocol = firstUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "https" : "http";

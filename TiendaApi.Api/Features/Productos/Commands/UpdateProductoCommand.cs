@@ -31,21 +31,18 @@ public class UpdateProductoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>>
-{
+    : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>> {
     private const int StockBajoUmbral = 10;
 
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
-        UpdateProductoCommand request, CancellationToken cancellationToken)
-    {
+        UpdateProductoCommand request, CancellationToken cancellationToken) {
         var producto = await productoRepository.FindByIdAsync(request.Id);
         if (producto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
 
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -53,11 +50,9 @@ public class UpdateProductoCommandHandler(
         }
 
         var categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
-        if (categoriaExists is null)
-        {
+        if (categoriaExists is null) {
             return Result.Failure<ProductoDto, DomainError>(
-                ProductoError.ValidacionConCampos(new Dictionary<string, string[]>
-                {
+                ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
                     { "CategoriaId", new[] { $"La categoría con ID {request.Dto.CategoriaId} no fue encontrada" } }
                 })
             );
@@ -78,8 +73,7 @@ public class UpdateProductoCommandHandler(
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
 
-        if (dto.Stock <= StockBajoUmbral)
-        {
+        if (dto.Stock <= StockBajoUmbral) {
             await mediator.Publish(new ProductoStockBajoNotification(dto, StockBajoUmbral), cancellationToken);
         }
 

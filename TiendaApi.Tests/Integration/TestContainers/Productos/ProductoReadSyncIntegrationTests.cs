@@ -25,8 +25,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Productos;
 /// </summary>
 [TestFixture]
 [Category("Integration")]
-public class ProductoReadSyncIntegrationTests
-{
+public class ProductoReadSyncIntegrationTests {
     private static long _nextId = 50_000_000;
     private static long NewId() => Interlocked.Increment(ref _nextId);
 
@@ -39,13 +38,11 @@ public class ProductoReadSyncIntegrationTests
     private IProductoService? _productoService;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
-    {
+    public async Task OneTimeSetup() {
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
                 { "MongoDbSettings:ProductosCollection", "productos_read" },
@@ -76,8 +73,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [OneTimeTearDown]
-    public async Task OneTimeTearDown()
-    {
+    public async Task OneTimeTearDown() {
         _provider?.Dispose();
 
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
@@ -89,8 +85,7 @@ public class ProductoReadSyncIntegrationTests
             new CategoriaResumenDto(9, categoriaNombre), null, DateTime.UtcNow, DateTime.UtcNow);
 
     [Test]
-    public async Task NotificacionCreado_CreaDocumentoDesnormalizado_LegiblePorQueries()
-    {
+    public async Task NotificacionCreado_CreaDocumentoDesnormalizado_LegiblePorQueries() {
         var id = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
@@ -108,8 +103,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task NotificacionCreado_ElServicioDeLecturaLoDevuelveConMapeo()
-    {
+    public async Task NotificacionCreado_ElServicioDeLecturaLoDevuelveConMapeo() {
         var id = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
@@ -122,8 +116,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task NotificacionActualizado_ReflectionaElNuevoPrecio()
-    {
+    public async Task NotificacionActualizado_ReflectionaElNuevoPrecio() {
         var id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
@@ -137,8 +130,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task NotificacionEliminado_HaceQueDejeDeAparecerEnConsultas()
-    {
+    public async Task NotificacionEliminado_HaceQueDejeDeAparecerEnConsultas() {
         var id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
@@ -151,8 +143,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task NotificacionCategoriaActualizada_PropagaElNombreATodosLosProductos()
-    {
+    public async Task NotificacionCategoriaActualizada_PropagaElNombreATodosLosProductos() {
         var categoriaId = NewId();
         var idA = NewId();
         var idB = NewId();
@@ -173,8 +164,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task Paged_FiltroPorNombre_EsSensibleAMayusculasComoPostgres()
-    {
+    public async Task Paged_FiltroPorNombre_EsSensibleAMayusculasComoPostgres() {
         var id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(
             NuevoProducto(id) with { Nombre = $"Zurito{id}" }), CancellationToken.None);
@@ -192,8 +182,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task Paged_FiltroPorCategoria_Embebida_YOrdenPorPrecio()
-    {
+    public async Task Paged_FiltroPorCategoria_Embebida_YOrdenPorPrecio() {
         var categoriaId = NewId();
         var idBarato = NewId();
         var idCaro = NewId();
@@ -215,8 +204,7 @@ public class ProductoReadSyncIntegrationTests
     }
 
     [Test]
-    public async Task Servicio_GetAllAsync_DevuelveLosProductosCreados()
-    {
+    public async Task Servicio_GetAllAsync_DevuelveLosProductosCreados() {
         var id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 

@@ -16,8 +16,7 @@ using TiendaApi.Api.Features.Auth.Commands;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
-public class AuthControllerTests
-{
+public class AuthControllerTests {
     // Se recrean en [SetUp]: cada test parte de mocks limpios, sin arrastrar
     // invocaciones de los tests anteriores. _schemeProvider va en campo porque
     // ExternalLogin consulta sus esquemas.
@@ -28,8 +27,7 @@ public class AuthControllerTests
     private AuthController _controller = null!;
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _mediator = new Mock<IMediator>();
         _schemeProvider = new Mock<IAuthenticationSchemeProvider>();
         _authenticationService = new Mock<IAuthenticationService>();
@@ -44,8 +42,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task SignUp_ConRegistroValido_RetornaCreated()
-    {
+    public async Task SignUp_ConRegistroValido_RetornaCreated() {
         var dto = new RegisterDto { Username = "nuevo", Email = "nuevo@test.com", Password = "Password123" };
         var response = new AuthResponseDto("token", new UserDto(1, "nuevo", "nuevo@test.com", "", "USER", DateTime.UtcNow));
         _mediator.Setup(m => m.Send(It.IsAny<SignUpCommand>(), It.IsAny<CancellationToken>()))
@@ -57,8 +54,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task SignIn_ConCredencialesInvalidas_RetornaUnauthorized()
-    {
+    public async Task SignIn_ConCredencialesInvalidas_RetornaUnauthorized() {
         var dto = new LoginDto { Username = "bad", Password = "bad" };
         _mediator.Setup(m => m.Send(It.IsAny<SignInCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<AuthResponseDto, DomainError>(UnauthorizedError.InvalidCredentials()));
@@ -72,8 +68,7 @@ public class AuthControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task SignIn_ConCredencialesValidas_RetornaElToken()
-    {
+    public async Task SignIn_ConCredencialesValidas_RetornaElToken() {
         var response = new AuthResponseDto("jwt-token", new UserDto(1, "user", "user@test.com", "", "USER", DateTime.UtcNow));
         _mediator.Setup(m => m.Send(It.IsAny<SignInCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(response));
@@ -84,8 +79,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task SignUp_ConErrorDeValidacion_RetornaBadRequest()
-    {
+    public async Task SignUp_ConErrorDeValidacion_RetornaBadRequest() {
         var dto = new RegisterDto { Username = "", Email = "", Password = "" };
         _mediator.Setup(m => m.Send(It.IsAny<SignUpCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<AuthResponseDto, DomainError>(ValidationError.Create("datos invalidos")));
@@ -96,8 +90,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task ExternalLogin_ProveedorNoConfigurado_Retorna404()
-    {
+    public async Task ExternalLogin_ProveedorNoConfigurado_Retorna404() {
         // Sin esquema registrado para el proveedor no hay a donde redirigir:
         // el controller responde 404 antes de construir la Challenge
         _schemeProvider.Setup(s => s.GetSchemeAsync("Twitter"))
@@ -111,8 +104,7 @@ public class AuthControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task ExternalLogin_ProveedorValido_RetornaChallengeAlProveedor()
-    {
+    public async Task ExternalLogin_ProveedorValido_RetornaChallengeAlProveedor() {
         // Con el esquema registrado el flujo termina en Challenge: la URL de
         // callback sale de Url.Action (mockeada aqui)
         _schemeProvider.Setup(s => s.GetSchemeAsync("Google"))
@@ -130,8 +122,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task ExternalLoginCallback_SinEsquemasExternos_Retorna400()
-    {
+    public async Task ExternalLoginCallback_SinEsquemasExternos_Retorna400() {
         // Sin esquemas de proveedor registrados (solo Bearer/Cookies, que el
         // loop salta) no hay principal: el contrato del callback es un 400
         _schemeProvider.Setup(s => s.GetAllSchemesAsync())
@@ -144,8 +135,7 @@ public class AuthControllerTests
     }
 
     [Test]
-    public async Task ExternalLoginCallback_ConEsquemaAutenticado_RetornaElToken()
-    {
+    public async Task ExternalLoginCallback_ConEsquemaAutenticado_RetornaElToken() {
         // Esquema de proveedor presente + authenticate con principal -> el
         // servicio de auth local devuelve el JWT y el callback responde200
         var props = new AuthenticationProperties();

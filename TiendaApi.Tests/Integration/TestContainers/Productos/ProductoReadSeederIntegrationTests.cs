@@ -27,8 +27,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Productos;
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
-public class ProductoReadSeederIntegrationTests
-{
+public class ProductoReadSeederIntegrationTests {
     private const string DatabaseName = "it_producto_read_seed";
 
     private string _connectionString = string.Empty;
@@ -39,28 +38,24 @@ public class ProductoReadSeederIntegrationTests
     private IMongoDatabase? _mongo;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
-    {
+    public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
-    public async Task OneTimeTearDown()
-    {
+    public async Task OneTimeTearDown() {
         await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
-    public async Task Setup()
-    {
+    public async Task Setup() {
         var connectionString = _connectionString;
         var mongoConnectionString = _mongoConnectionString;
 
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", connectionString },
                 { "MongoDbSettings:ConnectionString", mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
@@ -96,25 +91,22 @@ public class ProductoReadSeederIntegrationTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
+    public void TearDown() {
         _dbContext?.Dispose();
         _provider?.Dispose();
     }
 
     [Test]
-    public async Task SeedAsync_ElProductoSembradoConservaCategoriaYProveedor()    {
+    public async Task SeedAsync_ElProductoSembradoConservaCategoriaYProveedor() {
         // Arrange: categoría + proveedor + producto con las dos claves foráneas.
-        var categoria = new Categoria
-        {
+        var categoria = new Categoria {
             Nombre = $"Categoria {Guid.NewGuid():N}"[..30],
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _dbContext!.Categorias.Add(categoria);
 
-        var proveedor = new Proveedor
-        {
+        var proveedor = new Proveedor {
             Codigo = "SeedTest001",
             Nombre = "Proveedor de la semilla",
             CreatedAt = DateTime.UtcNow,
@@ -123,8 +115,7 @@ public class ProductoReadSeederIntegrationTests
         _dbContext.Proveedores.Add(proveedor);
         await _dbContext.SaveChangesAsync();
 
-        var producto = new Producto
-        {
+        var producto = new Producto {
             Nombre = "Producto con proveedor",
             Descripcion = "Para la semilla del read model",
             Precio = 15m,
@@ -160,19 +151,16 @@ public class ProductoReadSeederIntegrationTests
     /// proveedor (aunque en PostgreSQL la clave foránea siga ahí).
     /// </summary>
     [Test]
-    public async Task JobReparador_LaReplicaConservaElProveedorDelProducto()
-    {
+    public async Task JobReparador_LaReplicaConservaElProveedorDelProducto() {
         // Arrange: producto con proveedor en PostgreSQL.
-        var categoria = new Categoria
-        {
+        var categoria = new Categoria {
             Nombre = $"Categoria {Guid.NewGuid():N}"[..30],
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _dbContext!.Categorias.Add(categoria);
 
-        var proveedor = new Proveedor
-        {
+        var proveedor = new Proveedor {
             Codigo = "JobTest0001",
             Nombre = "Proveedor del job",
             CreatedAt = DateTime.UtcNow,
@@ -181,8 +169,7 @@ public class ProductoReadSeederIntegrationTests
         _dbContext.Proveedores.Add(proveedor);
         await _dbContext.SaveChangesAsync();
 
-        var producto = new Producto
-        {
+        var producto = new Producto {
             Nombre = "Producto del job",
             Descripcion = "Para la réplica reparadora",
             Precio = 25m,
@@ -207,8 +194,7 @@ public class ProductoReadSeederIntegrationTests
         // se sondea en vez de esperar un tiempo fijo.
         var coleccion = _mongo!.GetCollection<ProductoRead>("productos_read");
         ProductoRead? leido = null;
-        for (var i = 0; i < 30 && leido is null; i++)
-        {
+        for (var i = 0; i < 30 && leido is null; i++) {
             await Task.Delay(500);
             leido = await coleccion.Find(p => p.Id == producto.Id).FirstOrDefaultAsync();
         }

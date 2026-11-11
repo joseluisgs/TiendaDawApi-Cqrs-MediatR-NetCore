@@ -27,12 +27,10 @@ public class UpdatePedidoEstadoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdatePedidoEstadoCommand, Result<PedidoDto, DomainError>>
-{
+    : IRequestHandler<UpdatePedidoEstadoCommand, Result<PedidoDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<PedidoDto, DomainError>> Handle(
-        UpdatePedidoEstadoCommand request, CancellationToken cancellationToken)
-    {
+        UpdatePedidoEstadoCommand request, CancellationToken cancellationToken) {
         var validEstados = new[] { PedidoEstado.PENDIENTE, PedidoEstado.PROCESANDO, PedidoEstado.ENVIADO, PedidoEstado.ENTREGADO, PedidoEstado.CANCELADO };
         if (!validEstados.Contains(request.NuevoEstado))
             return Result.Failure<PedidoDto, DomainError>(PedidoError.EstadoInvalido(request.NuevoEstado, validEstados));
@@ -45,7 +43,7 @@ public class UpdatePedidoEstadoCommandHandler(
         var updated = await repository.UpdateAsync(pedido);
         var dto = updated.ToDto();
 
-        
+
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);
 

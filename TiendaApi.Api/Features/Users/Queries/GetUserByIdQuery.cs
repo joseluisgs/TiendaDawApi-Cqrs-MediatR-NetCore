@@ -24,15 +24,13 @@ public class GetUserByIdQueryHandler(
     IUserRepository repository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IRequestHandler<GetUserByIdQuery, Result<UserDto, DomainError>>
-{
+    : IRequestHandler<GetUserByIdQuery, Result<UserDto, DomainError>> {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:UsuarioCacheTTLMinutes"] ?? "10"));
 
     /// <inheritdoc/>
     public async Task<Result<UserDto, DomainError>> Handle(
-        GetUserByIdQuery request, CancellationToken cancellationToken)
-    {
+        GetUserByIdQuery request, CancellationToken cancellationToken) {
         var cacheKey = $"usuarios:{request.Id}";
         var cached = await cacheService.GetAsync<UserDto>(cacheKey);
         if (cached is not null)
@@ -43,11 +41,8 @@ public class GetUserByIdQueryHandler(
             return Result.Failure<UserDto, DomainError>(UsuarioError.NotFound(request.Id));
 
         var dto = user.ToDto();
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

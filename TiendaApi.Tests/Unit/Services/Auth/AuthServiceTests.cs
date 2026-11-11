@@ -19,8 +19,7 @@ namespace TiendaApi.Tests.Unit.Services.Auth;
 [Category("Unit")]
 [Category("Service")]
 [Category("Auth")]
-public class AuthServiceTests
-{
+public class AuthServiceTests {
     private Mock<IUserRepository> _mockUserRepository = null!;
     private Mock<IJwtService> _mockJwtService = null!;
     private Mock<ILogger<AuthService>> _mockLogger = null!;
@@ -28,8 +27,7 @@ public class AuthServiceTests
     private Mock<IValidator<LoginDto>> _mockLoginValidator = null!;
     private IAuthService _authService = null!;
 
-    private void CreateService()
-    {
+    private void CreateService() {
         _authService = new AuthService(
             _mockUserRepository.Object,
             new Mock<TiendaApi.Api.Repositories.Auth.IUserLoginRepository>().Object,
@@ -41,8 +39,7 @@ public class AuthServiceTests
     }
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mockUserRepository = new Mock<IUserRepository>();
         _mockJwtService = new Mock<IJwtService>();
         _mockLogger = new Mock<ILogger<AuthService>>();
@@ -65,10 +62,8 @@ public class AuthServiceTests
     #region Tests SignUp
 
     [Test]
-    public async Task SignUpAsync_ConDatosValidos_DebeRetornarExito()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConDatosValidos_DebeRetornarExito() {
+        var registerDto = new RegisterDto {
             Username = "newuser",
             Email = "newuser@test.com",
             Password = "Password123!"
@@ -80,8 +75,7 @@ public class AuthServiceTests
         _mockUserRepository.Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync((User?)null);
 
-        var savedUser = new User
-        {
+        var savedUser = new User {
             Id = 1,
             UserName = registerDto.Username,
             Email = registerDto.Email,
@@ -103,10 +97,8 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConUsernameVacio_DebeRetornarErrorValidacion()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConUsernameVacio_DebeRetornarErrorValidacion() {
+        var registerDto = new RegisterDto {
             Username = "",
             Email = "test@test.com",
             Password = "Password123!"
@@ -114,8 +106,7 @@ public class AuthServiceTests
 
         // Configurar validator para que falle
         _mockRegisterValidator.Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Username", "El nombre de usuario es obligatorio")
             }));
 
@@ -127,18 +118,15 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConUsernameCorto_DebeRetornarErrorValidacion()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConUsernameCorto_DebeRetornarErrorValidacion() {
+        var registerDto = new RegisterDto {
             Username = "ab",
             Email = "test@test.com",
             Password = "Password123!"
         };
 
         _mockRegisterValidator.Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Username", "El nombre de usuario debe tener al menos 3 caracteres")
             }));
 
@@ -150,18 +138,15 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConEmailInvalido_DebeRetornarErrorValidacion()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConEmailInvalido_DebeRetornarErrorValidacion() {
+        var registerDto = new RegisterDto {
             Username = "testuser",
             Email = "invalidemail",
             Password = "Password123!"
         };
 
         _mockRegisterValidator.Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Email", "Debe ser un correo electrónico válido")
             }));
 
@@ -173,18 +158,15 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConPasswordCorto_DebeRetornarErrorValidacion()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConPasswordCorto_DebeRetornarErrorValidacion() {
+        var registerDto = new RegisterDto {
             Username = "testuser",
             Email = "test@test.com",
             Password = "12345"
         };
 
         _mockRegisterValidator.Setup(v => v.ValidateAsync(registerDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Password", "La contraseña debe tener al menos 8 caracteres")
             }));
 
@@ -196,17 +178,14 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConUsernameDuplicado_DebeRetornarConflicto()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConUsernameDuplicado_DebeRetornarConflicto() {
+        var registerDto = new RegisterDto {
             Username = "existinguser",
             Email = "new@test.com",
             Password = "Password123!"
         };
 
-        var existingUser = new User
-        {
+        var existingUser = new User {
             Id = 1,
             UserName = "existinguser",
             Email = "existing@test.com"
@@ -223,10 +202,8 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignUpAsync_ConEmailDuplicado_DebeRetornarConflicto()
-    {
-        var registerDto = new RegisterDto
-        {
+    public async Task SignUpAsync_ConEmailDuplicado_DebeRetornarConflicto() {
+        var registerDto = new RegisterDto {
             Username = "newuser",
             Email = "existing@test.com",
             Password = "Password123!"
@@ -235,8 +212,7 @@ public class AuthServiceTests
         _mockUserRepository.Setup(x => x.FindByUsernameAsync(It.IsAny<string>()))
             .ReturnsAsync((User?)null);
 
-        var existingUser = new User
-        {
+        var existingUser = new User {
             Id = 1,
             UserName = "existinguser",
             Email = "existing@test.com"
@@ -257,18 +233,15 @@ public class AuthServiceTests
     #region Tests SignIn
 
     [Test]
-    public async Task SignInAsync_ConCredencialesValidas_DebeRetornarExito()
-    {
-        var loginDto = new LoginDto
-        {
+    public async Task SignInAsync_ConCredencialesValidas_DebeRetornarExito() {
+        var loginDto = new LoginDto {
             Username = "testuser",
             Password = "Password123!"
         };
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123!", workFactor: 11);
 
-        var user = new User
-        {
+        var user = new User {
             Id = 1,
             UserName = "testuser",
             Email = "test@test.com",
@@ -288,17 +261,14 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignInAsync_ConUsernameVacio_DebeRetornarErrorValidacion()
-    {
-        var loginDto = new LoginDto
-        {
+    public async Task SignInAsync_ConUsernameVacio_DebeRetornarErrorValidacion() {
+        var loginDto = new LoginDto {
             Username = "",
             Password = "Password123!"
         };
 
         _mockLoginValidator.Setup(v => v.ValidateAsync(loginDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Username", "El nombre de usuario es obligatorio")
             }));
 
@@ -310,17 +280,14 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignInAsync_ConPasswordVacio_DebeRetornarErrorValidacion()
-    {
-        var loginDto = new LoginDto
-        {
+    public async Task SignInAsync_ConPasswordVacio_DebeRetornarErrorValidacion() {
+        var loginDto = new LoginDto {
             Username = "testuser",
             Password = ""
         };
 
         _mockLoginValidator.Setup(v => v.ValidateAsync(loginDto, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(new[]
-            {
+            .ReturnsAsync(new ValidationResult(new[] {
                 new ValidationFailure("Password", "La contraseña es obligatoria")
             }));
 
@@ -332,10 +299,8 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignInAsync_ConUsuarioNoExistente_DebeRetornarNoAutorizado()
-    {
-        var loginDto = new LoginDto
-        {
+    public async Task SignInAsync_ConUsuarioNoExistente_DebeRetornarNoAutorizado() {
+        var loginDto = new LoginDto {
             Username = "nonexistent",
             Password = "Password123!"
         };
@@ -350,18 +315,15 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SignInAsync_ConPasswordIncorrecto_DebeRetornarNoAutorizado()
-    {
-        var loginDto = new LoginDto
-        {
+    public async Task SignInAsync_ConPasswordIncorrecto_DebeRetornarNoAutorizado() {
+        var loginDto = new LoginDto {
             Username = "testuser",
             Password = "WrongPassword123!"
         };
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123!", workFactor: 11);
 
-        var user = new User
-        {
+        var user = new User {
             Id = 1,
             UserName = "testuser",
             Email = "test@test.com",

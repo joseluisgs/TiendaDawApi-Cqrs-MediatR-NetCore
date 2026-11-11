@@ -9,13 +9,11 @@ namespace TiendaApi.Api.Data;
 /// DbContext específico para MongoDB.
 /// Gestiona únicamente la colección de Pedidos.
 /// </summary>
-public class TiendaMongoContext : DbContext
-{
+public class TiendaMongoContext : DbContext {
     /// <summary>
     /// Constructor con opciones de configuración.
     /// </summary>
-    public TiendaMongoContext(DbContextOptions<TiendaMongoContext> options) : base(options)
-    {
+    public TiendaMongoContext(DbContextOptions<TiendaMongoContext> options) : base(options) {
     }
 
     /// <summary>DbSet de Pedidos.</summary>
@@ -24,12 +22,10 @@ public class TiendaMongoContext : DbContext
     /// <summary>
     /// Define el modelo de la colección de pedidos de MongoDB.
     /// </summary>
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Pedido>(entity =>
-        {
+        modelBuilder.Entity<Pedido>(entity => {
             entity.ToCollection("pedidos");
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Estado).IsRequired().HasMaxLength(50);

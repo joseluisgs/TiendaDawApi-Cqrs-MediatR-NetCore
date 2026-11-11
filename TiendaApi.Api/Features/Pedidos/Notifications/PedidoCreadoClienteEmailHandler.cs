@@ -14,11 +14,9 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// emails. OPEN/CLOSED: el comando no cambia, se añade un handler.
 /// </summary>
 public class PedidoCreadoClienteEmailHandler(IEmailService emailService)
-    : INotificationHandler<PedidoCreadoNotification>
-{
+    : INotificationHandler<PedidoCreadoNotification> {
     /// <inheritdoc/>
-    public Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken)
-    {
+    public Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken) {
         var destinatario = notification.Pedido.Destinatario;
         if (string.IsNullOrWhiteSpace(destinatario?.Email)) return Task.CompletedTask;
 
@@ -31,8 +29,7 @@ public class PedidoCreadoClienteEmailHandler(IEmailService emailService)
         Log.Information("📧 [EMAIL] Confirmación de pedido encolada para el cliente: {PedidoId} -> {Email}",
             notification.Pedido.Id, destinatario.Email);
 
-        return emailService.EnqueueEmailAsync(new EmailMessage
-        {
+        return emailService.EnqueueEmailAsync(new EmailMessage {
             To = destinatario.Email,
             Subject = $"✅ Pedido #{notification.Pedido.Id} confirmado",
             Body = EmailTemplates.CreateBase($"Pedido #{notification.Pedido.Id} confirmado", content),

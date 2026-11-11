@@ -15,11 +15,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class UpdatePedidoAdminCommandHandlerTests
-{
+public class UpdatePedidoAdminCommandHandlerTests {
     [Test]
-    public async Task Handle_PedidoExistente_ActualizaCampos()
-    {
+    public async Task Handle_PedidoExistente_ActualizaCampos() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -37,8 +35,7 @@ public class UpdatePedidoAdminCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_PedidoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -54,8 +51,7 @@ public class UpdatePedidoAdminCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_CambiaEstado_PublicaNotificacionDeEstado()
-    {
+    public async Task Handle_CambiaEstado_PublicaNotificacionDeEstado() {
         // 📧 Matriz: si el estado cambió → EstadoPedidoActualizadoNotification
         // (email de estado al cliente + tiempo real).
         var repository = new Mock<IPedidosRepository>();
@@ -80,8 +76,7 @@ public class UpdatePedidoAdminCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinCambioDeEstado_PublicaModificacionPorAdmin()
-    {
+    public async Task Handle_SinCambioDeEstado_PublicaModificacionPorAdmin() {
         // 📧 Matriz: edición de datos sin cambiar estado → aviso de
         // modificación al cliente (el admin no se notifica su propia acción).
         var repository = new Mock<IPedidosRepository>();

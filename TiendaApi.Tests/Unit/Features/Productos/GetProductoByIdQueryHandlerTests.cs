@@ -17,11 +17,9 @@ namespace TiendaApi.Tests.Unit.Features.Productos;
 ///
 /// En CQRS, la lectura la hace IProductoService (caché + MongoDB).
 /// </summary>
-public class GetProductoByIdQueryHandlerTests
-{
+public class GetProductoByIdQueryHandlerTests {
     [Test]
-    public async Task Handle_ProductoExiste_DevuelveSuccessConDto()
-    {
+    public async Task Handle_ProductoExiste_DevuelveSuccessConDto() {
         var service = new Mock<IProductoService>();
         service.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(
             new ProductoDto(1, "Laptop", "", 12m, 5, null, new CategoriaResumenDto(2, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow));
@@ -36,8 +34,7 @@ public class GetProductoByIdQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_DevuelveFailureConNotFound()
-    {
+    public async Task Handle_ProductoNoExiste_DevuelveFailureConNotFound() {
         var service = new Mock<IProductoService>();
         service.Setup(s => s.GetByIdAsync(99)).ReturnsAsync((ProductoDto?)null);
 

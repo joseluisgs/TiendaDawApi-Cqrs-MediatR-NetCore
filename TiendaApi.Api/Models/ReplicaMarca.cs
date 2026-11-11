@@ -7,8 +7,7 @@ namespace TiendaApi.Api.Models;
 /// para saber qué productos replicar en la siguiente ejecución.
 /// Una sola fila por tipo de réplica (en este proyecto: "productos").
 /// </summary>
-public class ReplicaMarca
-{
+public class ReplicaMarca {
     /// <summary>Nombre del tipo de réplica (PK compuesta con UltimaPasada no aplica; es simple).</summary>
     public string Nombre { get; set; } = null!;
 

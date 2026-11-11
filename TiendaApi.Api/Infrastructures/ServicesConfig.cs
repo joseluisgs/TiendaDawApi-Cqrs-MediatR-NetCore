@@ -13,13 +13,11 @@ namespace TiendaApi.Api.Infrastructures;
 /// <summary>
 /// Registra los servicios de infraestructura del contenedor de dependencias.
 /// </summary>
-public static class ServicesConfig
-{
+public static class ServicesConfig {
     /// <summary>
     /// Registra JWT y autenticación para la aplicación.
     /// </summary>
-    public static IServiceCollection AddServices(this IServiceCollection services)
-    {
+    public static IServiceCollection AddServices(this IServiceCollection services) {
         Log.Information("⚙️ Registrando servicios...");
         // ⚠️ IAuthService NO se registra aquí: lo decide AuthenticationConfig
         // según Auth:Mode (Custom → AuthService / Identity → IdentityAuthService).

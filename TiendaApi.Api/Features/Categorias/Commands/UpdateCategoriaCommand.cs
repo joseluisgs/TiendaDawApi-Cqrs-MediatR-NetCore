@@ -28,15 +28,12 @@ public class UpdateCategoriaCommandHandler(
     ICacheService cacheService,
     IMediator mediator,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>>
-{
+    : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<CategoriaDto, DomainError>> Handle(
-        UpdateCategoriaCommand request, CancellationToken cancellationToken)
-    {
+        UpdateCategoriaCommand request, CancellationToken cancellationToken) {
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());

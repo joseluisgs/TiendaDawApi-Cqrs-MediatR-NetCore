@@ -11,11 +11,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
-public class DeleteCategoriaCommandHandlerTests
-{
+public class DeleteCategoriaCommandHandlerTests {
     [Test]
-    public async Task Handle_CategoriaExistente_DevuelveSuccess()
-    {
+    public async Task Handle_CategoriaExistente_DevuelveSuccess() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
@@ -29,8 +27,7 @@ public class DeleteCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_CategoriaNoExiste_DevuelveNotFound() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);

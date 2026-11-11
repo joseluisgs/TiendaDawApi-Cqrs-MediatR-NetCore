@@ -10,15 +10,13 @@ namespace TiendaApi.Tests.Unit.Services.Cache;
 /// <summary>
 /// Tests unitarios para RedisCacheService.
 /// </summary>
-public class RedisCacheServiceTests
-{
+public class RedisCacheServiceTests {
     private Mock<IDistributedCache> _mockCache = null!;
     private Mock<ILogger<RedisCacheService>> _mockLogger = null!;
     private RedisCacheService _cacheService = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mockCache = new Mock<IDistributedCache>();
         _mockLogger = new Mock<ILogger<RedisCacheService>>();
         _cacheService = new RedisCacheService(
@@ -34,8 +32,7 @@ public class RedisCacheServiceTests
     /// Returns: null (cache miss)
     /// </summary>
     [Test]
-    public async Task GetAsync_CacheMiss_RetornaNull()
-    {
+    public async Task GetAsync_CacheMiss_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Returns((byte[]?)null);
 
@@ -49,8 +46,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success
     /// </summary>
     [Test]
-    public async Task GetAsync_CacheHit_NoLanzaExcepcion()
-    {
+    public async Task GetAsync_CacheHit_NoLanzaExcepcion() {
         var testObject = new TestData { Id = 1, Name = "Test" };
         var json = JsonSerializer.Serialize(testObject);
         var bytes = System.Text.Encoding.UTF8.GetBytes(json);
@@ -67,8 +63,7 @@ public class RedisCacheServiceTests
     /// Returns: null (array vacío se trata como cache miss)
     /// </summary>
     [Test]
-    public async Task GetAsync_ArrayVacio_RetornaNull()
-    {
+    public async Task GetAsync_ArrayVacio_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Returns(Array.Empty<byte>());
 
@@ -82,8 +77,7 @@ public class RedisCacheServiceTests
     /// Returns: null (manejo de excepción)
     /// </summary>
     [Test]
-    public async Task GetAsync_ConExcepcion_RetornaNull()
-    {
+    public async Task GetAsync_ConExcepcion_RetornaNull() {
         _mockCache.Setup(c => c.Get(It.IsAny<string>()))
             .Throws(new Exception("Error de caché"));
 
@@ -101,8 +95,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success
     /// </summary>
     [Test]
-    public async Task SetAsync_ConValorValido_GuardarEnCache()
-    {
+    public async Task SetAsync_ConValorValido_GuardarEnCache() {
         var key = "test-key";
         var value = "test-value";
 
@@ -115,8 +108,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success con expiración personalizada
     /// </summary>
     [Test]
-    public async Task SetAsync_ConExpiracionPersonalizada_UsaExpiracionDada()
-    {
+    public async Task SetAsync_ConExpiracionPersonalizada_UsaExpiracionDada() {
         var key = "test-key";
         var value = "test-value";
         var expiration = TimeSpan.FromMinutes(10);
@@ -130,8 +122,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success con expiración por defecto
     /// </summary>
     [Test]
-    public async Task SetAsync_SinExpiracion_UsaExpiracionPorDefecto()
-    {
+    public async Task SetAsync_SinExpiracion_UsaExpiracionPorDefecto() {
         var key = "test-key";
         var value = "test-value";
 
@@ -144,8 +135,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success
     /// </summary>
     [Test]
-    public async Task SetAsync_ObjetoComplejo_SerializaCorrectamente()
-    {
+    public async Task SetAsync_ObjetoComplejo_SerializaCorrectamente() {
         var testObject = new TestData { Id = 42, Name = "Complex Test" };
 
         var act = async () => await _cacheService.SetAsync("complex-key", testObject);
@@ -157,8 +147,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success (excepción capturada internamente)
     /// </summary>
     [Test]
-    public async Task SetAsync_ConExcepcion_NoLanzaExcepcion()
-    {
+    public async Task SetAsync_ConExcepcion_NoLanzaExcepcion() {
         _mockCache.Setup(c => c.Set(
                 It.IsAny<string>(),
                 It.IsAny<byte[]>(),
@@ -178,8 +167,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success
     /// </summary>
     [Test]
-    public async Task RemoveAsync_ConClaveExistente_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConClaveExistente_NoLanzaExcepcion() {
         var key = "test-key";
 
         var act = async () => await _cacheService.RemoveAsync(key);
@@ -191,8 +179,7 @@ public class RedisCacheServiceTests
     /// Returns: Unit.Success (excepción capturada internamente)
     /// </summary>
     [Test]
-    public async Task RemoveAsync_ConExcepcion_NoLanzaExcepcion()
-    {
+    public async Task RemoveAsync_ConExcepcion_NoLanzaExcepcion() {
         _mockCache.Setup(c => c.Remove(It.IsAny<string>()))
             .Throws(new Exception("Error de caché"));
 
@@ -206,8 +193,7 @@ public class RedisCacheServiceTests
 /// <summary>
 /// Clase de prueba para serialización.
 /// </summary>
-public class TestData
-{
+public class TestData {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
 }

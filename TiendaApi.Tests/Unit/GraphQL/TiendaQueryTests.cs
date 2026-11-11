@@ -20,14 +20,12 @@ namespace TiendaApi.Tests.Unit.GraphQL;
 [TestFixture]
 [Category("Unit")]
 [Category("GraphQL")]
-public class TiendaQueryTests
-{
+public class TiendaQueryTests {
     private Mock<IMediator> _mediatorMock = null!;
     private TiendaQuery _query = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mediatorMock = new Mock<IMediator>();
         _query = new TiendaQuery();
     }
@@ -35,10 +33,8 @@ public class TiendaQueryTests
     #region GetProductos Tests
 
     [Test]
-    public async Task GetProductos_MediatorReturnsList_ReturnsList()
-    {
-        var productos = new List<ProductoDto>
-        {
+    public async Task GetProductos_MediatorReturnsList_ReturnsList() {
+        var productos = new List<ProductoDto> {
             new(1, "Producto 1", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow)
         };
 
@@ -56,8 +52,7 @@ public class TiendaQueryTests
     #region GetProducto Tests
 
     [Test]
-    public async Task GetProducto_WithId_ReturnsProducto()
-    {
+    public async Task GetProducto_WithId_ReturnsProducto() {
         var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
@@ -70,8 +65,7 @@ public class TiendaQueryTests
     }
 
     [Test]
-    public async Task GetProducto_WithInvalidId_ReturnsNull()
-    {
+    public async Task GetProducto_WithInvalidId_ReturnsNull() {
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(new NotFoundError("No encontrado")));
 
@@ -85,11 +79,9 @@ public class TiendaQueryTests
     #region GetProductosPaged Tests
 
     [Test]
-    public async Task GetProductosPaged_WithPage1_ConvertsToZeroBasedFilter()
-    {
+    public async Task GetProductosPaged_WithPage1_ConvertsToZeroBasedFilter() {
         ProductoFilterDto? capturedFilter = null;
-        var pagedResult = new PagedResult<ProductoDto>
-        {
+        var pagedResult = new PagedResult<ProductoDto> {
             Items = Enumerable.Empty<ProductoDto>(),
             TotalCount = 2,
             Page = 0,
@@ -97,8 +89,7 @@ public class TiendaQueryTests
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllProductosQuery>(), It.IsAny<CancellationToken>()))
-            .Callback((IRequest<Result<PagedResult<ProductoDto>, DomainError>> request, CancellationToken _) =>
-            {
+            .Callback((IRequest<Result<PagedResult<ProductoDto>, DomainError>> request, CancellationToken _) => {
                 if (request is GetAllProductosQuery query)
                     capturedFilter = query.Filter;
             })
@@ -118,10 +109,8 @@ public class TiendaQueryTests
     #region GetCategorias Tests
 
     [Test]
-    public async Task GetCategorias_MediatorReturnsList_ReturnsList()
-    {
-        var categorias = new List<CategoriaDto>
-        {
+    public async Task GetCategorias_MediatorReturnsList_ReturnsList() {
+        var categorias = new List<CategoriaDto> {
             new(1, "Cat 1", "Desc", DateTime.UtcNow, DateTime.UtcNow)
         };
 
@@ -139,8 +128,7 @@ public class TiendaQueryTests
     #region GetCategoria Tests
 
     [Test]
-    public async Task GetCategoria_WithId_ReturnsCategoria()
-    {
+    public async Task GetCategoria_WithId_ReturnsCategoria() {
         var categoria = new CategoriaDto(1, "Test", "Desc", DateTime.UtcNow, DateTime.UtcNow);
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
@@ -153,8 +141,7 @@ public class TiendaQueryTests
     }
 
     [Test]
-    public async Task GetCategoria_WithInvalidId_ReturnsNull()
-    {
+    public async Task GetCategoria_WithInvalidId_ReturnsNull() {
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(new NotFoundError("No encontrado")));
 
@@ -168,11 +155,9 @@ public class TiendaQueryTests
     #region GetCategoriasPaged Tests
 
     [Test]
-    public async Task GetCategoriasPaged_WithPage1_ConvertsToZeroBasedFilter()
-    {
+    public async Task GetCategoriasPaged_WithPage1_ConvertsToZeroBasedFilter() {
         CategoriaFilterDto? capturedFilter = null;
-        var pagedResult = new PagedResult<CategoriaDto>
-        {
+        var pagedResult = new PagedResult<CategoriaDto> {
             Items = Enumerable.Empty<CategoriaDto>(),
             TotalCount = 2,
             Page = 0,
@@ -180,8 +165,7 @@ public class TiendaQueryTests
         };
 
         _mediatorMock.Setup(m => m.Send(It.IsAny<GetAllCategoriasQuery>(), It.IsAny<CancellationToken>()))
-            .Callback((IRequest<Result<PagedResult<CategoriaDto>, DomainError>> request, CancellationToken _) =>
-            {
+            .Callback((IRequest<Result<PagedResult<CategoriaDto>, DomainError>> request, CancellationToken _) => {
                 if (request is GetAllCategoriasQuery query)
                     capturedFilter = query.Filter;
             })
@@ -211,8 +195,7 @@ public class TiendaQueryTests
         CreatedAt: DateTime.UtcNow);
 
     [Test]
-    public async Task GetPedidos_ReturnsAllAsDtos()
-    {
+    public async Task GetPedidos_ReturnsAllAsDtos() {
         // pedidos = solo ADMIN: la resolver delega en la query CQRS que
         // lista todos los pedidos.
         var pedidos = new List<PedidoDto> { UnPedidoDto(1), UnPedidoDto(2) };
@@ -226,8 +209,7 @@ public class TiendaQueryTests
     }
 
     [Test]
-    public async Task GetMisPedidos_ConClaim_FiltraPorElUsuarioAutenticado()
-    {
+    public async Task GetMisPedidos_ConClaim_FiltraPorElUsuarioAutenticado() {
         // El userId SIEMPRE sale del claim del JWT: la query CQRS filtra por
         // él y un usuario jamás ve pedidos ajenos por GraphQL.
         var pedidos = new List<PedidoDto> { UnPedidoDto(7) };
@@ -249,8 +231,7 @@ public class TiendaQueryTests
     }
 
     [Test]
-    public async Task GetMisPedidos_SinClaim_LanzaError()
-    {
+    public async Task GetMisPedidos_SinClaim_LanzaError() {
         var sinClaims = new ClaimsPrincipal(new ClaimsIdentity()); // anónimo
 
         var act = () => _query.GetMisPedidos(sinClaims, _mediatorMock.Object);

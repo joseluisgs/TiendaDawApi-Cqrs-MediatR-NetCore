@@ -9,15 +9,12 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 /// Handler que publica evento de GraphQL Subscription cuando se crea un producto.
 /// </summary>
 public class ProductoCreadoGraphQLHandler(IEventPublisher eventPublisher)
-    : INotificationHandler<ProductoCreadoNotification>
-{
+    : INotificationHandler<ProductoCreadoNotification> {
     /// <summary>
     /// Procesa el evento ProductoCreado y publica la suscripción GraphQL onProductoCreado.
     /// </summary>
-    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
-    {
-        await eventPublisher.PublishAsync("onProductoCreado", new ProductoCreadoEvent
-        {
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
+        await eventPublisher.PublishAsync("onProductoCreado", new ProductoCreadoEvent {
             ProductoId = notification.Producto.Id,
             Nombre = notification.Producto.Nombre,
             Precio = notification.Producto.Precio,

@@ -23,8 +23,7 @@ namespace TiendaApi.Tests.Unit.Features.Productos;
 [TestFixture]
 [Category("Unit")]
 [Category("Orden")]
-public class ProductoCommandOrderTests
-{
+public class ProductoCommandOrderTests {
     private Mock<IProductoRepository> _productoRepoMock = null!;
     private Mock<ICategoriaRepository> _categoriaRepoMock = null!;
     private Mock<IMediator> _mediatorMock = null!;
@@ -33,8 +32,7 @@ public class ProductoCommandOrderTests
     private Mock<IValidator<ProductoRequestDto>> _validatorMock = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _productoRepoMock = new Mock<IProductoRepository>();
         _categoriaRepoMock = new Mock<ICategoriaRepository>();
         _mediatorMock = new Mock<IMediator>();
@@ -59,8 +57,7 @@ public class ProductoCommandOrderTests
     }
 
     [Test]
-    public async Task CreateProducto_InvalidaCache()
-    {
+    public async Task CreateProducto_InvalidaCache() {
         _productoRepoMock.Setup(r => r.SaveAsync(It.IsAny<Producto>()))
             .ReturnsAsync(new Producto { Id = 1, Nombre = "Test", CategoriaId = 1 });
 
@@ -68,8 +65,7 @@ public class ProductoCommandOrderTests
             _productoRepoMock.Object, _categoriaRepoMock.Object, _validatorMock.Object,
             _mediatorMock.Object, _cacheServiceMock.Object, _outputCacheMock.Object);
 
-        await handler.Handle(new CreateProductoCommand(new ProductoRequestDto
-        {
+        await handler.Handle(new CreateProductoCommand(new ProductoRequestDto {
             Nombre = "Test", Precio = 10m, Stock = 5, CategoriaId = 1
         }), CancellationToken.None);
 
@@ -78,8 +74,7 @@ public class ProductoCommandOrderTests
     }
 
     [Test]
-    public async Task UpdateProducto_InvalidaCache()
-    {
+    public async Task UpdateProducto_InvalidaCache() {
         var producto = new Producto { Id = 1, Nombre = "Viejo", CategoriaId = 1 };
         _productoRepoMock.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
         _productoRepoMock.Setup(r => r.UpdateAsync(It.IsAny<Producto>()))
@@ -89,8 +84,7 @@ public class ProductoCommandOrderTests
             _productoRepoMock.Object, _categoriaRepoMock.Object, _validatorMock.Object,
             _mediatorMock.Object, _cacheServiceMock.Object, _outputCacheMock.Object);
 
-        await handler.Handle(new UpdateProductoCommand(1, new ProductoRequestDto
-        {
+        await handler.Handle(new UpdateProductoCommand(1, new ProductoRequestDto {
             Nombre = "Nuevo", Precio = 10m, Stock = 5, CategoriaId = 1
         }), CancellationToken.None);
 
@@ -99,8 +93,7 @@ public class ProductoCommandOrderTests
     }
 
     [Test]
-    public async Task DeleteProducto_InvalidaCache()
-    {
+    public async Task DeleteProducto_InvalidaCache() {
         var producto = new Producto { Id = 1, Nombre = "Test", CategoriaId = 1 };
         _productoRepoMock.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
 

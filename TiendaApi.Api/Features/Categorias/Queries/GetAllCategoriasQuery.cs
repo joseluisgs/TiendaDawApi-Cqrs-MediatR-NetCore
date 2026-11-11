@@ -24,15 +24,13 @@ public class GetAllCategoriasQueryHandler(
     ICategoriaRepository repository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IRequestHandler<GetAllCategoriasQuery, Result<PagedResult<CategoriaDto>, DomainError>>
-{
+    : IRequestHandler<GetAllCategoriasQuery, Result<PagedResult<CategoriaDto>, DomainError>> {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:CategoriaCacheTTLMinutes"] ?? "10"));
 
     /// <inheritdoc/>
     public async Task<Result<PagedResult<CategoriaDto>, DomainError>> Handle(
-        GetAllCategoriasQuery request, CancellationToken cancellationToken)
-    {
+        GetAllCategoriasQuery request, CancellationToken cancellationToken) {
         // La key incluye todos los filtros del record (ToString automático de C#)
         var cacheKey = $"categorias:paged:{request.Filter}";
         var cached = await cacheService.GetAsync<PagedResult<CategoriaDto>>(cacheKey);
@@ -40,19 +38,15 @@ public class GetAllCategoriasQueryHandler(
             return Result.Success<PagedResult<CategoriaDto>, DomainError>(cached);
 
         var (categorias, totalCount) = await repository.FindAllPagedAsync(request.Filter);
-        var pagedResult = new PagedResult<CategoriaDto>
-        {
+        var pagedResult = new PagedResult<CategoriaDto> {
             Items = categorias.ToDtoList(),
             TotalCount = totalCount,
             Page = request.Filter.Page + 1,
             PageSize = request.Filter.Size
         };
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

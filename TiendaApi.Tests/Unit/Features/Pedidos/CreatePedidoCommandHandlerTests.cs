@@ -17,11 +17,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class CreatePedidoCommandHandlerTests
-{
+public class CreatePedidoCommandHandlerTests {
     [Test]
-    public async Task Handle_PedidoValido_DevuelveSuccessYPublicaNotification()
-    {
+    public async Task Handle_PedidoValido_DevuelveSuccessYPublicaNotification() {
         var pedidosRepository = new Mock<IPedidosRepository>();
         var productoRepository = new Mock<IProductoRepository>();
         var userRepository = new Mock<IUserRepository>();
@@ -47,8 +45,7 @@ public class CreatePedidoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioNoEncontrado_DevuelveNotFoundError()
-    {
+    public async Task Handle_UsuarioNoEncontrado_DevuelveNotFoundError() {
         var pedidosRepository = new Mock<IPedidosRepository>();
         var productoRepository = new Mock<IProductoRepository>();
         var userRepository = new Mock<IUserRepository>();

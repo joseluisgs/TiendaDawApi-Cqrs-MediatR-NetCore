@@ -20,12 +20,10 @@ public record GetAllProductosQuery(ProductoFilterDto Filter)
 /// (caché + MongoDB). El handler solo orquesta.
 /// </summary>
 public class GetAllProductosQueryHandler(IProductoService service)
-    : IRequestHandler<GetAllProductosQuery, Result<PagedResult<ProductoDto>, DomainError>>
-{
+    : IRequestHandler<GetAllProductosQuery, Result<PagedResult<ProductoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<PagedResult<ProductoDto>, DomainError>> Handle(
-        GetAllProductosQuery request, CancellationToken cancellationToken)
-    {
+        GetAllProductosQuery request, CancellationToken cancellationToken) {
         var pagedResult = await service.GetPagedAsync(request.Filter);
         return Result.Success<PagedResult<ProductoDto>, DomainError>(pagedResult);
     }

@@ -16,23 +16,18 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class UpdatePedidoEstadoCommandHandlerTests
-{
-    private Pedido CreateTestPedido(string estado)
-    {
-        return new Pedido
-        {
+public class UpdatePedidoEstadoCommandHandlerTests {
+    private Pedido CreateTestPedido(string estado) {
+        return new Pedido {
             Id = ObjectId.GenerateNewId(),
             UserId = 1,
             Estado = estado,
             Total = 100m,
             DireccionEnvio = "Calle 123",
-            Destinatario = new Destinatario
-            {
+            Destinatario = new Destinatario {
                 NombreCompleto = "Juan Pérez",
                 Email = "juan@test.com",
-                Direccion = new Direccion
-                {
+                Direccion = new Direccion {
                     Calle = "Calle Principal",
                     Ciudad = "Madrid",
                     Pais = "España"
@@ -43,8 +38,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoExistente_ActualizaEstado()
-    {
+    public async Task Handle_PedidoExistente_ActualizaEstado() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -62,8 +56,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_EstadoInvalido_DevuelveError()
-    {
+    public async Task Handle_EstadoInvalido_DevuelveError() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -76,8 +69,7 @@ public class UpdatePedidoEstadoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_PedidoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();

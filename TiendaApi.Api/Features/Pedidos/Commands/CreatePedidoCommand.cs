@@ -37,8 +37,7 @@ public class CreatePedidoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>>
-{
+    : IRequestHandler<CreatePedidoCommand, Result<PedidoDto, DomainError>> {
     /// <summary>Reintentos para conflictos de concurrencia al crear pedidos simultáneos.</summary>
     private const int MaxRetries = 3;
 
@@ -47,15 +46,13 @@ public class CreatePedidoCommandHandler(
 
     /// <inheritdoc/>
     public async Task<Result<PedidoDto, DomainError>> Handle(
-        CreatePedidoCommand request, CancellationToken cancellationToken)
-    {
+        CreatePedidoCommand request, CancellationToken cancellationToken) {
         var user = await userRepository.FindByIdAsync(request.UserId);
         if (user is null || user.IsDeleted)
             return Result.Failure<PedidoDto, DomainError>(NotFoundError.FromId(request.UserId, "Usuario"));
 
         var validationResult = await pedidoValidator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors.GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
             return Result.Failure<PedidoDto, DomainError>(PedidoError.ValidacionConCampos(errors));
@@ -72,24 +69,15 @@ public class CreatePedidoCommandHandler(
     /// Extraído de Handle para que ese método se quede con validar y delegar.
     /// </summary>
     private async Task<Result<PedidoDto, DomainError>> ConReintentosDeSerializacionAsync(
-        Func<Task<Result<PedidoDto, DomainError>>> operacion, CancellationToken cancellationToken)
-    {
-        for (var attempt = 1; attempt <= MaxRetries; attempt++)
-        {
-            try
-            {
+        Func<Task<Result<PedidoDto, DomainError>>> operacion, CancellationToken cancellationToken) {
+        for (var attempt = 1; attempt <= MaxRetries; attempt++) {
+            try {
                 return await operacion();
-            }
-            catch (SerializationFailureException) when (attempt < MaxRetries)
-            {
+            } catch (SerializationFailureException) when (attempt < MaxRetries) {
                 await Task.Delay(50 * attempt, cancellationToken);
-            }
-            catch (DbUpdateException ex) when (IsSerializationFailure(ex) && attempt < MaxRetries)
-            {
+            } catch (DbUpdateException ex) when (IsSerializationFailure(ex) && attempt < MaxRetries) {
                 await Task.Delay(50 * attempt, cancellationToken);
-            }
-            catch (NpgsqlException ex) when (IsSerializationFailureMessage(ex.Message) && attempt < MaxRetries)
-            {
+            } catch (NpgsqlException ex) when (IsSerializationFailureMessage(ex.Message) && attempt < MaxRetries) {
                 await Task.Delay(50 * attempt, cancellationToken);
             }
         }
@@ -99,11 +87,9 @@ public class CreatePedidoCommandHandler(
 
     private async Task<Result<PedidoDto, DomainError>> CreateWithSerializableTransactionAsync(
         CreatePedidoCommand request,
-        CancellationToken cancellationToken)
-    {
+        CancellationToken cancellationToken) {
         await using var transaction = await productoRepository.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-        try
-        {
+        try {
             var pedidoItems = new List<PedidoItem>();
             decimal total = 0;
 
@@ -116,25 +102,21 @@ public class CreatePedidoCommandHandler(
                 .FindByIdsAsync(request.Dto.Items.Select(i => i.ProductoId)))
                 .ToDictionary(p => p.Id);
 
-            foreach (var itemDto in request.Dto.Items)
-            {
+            foreach (var itemDto in request.Dto.Items) {
                 var itemValidation = await pedidoItemValidator.ValidateAsync(itemDto, cancellationToken);
-                if (!itemValidation.IsValid)
-                {
+                if (!itemValidation.IsValid) {
                     var itemErrors = itemValidation.Errors.GroupBy(e => e.PropertyName)
                         .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
                     await transaction.RollbackAsync(cancellationToken);
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ValidacionConCampos(itemErrors));
                 }
 
-                if (!productosPorId.TryGetValue(itemDto.ProductoId, out var producto))
-                {
+                if (!productosPorId.TryGetValue(itemDto.ProductoId, out var producto)) {
                     await transaction.RollbackAsync(cancellationToken);
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ProductoNoEncontrado(itemDto.ProductoId));
                 }
 
-                if (producto.Stock < itemDto.Cantidad)
-                {
+                if (producto.Stock < itemDto.Cantidad) {
                     await transaction.RollbackAsync(cancellationToken);
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.StockInsuficiente(producto.Nombre, producto.Stock, itemDto.Cantidad));
                 }
@@ -142,8 +124,7 @@ public class CreatePedidoCommandHandler(
                 producto.Stock -= itemDto.Cantidad;
                 await productoRepository.UpdateAsync(producto);
 
-                var item = new PedidoItem
-                {
+                var item = new PedidoItem {
                     ProductoId = itemDto.ProductoId,
                     NombreProducto = producto.Nombre,
                     Cantidad = itemDto.Cantidad,
@@ -154,8 +135,7 @@ public class CreatePedidoCommandHandler(
                 total += item.Subtotal;
             }
 
-            var pedido = new Pedido
-            {
+            var pedido = new Pedido {
                 UserId = request.UserId,
                 Destinatario = request.Dto.Destinatario?.ToEntity(),
                 Items = pedidoItems,
@@ -168,18 +148,16 @@ public class CreatePedidoCommandHandler(
             var pedidoGuardado = await pedidosRepository.SaveAsync(pedido);
             await transaction.CommitAsync(cancellationToken);
 
-            
+
 
             var dto = pedidoGuardado.ToDto();
             await mediator.Publish(new PedidoCreadoNotification(dto), cancellationToken);
 
             await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
-        await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
+            await outputCacheStore.EvictByTagAsync("pedidos", cancellationToken);
 
             return Result.Success<PedidoDto, DomainError>(dto);
-        }
-        catch
-        {
+        } catch {
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
