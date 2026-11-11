@@ -7,6 +7,7 @@ using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Features.Productos.Sync;
+using TiendaApi.Api.Features.Proveedores.Notifications;
 using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
@@ -166,6 +167,28 @@ public class ProductoReadSyncIntegrationTests {
 
         (await _readRepository!.FindByIdAsync(idA))!.Categoria.Nombre.Should().Be("Tecnología Nueva");
         (await _readRepository.FindByIdAsync(idB))!.Categoria.Nombre.Should().Be("Tecnología Nueva");
+    }
+
+    [Test]
+    public async Task NotificacionProveedorActualizada_PropagaElNombreATodosLosProductos() {
+        string codigo = $"P{NewId()}";
+        long idA = NewId();
+        long idB = NewId();
+
+        var proveedor = new ProveedorResumenDto(codigo, "Proveedor Antiguo", "Descripción antigua");
+        await _handler!.Handle(new ProductoCreadoNotification(
+                NuevoProducto(idA) with { Proveedor = proveedor }), CancellationToken.None);
+        await _handler.Handle(new ProductoCreadoNotification(
+                NuevoProducto(idB) with { Proveedor = proveedor }), CancellationToken.None);
+
+        await _handler.Handle(
+            new ProveedorActualizadaNotification(codigo, "Proveedor Nuevo", "Descripción nueva"),
+            CancellationToken.None);
+
+        ProductoRead? leidoA = await _readRepository!.FindByIdAsync(idA);
+        leidoA!.Proveedor.Nombre.Should().Be("Proveedor Nuevo");
+        leidoA.Proveedor.Descripcion.Should().Be("Descripción nueva");
+        (await _readRepository.FindByIdAsync(idB))!.Proveedor.Nombre.Should().Be("Proveedor Nuevo");
     }
 
     [Test]

@@ -171,6 +171,19 @@ public class ProductoReadRepository(
             result.ModifiedCount, categoriaId);
     }
 
+    /// <inheritdoc />
+    public async Task UpdateProveedorNombreAsync(string codigo, string nombre, string? descripcion) {
+        UpdateResult result = await Collection.UpdateManyAsync(
+            p => p.Proveedor.Codigo == codigo,
+            Builders<ProductoRead>.Update
+                .Set(p => p.Proveedor!.Nombre, nombre)
+                .Set(p => p.Proveedor!.Descripcion, descripcion)
+                .Set(p => p.SyncAt, DateTime.UtcNow));
+        logger.LogDebug(
+            "Datos de proveedor actualizados en {Count} productos del proveedor {Codigo}",
+            result.ModifiedCount, codigo);
+    }
+
     /// <summary>Whitelist de orden — idéntico a ApplySorting del repositorio de PostgreSQL.</summary>
     private static SortDefinition<ProductoRead> ApplySorting(string sortBy, string direction) {
         bool isDescending = direction.Equals("desc", StringComparison.OrdinalIgnoreCase);

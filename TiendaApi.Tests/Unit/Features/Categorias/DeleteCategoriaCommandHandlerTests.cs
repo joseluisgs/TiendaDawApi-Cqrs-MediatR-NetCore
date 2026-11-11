@@ -39,4 +39,23 @@ public class DeleteCategoriaCommandHandlerTests {
 
         result.IsFailure.Should().BeTrue();
     }
+
+    [Test]
+    public async Task Handle_ConProductosAsociados_DevuelveTieneProductosSinBorrar() {
+        var repository = new Mock<ICategoriaRepository>();
+        var cacheService = new Mock<ICacheService>();
+        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
+        repository.Setup(r => r.CountProductosAsync(1)).ReturnsAsync(3);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler =
+            new DeleteCategoriaCommandHandler(repository.Object, cacheService.Object, outputCacheStore.Object);
+
+        UnitResult<DomainError> result = await handler.Handle(new DeleteCategoriaCommand(1), CancellationToken.None);
+
+        // 422 de regla de negocio y NO se toca el borrado ni la caché
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().BeOfType<BusinessRuleError>();
+        repository.Verify(r => r.DeleteAsync(It.IsAny<long>()), Times.Never);
+        outputCacheStore.Verify(c => c.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

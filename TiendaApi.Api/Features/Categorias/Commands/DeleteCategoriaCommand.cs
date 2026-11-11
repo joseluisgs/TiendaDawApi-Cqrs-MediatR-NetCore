@@ -31,6 +31,11 @@ public class DeleteCategoriaCommandHandler(
             return UnitResult.Failure<DomainError>(CategoriaError.NotFound(request.Id));
         }
 
+        int productosCount = await repository.CountProductosAsync(request.Id);
+        if (productosCount > 0) {
+            return UnitResult.Failure<DomainError>(CategoriaError.TieneProductos(request.Id, productosCount));
+        }
+
         await repository.DeleteAsync(request.Id);
 
         await cacheService.RemoveAsync($"categorias:{request.Id}");

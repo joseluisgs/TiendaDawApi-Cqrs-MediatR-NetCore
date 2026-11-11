@@ -10,6 +10,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
@@ -27,8 +28,8 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
-            mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, Mock.Of<IProductoRepository>(),
+            validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         Result<CategoriaDto, DomainError> result =
             await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
@@ -49,8 +50,8 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
-            mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, Mock.Of<IProductoRepository>(),
+            validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         Result<CategoriaDto, DomainError> result =
             await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
@@ -70,8 +71,8 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
-            mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, Mock.Of<IProductoRepository>(),
+            validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         Result<CategoriaDto, DomainError> result =
             await handler.Handle(new UpdateCategoriaCommand(999, dto), CancellationToken.None);
@@ -90,8 +91,8 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(true);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
-            mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, Mock.Of<IProductoRepository>(),
+            validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
 
         Result<CategoriaDto, DomainError> result =
             await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);

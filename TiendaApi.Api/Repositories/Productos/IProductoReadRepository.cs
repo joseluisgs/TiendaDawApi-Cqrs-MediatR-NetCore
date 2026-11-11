@@ -51,4 +51,10 @@ public interface IProductoReadRepository {
     /// <param name="nombre">Nuevo nombre de la categoría.</param>
     /// <param name="descripcion">Nueva descripción de la categoría (null si no tiene).</param>
     Task UpdateCategoriaNombreAsync(long categoriaId, string nombre, string? descripcion);
+
+    /// <summary>Actualiza el nombre y la descripción de proveedor embebidos en todos sus productos (updateMany).</summary>
+    /// <param name="codigo">Código del proveedor actualizado.</param>
+    /// <param name="nombre">Nuevo nombre del proveedor.</param>
+    /// <param name="descripcion">Nueva descripción del proveedor (null si no tiene).</param>
+    Task UpdateProveedorNombreAsync(string codigo, string nombre, string? descripcion);
 }

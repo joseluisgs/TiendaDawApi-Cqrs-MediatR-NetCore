@@ -1,16 +1,20 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
 using FluentValidation.Results;
+using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Proveedores;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Proveedores;
+using TiendaApi.Api.Features.Proveedores.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Proveedores;
+using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Services.Proveedores;
 
@@ -23,6 +27,8 @@ namespace TiendaApi.Api.Services.Proveedores;
 /// </summary>
 public class ProveedorService(
     IProveedorRepository repository,
+    IMediator mediator,
+    IProductoRepository productos,
     ILogger<ProveedorService> logger,
     IValidator<ProveedorRequestDto> proveedorValidator,
     ICacheService cacheService,
@@ -142,7 +148,21 @@ public class ProveedorService(
         Proveedor updated = await repository.UpdateAsync(proveedor);
         ProveedorDto result = updated.ToDto();
 
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a Mongo), DESPUÉS invalidar.
+        // El Publish renombra el proveedor embebido en productos_read (los DTO llevan proveedor).
+        await mediator.Publish(
+            new ProveedorActualizadaNotification(codigo, result.Nombre, result.Descripcion));
+
         await InvalidarCacheAsync($"proveedores:{codigo}");
+
+        // Los DTO de producto embeben el proveedor: invalidar sus claves en
+        // caché (ICacheService no admite patrones) y versionar el paginado,
+        // o se sirve el nombre viejo hasta el TTL.
+        IEnumerable<long> afectados = await productos.FindIdsByProveedorAsync(codigo) ?? [];
+        foreach (long productoId in afectados) {
+            await cacheService.RemoveAsync($"productos:{productoId}");
+        }
+        ProductoService.InvalidatePagedCache();
 
         return Result.Success<ProveedorDto, DomainError>(result);
     }

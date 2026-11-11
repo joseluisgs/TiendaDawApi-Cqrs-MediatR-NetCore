@@ -10,7 +10,9 @@ using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
@@ -25,6 +27,7 @@ public record UpdateCategoriaCommand(long Id, CategoriaRequestDto Dto)
 /// </summary>
 public class UpdateCategoriaCommandHandler(
     ICategoriaRepository repository,
+    IProductoRepository productos,
     IValidator<CategoriaRequestDto> validator,
     ICacheService cacheService,
     IMediator mediator,
@@ -64,6 +67,15 @@ public class UpdateCategoriaCommandHandler(
         // Invalidar también productos (los DTO llevan categoriaNombre)
         await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
+        // Los DTO de producto embeben el nombre de la categoría: invalidar sus
+        // claves en caché (ICacheService no admite patrones) y versionar el
+        // paginado, o se sirve el nombre viejo hasta el TTL.
+        IEnumerable<Producto> afectados = await productos.FindByCategoriaIdAsync(request.Id) ?? [];
+        foreach (long productoId in afectados.Select(p => p.Id)) {
+            await cacheService.RemoveAsync($"productos:{productoId}");
+        }
+        ProductoService.InvalidatePagedCache();
 
         return Result.Success<CategoriaDto, DomainError>(dto);
     }

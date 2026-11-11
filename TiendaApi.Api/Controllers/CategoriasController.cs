@@ -139,6 +139,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult> Delete(long id) {
         UnitResult<DomainError> resultado = await mediator.Send(new DeleteCategoriaCommand(id));
         if (resultado.IsSuccess) {
@@ -149,6 +150,9 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
         return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
+            // Regla de negocio (p.ej. categoría con productos asociados): 422 como
+            // en el resto de controladores (ToHttpResult) y en la api normal.
+            BusinessRuleError => StatusCode(StatusCodes.Status422UnprocessableEntity, new { message = error.Message }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
         };
     }

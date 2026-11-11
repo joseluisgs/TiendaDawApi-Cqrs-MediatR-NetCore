@@ -5,6 +5,7 @@ using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Features.Productos.Sync;
+using TiendaApi.Api.Features.Proveedores.Notifications;
 using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Productos;
 
@@ -118,6 +119,28 @@ public class ProductoReadSyncHandlerTests {
 
         Func<Task> act = async () => await _handler.Handle(
             new CategoriaActualizadaNotification(1, "Nueva"), CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Test]
+    public async Task Handle_ProveedorActualizada_PropagaNombreYDescripcionEmbebidos() {
+        await _handler.Handle(
+            new ProveedorActualizadaNotification("PROV1234567", "Proveedor Nuevo", "Descripción nueva"),
+            CancellationToken.None);
+
+        _readRepository.Verify(
+            r => r.UpdateProveedorNombreAsync("PROV1234567", "Proveedor Nuevo", "Descripción nueva"), Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_FalloDeMongoEnProveedor_NoPropagaExcepcion() {
+        _readRepository
+            .Setup(r => r.UpdateProveedorNombreAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>()))
+            .ThrowsAsync(new TimeoutException("MongoDB caído"));
+
+        Func<Task> act = async () => await _handler.Handle(
+            new ProveedorActualizadaNotification("PROV1234567", "Nuevo"), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
     }

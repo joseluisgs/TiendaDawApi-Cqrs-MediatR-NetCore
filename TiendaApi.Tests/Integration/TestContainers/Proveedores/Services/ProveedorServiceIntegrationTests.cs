@@ -6,11 +6,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Proveedores;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.IdGenerators;
+using TiendaApi.Api.Infrastructures;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
@@ -80,6 +82,15 @@ public class ProveedorServiceIntegrationTests {
         services.AddScoped<IProveedorService, ProveedorService>();
         services.AddScoped<IValidator<ProveedorRequestDto>, ProveedorRequestValidator>();
         services.AddScoped<ICacheService, MemoryCacheService>();
+
+        // El ProveedorService publica ProveedorActualizadaNotification (sync del
+        // read model): MediatR + Mongo para que ProductoReadSyncHandler pueda
+        // construirse (su ServiceCollection manual no los tenía).
+        services.AddSingleton<IMongoClient>(new MongoClient(mongoConnectionString));
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IMongoClient>().GetDatabase(configuration["MongoDbSettings:DatabaseName"] ?? "tienda"));
+        services.AddScoped<IProductoReadRepository, ProductoReadRepository>();
+        services.AddMediatRHandlers();
 
         _serviceProvider = services.BuildServiceProvider();
 

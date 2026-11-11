@@ -1,6 +1,7 @@
 using MediatR;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Features.Productos.Notifications;
+using TiendaApi.Api.Features.Proveedores.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Repositories.Productos;
 
@@ -23,7 +24,8 @@ public class ProductoReadSyncHandler(
 ) : INotificationHandler<ProductoCreadoNotification>
     , INotificationHandler<ProductoActualizadoNotification>
     , INotificationHandler<ProductoEliminadoNotification>
-    , INotificationHandler<CategoriaActualizadaNotification> {
+    , INotificationHandler<CategoriaActualizadaNotification>
+    , INotificationHandler<ProveedorActualizadaNotification> {
     /// <inheritdoc />
     public async Task Handle(CategoriaActualizadaNotification notification, CancellationToken cancellationToken) {
         try {
@@ -36,6 +38,21 @@ public class ProductoReadSyncHandler(
             logger.LogError(ex,
                 "Sync: fallo al propagar renombre de categoría {Id} en MongoDB (PG ya commiteado, el seeder repara)",
                 notification.CategoriaId);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task Handle(ProveedorActualizadaNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug(
+                "Sync: proveedor {Codigo} actualizado a '{Nombre}' → updateMany en MongoDB",
+                notification.Codigo, notification.NuevoNombre);
+            await readRepository.UpdateProveedorNombreAsync(
+                notification.Codigo, notification.NuevoNombre, notification.NuevaDescripcion);
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al propagar renombre de proveedor {Codigo} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.Codigo);
         }
     }
 
