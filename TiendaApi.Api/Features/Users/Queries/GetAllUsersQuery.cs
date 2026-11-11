@@ -24,15 +24,13 @@ public class GetAllUsersPagedQueryHandler(
     IUserRepository repository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IRequestHandler<GetAllUsersPagedQuery, Result<PagedResult<UserDto>, DomainError>>
-{
+    : IRequestHandler<GetAllUsersPagedQuery, Result<PagedResult<UserDto>, DomainError>> {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:UsuarioCacheTTLMinutes"] ?? "10"));
 
     /// <inheritdoc/>
     public async Task<Result<PagedResult<UserDto>, DomainError>> Handle(
-        GetAllUsersPagedQuery request, CancellationToken cancellationToken)
-    {
+        GetAllUsersPagedQuery request, CancellationToken cancellationToken) {
         // La key incluye todos los filtros del record (ToString automático de C#)
         var cacheKey = $"usuarios:paged:{request.Filter}";
         var cached = await cacheService.GetAsync<PagedResult<UserDto>>(cacheKey);
@@ -40,19 +38,15 @@ public class GetAllUsersPagedQueryHandler(
             return Result.Success<PagedResult<UserDto>, DomainError>(cached);
 
         var (users, totalCount) = await repository.FindAllPagedAsync(request.Filter);
-        var pagedResult = new PagedResult<UserDto>
-        {
+        var pagedResult = new PagedResult<UserDto> {
             Items = users.ToDtoList(),
             TotalCount = totalCount,
             Page = request.Filter.Page + 1,
             PageSize = request.Filter.Size
         };
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

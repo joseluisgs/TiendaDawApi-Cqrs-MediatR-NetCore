@@ -33,8 +33,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Pedidos.Services;
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
-public class PedidosHandlerIntegrationTests
-{
+public class PedidosHandlerIntegrationTests {
     private const string DatabaseName = "it_pedidos_handler";
     private string _connectionString = string.Empty;
     private string _mongoConnectionString = string.Empty;
@@ -45,25 +44,21 @@ public class PedidosHandlerIntegrationTests
     private long _userId;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
-    {
+    public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
-    public async Task OneTimeTearDown()
-    {
+    public async Task OneTimeTearDown() {
         await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
-    public async Task Setup()
-    {
+    public async Task Setup() {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", _connectionString },
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
@@ -117,8 +112,7 @@ public class PedidosHandlerIntegrationTests
         await categoriaRepo.SaveAsync(categoria);
 
         var productoRepo = _provider.GetRequiredService<IProductoRepository>();
-        var producto = new Producto
-        {
+        var producto = new Producto {
             Nombre = $"Producto Test {Guid.NewGuid():N}".Substring(0, 20),
             Descripcion = "Producto para pedidos",
             Precio = 99.99m,
@@ -130,8 +124,7 @@ public class PedidosHandlerIntegrationTests
         _productoId = producto.Id;
 
         var userRepo = _provider.GetRequiredService<IUserRepository>();
-        var user = new User
-        {
+        var user = new User {
             UserName = $"testuser_{Guid.NewGuid():N}".Substring(0, 15),
             Email = $"test_{Guid.NewGuid():N}@example.com",
             PasswordHash = "$2a$11$test",
@@ -144,30 +137,25 @@ public class PedidosHandlerIntegrationTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
+    public void TearDown() {
         _dbContext?.Dispose();
         _provider?.Dispose();
     }
 
     #region ========== UTILIDADES ==========
 
-    private static PedidoRequestDto NuevoPedidoDto(long productoId, int cantidad, string? calle = "Calle Test") => new()
-    {
-        Destinatario = new DestinatarioDto
-        {
+    private static PedidoRequestDto NuevoPedidoDto(long productoId, int cantidad, string? calle = "Calle Test") => new() {
+        Destinatario = new DestinatarioDto {
             NombreCompleto = "Test Destinatario",
             Email = "test@email.com",
             Direccion = new DireccionDto { Calle = calle ?? "Calle Test", Ciudad = "Madrid", Pais = "España" }
         },
-        Items = new List<PedidoItemRequestDto>
-        {
+        Items = new List<PedidoItemRequestDto> {
             new() { ProductoId = productoId, Cantidad = cantidad }
         }
     };
 
-    private async Task SetProductoStock(long productoId, int stock)
-    {
+    private async Task SetProductoStock(long productoId, int stock) {
         var producto = await _dbContext!.FindAsync<Producto>(productoId);
         producto!.Stock = stock;
         await _dbContext.SaveChangesAsync();
@@ -178,8 +166,7 @@ public class PedidosHandlerIntegrationTests
     #region ========== FIND ==========
 
     [Test]
-    public async Task FindAllAsync_SinPedidos_RetornaListaVacia()
-    {
+    public async Task FindAllAsync_SinPedidos_RetornaListaVacia() {
         var result = await _mediator!.Send(new GetAllPedidosListQuery());
 
         result.IsSuccess.Should().BeTrue();
@@ -187,8 +174,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindByUserIdAsync_SinPedidos_RetornaListaVacia()
-    {
+    public async Task FindByUserIdAsync_SinPedidos_RetornaListaVacia() {
         var result = await _mediator!.Send(new GetMyPedidosQuery(_userId));
 
         result.IsSuccess.Should().BeTrue();
@@ -196,8 +182,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindByIdAsync_SinPedidos_RetornaNotFound()
-    {
+    public async Task FindByIdAsync_SinPedidos_RetornaNotFound() {
         var result = await _mediator!.Send(new GetPedidoByIdQuery("507f1f77bcf86cd799439011"));
 
         result.IsFailure.Should().BeTrue();
@@ -208,8 +193,7 @@ public class PedidosHandlerIntegrationTests
     #region ========== CREATE ==========
 
     [Test]
-    public async Task CreateAsync_ConItemsValidos_RetornaPedidoCreado()
-    {
+    public async Task CreateAsync_ConItemsValidos_RetornaPedidoCreado() {
         var result = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 2)));
 
         result.IsSuccess.Should().BeTrue();
@@ -219,8 +203,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_ConItemsVacios_RetornaError()
-    {
+    public async Task CreateAsync_ConItemsVacios_RetornaError() {
         var dto = NuevoPedidoDto(_productoId, 1) with { Items = new List<PedidoItemRequestDto>() };
 
         var result = await _mediator!.Send(new CreatePedidoCommand(_userId, dto));
@@ -229,16 +212,14 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_ConProductoNoExistente_RetornaError()
-    {
+    public async Task CreateAsync_ConProductoNoExistente_RetornaError() {
         var result = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(999999, 1)));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
-    public async Task CreateAsync_ConStockCero_RetornaErrorDeStock()
-    {
+    public async Task CreateAsync_ConStockCero_RetornaErrorDeStock() {
         await SetProductoStock(_productoId, 0);
 
         var result = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
@@ -247,8 +228,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_ConStockInsuficiente_RetornaErrorDeStock()
-    {
+    public async Task CreateAsync_ConStockInsuficiente_RetornaErrorDeStock() {
         await SetProductoStock(_productoId, 5);
 
         var result = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 10)));
@@ -257,8 +237,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_ConStockSuficiente_DecrementaStockCorrectamente()
-    {
+    public async Task CreateAsync_ConStockSuficiente_DecrementaStockCorrectamente() {
         var stockInicial = 50;
         await SetProductoStock(_productoId, stockInicial);
 
@@ -271,8 +250,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_CantidadExactaStock_PermitePedido()
-    {
+    public async Task CreateAsync_CantidadExactaStock_PermitePedido() {
         var stockInicial = 10;
         await SetProductoStock(_productoId, stockInicial);
 
@@ -285,8 +263,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_CantidadMayorStock_RechazaPedido()
-    {
+    public async Task CreateAsync_CantidadMayorStock_RechazaPedido() {
         var stockInicial = 10;
         await SetProductoStock(_productoId, stockInicial);
 
@@ -299,8 +276,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task CreateAsync_UsuarioNoExistente_RetornaError()
-    {
+    public async Task CreateAsync_UsuarioNoExistente_RetornaError() {
         var dto = NuevoPedidoDto(_productoId, 1);
 
         var result = await _mediator!.Send(new CreatePedidoCommand(999999, dto));
@@ -313,8 +289,7 @@ public class PedidosHandlerIntegrationTests
     #region ========== DECREMENTO DE STOCK ==========
 
     [Test]
-    public async Task DecrementStockAsync_StockInsuficiente_NoDecrementa()
-    {
+    public async Task DecrementStockAsync_StockInsuficiente_NoDecrementa() {
         var productoRepo = _provider!.GetRequiredService<IProductoRepository>();
         await SetProductoStock(_productoId, 3);
 
@@ -329,8 +304,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DecrementStockAsync_StockSuficiente_Decrementa()
-    {
+    public async Task DecrementStockAsync_StockSuficiente_Decrementa() {
         var productoRepo = _provider!.GetRequiredService<IProductoRepository>();
         await SetProductoStock(_productoId, 10);
 
@@ -349,8 +323,7 @@ public class PedidosHandlerIntegrationTests
     #region ========== MÉTODOS DE ADMINISTRADOR ==========
 
     [Test]
-    public async Task FindAllPagedAsync_ConPaginacion_RetornaPedidosPaginados()
-    {
+    public async Task FindAllPagedAsync_ConPaginacion_RetornaPedidosPaginados() {
         var result = await _mediator!.Send(new GetAllPedidosQuery(0, 10));
 
         result.IsSuccess.Should().BeTrue();
@@ -361,8 +334,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindAllPagedAsync_SegundaPagina_RetornaPaginaCorrecta()
-    {
+    public async Task FindAllPagedAsync_SegundaPagina_RetornaPaginaCorrecta() {
         var result = await _mediator!.Send(new GetAllPedidosQuery(1, 5));
 
         result.IsSuccess.Should().BeTrue();
@@ -371,8 +343,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task UpdateAdminAsync_ConDireccion_ActualizaPedido()
-    {
+    public async Task UpdateAdminAsync_ConDireccion_ActualizaPedido() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -385,8 +356,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task UpdateAdminAsync_PedidoNoExistente_RetornaNotFound()
-    {
+    public async Task UpdateAdminAsync_PedidoNoExistente_RetornaNotFound() {
         var updateDto = new UpdatePedidoDto { Estado = "ENVIADO" };
 
         var result = await _mediator!.Send(new UpdatePedidoAdminCommand("507f1f77bcf86cd799439011", updateDto));
@@ -395,8 +365,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task UpdateEstadoAsync_EstadoValido_ActualizaEstado()
-    {
+    public async Task UpdateEstadoAsync_EstadoValido_ActualizaEstado() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -408,8 +377,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task UpdateEstadoAsync_EstadoInvalido_RetornaError()
-    {
+    public async Task UpdateEstadoAsync_EstadoInvalido_RetornaError() {
         var result = await _mediator!.Send(
             new UpdatePedidoEstadoCommand("507f1f77bcf86cd799439011", "ESTADO_INVALIDO"));
 
@@ -417,8 +385,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DeleteAdminAsync_PedidoExistente_MarcaComoEliminado()
-    {
+    public async Task DeleteAdminAsync_PedidoExistente_MarcaComoEliminado() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -435,8 +402,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DeleteAdminAsync_PedidoNoExistente_RetornaNotFound()
-    {
+    public async Task DeleteAdminAsync_PedidoNoExistente_RetornaNotFound() {
         var result = await _mediator!.Send(new DeletePedidoAdminCommand("507f1f77bcf86cd799439011"));
 
         result.IsFailure.Should().BeTrue();
@@ -447,8 +413,7 @@ public class PedidosHandlerIntegrationTests
     #region ========== MÉTODOS DE USUARIO ==========
 
     [Test]
-    public async Task FindMyPedidosAsync_ConPedidos_RetornaPedidosDelUsuario()
-    {
+    public async Task FindMyPedidosAsync_ConPedidos_RetornaPedidosDelUsuario() {
         await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
 
         var result = await _mediator.Send(new GetMyPedidosQuery(_userId));
@@ -459,8 +424,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindMyPedidosAsync_SinPedidos_RetornaListaVacia()
-    {
+    public async Task FindMyPedidosAsync_SinPedidos_RetornaListaVacia() {
         var result = await _mediator!.Send(new GetMyPedidosQuery(999999));
 
         result.IsSuccess.Should().BeTrue();
@@ -468,8 +432,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindMyPedidosPagedAsync_ConPaginacion_RetornaPedidosPaginados()
-    {
+    public async Task FindMyPedidosPagedAsync_ConPaginacion_RetornaPedidosPaginados() {
         var result = await _mediator!.Send(new GetMyPedidosPagedQuery(_userId, 0, 10));
 
         result.IsSuccess.Should().BeTrue();
@@ -479,8 +442,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindMyPedidoAsync_PedidoPropio_RetornaPedido()
-    {
+    public async Task FindMyPedidoAsync_PedidoPropio_RetornaPedido() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -493,16 +455,14 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task FindMyPedidoAsync_PedidoAjeno_RetornaError()
-    {
+    public async Task FindMyPedidoAsync_PedidoAjeno_RetornaError() {
         var result = await _mediator!.Send(new GetMyPedidoByIdQuery("507f1f77bcf86cd799439011", 999999));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
-    public async Task UpdateMyPedidoAsync_EstadoPendiente_ActualizaDireccion()
-    {
+    public async Task UpdateMyPedidoAsync_EstadoPendiente_ActualizaDireccion() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(
             _userId, NuevoPedidoDto(_productoId, 1, "Calle Original")));
         createResult.IsSuccess.Should().BeTrue();
@@ -516,8 +476,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task UpdateMyPedidoAsync_EstadoNoPendiente_RetornaError()
-    {
+    public async Task UpdateMyPedidoAsync_EstadoNoPendiente_RetornaError() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -531,8 +490,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DeleteMyPedidoAsync_EstadoPendiente_MarcaEliminado()
-    {
+    public async Task DeleteMyPedidoAsync_EstadoPendiente_MarcaEliminado() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -543,8 +501,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DeleteMyPedidoAsync_EstadoNoPendiente_RetornaError()
-    {
+    public async Task DeleteMyPedidoAsync_EstadoNoPendiente_RetornaError() {
         var createResult = await _mediator!.Send(new CreatePedidoCommand(_userId, NuevoPedidoDto(_productoId, 1)));
         createResult.IsSuccess.Should().BeTrue();
         var pedidoId = createResult.Value.Id;
@@ -557,8 +514,7 @@ public class PedidosHandlerIntegrationTests
     }
 
     [Test]
-    public async Task DeleteMyPedidoAsync_PedidoAjeno_RetornaError()
-    {
+    public async Task DeleteMyPedidoAsync_PedidoAjeno_RetornaError() {
         var result = await _mediator!.Send(new DeleteMyPedidoCommand("507f1f77bcf86cd799439011", 999999));
 
         result.IsFailure.Should().BeTrue();

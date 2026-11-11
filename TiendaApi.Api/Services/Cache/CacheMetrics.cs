@@ -9,8 +9,7 @@ namespace TiendaApi.Api.Services.Cache;
 /// En producción, esto se expondría vía Prometheus/OpenTelemetry.
 /// Para DAW, suficiente con verlo en /health.
 /// </summary>
-public class CacheMetrics
-{
+public class CacheMetrics {
     private long _getTotal;
     private long _getErrors;
     private long _setTotal;
@@ -51,8 +50,7 @@ public class CacheMetrics
     public void RecordGetSuccess() => Interlocked.Increment(ref _getTotal);
 
     /// <summary>Registra una operación Get con error.</summary>
-    public void RecordGetError(string message)
-    {
+    public void RecordGetError(string message) {
         Interlocked.Increment(ref _getTotal);
         Interlocked.Increment(ref _getErrors);
         _lastErrorAt = DateTime.UtcNow;
@@ -63,8 +61,7 @@ public class CacheMetrics
     public void RecordSetSuccess() => Interlocked.Increment(ref _setTotal);
 
     /// <summary>Registra una operación Set con error.</summary>
-    public void RecordSetError(string message)
-    {
+    public void RecordSetError(string message) {
         Interlocked.Increment(ref _setTotal);
         Interlocked.Increment(ref _setErrors);
         _lastErrorAt = DateTime.UtcNow;
@@ -75,8 +72,7 @@ public class CacheMetrics
     public void RecordRemoveSuccess() => Interlocked.Increment(ref _removeTotal);
 
     /// <summary>Registra una operación Remove con error.</summary>
-    public void RecordRemoveError(string message)
-    {
+    public void RecordRemoveError(string message) {
         Interlocked.Increment(ref _removeTotal);
         Interlocked.Increment(ref _removeErrors);
         _lastErrorAt = DateTime.UtcNow;
@@ -84,18 +80,15 @@ public class CacheMetrics
     }
 
     /// <summary>Calcula la tasa de errores (0.0 = sin errores, 1.0 = todos fallan).</summary>
-    public double ErrorRate
-    {
-        get
-        {
+    public double ErrorRate {
+        get {
             var total = GetTotal + SetTotal + RemoveTotal;
             return total == 0 ? 0.0 : (double)TotalErrors / total;
         }
     }
 
     /// <summary>Resumen para el health check.</summary>
-    public object ToSummary() => new
-    {
+    public object ToSummary() => new {
         getTotal = GetTotal,
         getErrors = GetErrors,
         setTotal = SetTotal,

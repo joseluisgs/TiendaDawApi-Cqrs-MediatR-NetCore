@@ -26,12 +26,10 @@ public class DeleteMyPedidoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<DeleteMyPedidoCommand, UnitResult<DomainError>>
-{
+    : IRequestHandler<DeleteMyPedidoCommand, UnitResult<DomainError>> {
     /// <inheritdoc/>
     public async Task<UnitResult<DomainError>> Handle(
-        DeleteMyPedidoCommand request, CancellationToken cancellationToken)
-    {
+        DeleteMyPedidoCommand request, CancellationToken cancellationToken) {
         var pedido = await repository.FindByIdAsync(request.Id);
         if (pedido is null)
             return UnitResult.Failure<DomainError>(PedidoError.NotFound(request.Id));

@@ -9,15 +9,12 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 /// Handler que publica evento de GraphQL Subscription cuando se elimina un producto.
 /// </summary>
 public class ProductoEliminadoGraphQLHandler(IEventPublisher eventPublisher)
-    : INotificationHandler<ProductoEliminadoNotification>
-{
+    : INotificationHandler<ProductoEliminadoNotification> {
     /// <summary>
     /// Procesa el evento ProductoEliminado y publica la suscripción GraphQL onProductoEliminado.
     /// </summary>
-    public async Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken)
-    {
-        await eventPublisher.PublishAsync("onProductoEliminado", new ProductoEliminadoEvent
-        {
+    public async Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken) {
+        await eventPublisher.PublishAsync("onProductoEliminado", new ProductoEliminadoEvent {
             ProductoId = notification.ProductoId,
             DeletedAt = DateTime.UtcNow
         });

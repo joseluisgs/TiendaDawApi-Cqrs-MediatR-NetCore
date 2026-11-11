@@ -9,14 +9,12 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// Handler que notifica por WebSocket la actualización de un pedido propio.
 /// </summary>
 public class PedidoActualizadoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
-    : INotificationHandler<PedidoActualizadoNotification>
-{
+    : INotificationHandler<PedidoActualizadoNotification> {
     /// <summary>
     /// Procesa el evento PedidoActualizado y notifica por WebSocket al usuario
     /// dueño y a todos los administradores.
     /// </summary>
-    public async Task Handle(PedidoActualizadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoActualizadoNotification notification, CancellationToken cancellationToken) {
         var pedido = notification.Pedido;
         await webSocketHandler.NotifyUserAndAdminsAsync(pedido.UserId, new PedidoNotificacion(
             PedidoNotificationType.ESTADO_ACTUALIZADO,

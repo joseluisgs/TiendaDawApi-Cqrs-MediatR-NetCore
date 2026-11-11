@@ -24,12 +24,10 @@ public record GetProductosByCategoriaQuery(long CategoriaId)
 public class GetProductosByCategoriaQueryHandler(
     IProductoService service,
     ICategoriaRepository categoriaRepository)
-    : IRequestHandler<GetProductosByCategoriaQuery, Result<IEnumerable<ProductoDto>, DomainError>>
-{
+    : IRequestHandler<GetProductosByCategoriaQuery, Result<IEnumerable<ProductoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<IEnumerable<ProductoDto>, DomainError>> Handle(
-        GetProductosByCategoriaQuery request, CancellationToken cancellationToken)
-    {
+        GetProductosByCategoriaQuery request, CancellationToken cancellationToken) {
         var categoria = await categoriaRepository.FindByIdAsync(request.CategoriaId);
         if (categoria is null)
             return Result.Failure<IEnumerable<ProductoDto>, DomainError>(

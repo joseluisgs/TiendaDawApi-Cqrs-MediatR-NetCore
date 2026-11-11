@@ -33,8 +33,7 @@ namespace TiendaApi.Api.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
 [Produces("application/json")]
-public class ProductosController(IMediator mediator) : ControllerBase
-{
+public class ProductosController(IMediator mediator) : ControllerBase {
     /// <summary>Obtiene todos los productos paginados con filtros opcionales.</summary>
     [HttpGet]
     [OutputCache(Duration = 60, Tags = new[] { "productos" })]
@@ -49,13 +48,11 @@ public class ProductosController(IMediator mediator) : ControllerBase
         [FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string sortBy = "id",
-        [FromQuery] string direction = "asc")
-    {
+        [FromQuery] string direction = "asc") {
         var filter = new ProductoFilterDto(nombre, categoria, isDeleted, precioMax, stockMin, page, size, sortBy, direction);
         var resultado = await mediator.Send(new GetAllProductosQuery(filter));
         return resultado.Match(
-            onSuccess: productos =>
-            {
+            onSuccess: productos => {
                 // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader))
@@ -72,8 +69,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(ProductoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    public async Task<ActionResult<ProductoDto>> GetById(long id)
-    {
+    public async Task<ActionResult<ProductoDto>> GetById(long id) {
         var resultado = await mediator.Send(new GetProductoByIdQuery(id));
         return resultado.Match(
             onSuccess: producto => producto,
@@ -87,8 +83,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ProductoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<ProductoDto>>> GetByCategoria(long categoriaId)
-    {
+    public async Task<ActionResult<IEnumerable<ProductoDto>>> GetByCategoria(long categoriaId) {
         var resultado = await mediator.Send(new GetProductosByCategoriaQuery(categoriaId));
         return resultado.Match(
             onSuccess: productos => Ok(productos),
@@ -104,8 +99,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<ProductoDto>> Create([FromBody] ProductoRequestDto dto)
-    {
+    public async Task<ActionResult<ProductoDto>> Create([FromBody] ProductoRequestDto dto) {
         var resultado = await mediator.Send(new CreateProductoCommand(dto));
         return resultado.Match(
             onSuccess: producto => CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto),
@@ -121,8 +115,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<ProductoDto>> Update(long id, [FromBody] ProductoRequestDto dto)
-    {
+    public async Task<ActionResult<ProductoDto>> Update(long id, [FromBody] ProductoRequestDto dto) {
         var resultado = await mediator.Send(new UpdateProductoCommand(id, dto));
         return resultado.Match(
             onSuccess: producto => producto,
@@ -137,13 +130,11 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult> Delete(long id)
-    {
+    public async Task<ActionResult> Delete(long id) {
         var resultado = await mediator.Send(new DeleteProductoCommand(id));
         if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
-        return error switch
-        {
+        return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
@@ -159,8 +150,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [RequestSizeLimit(10 * 1024 * 1024)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<ProductoDto>> UpdateImage(long id, IFormFile image)
-    {
+    public async Task<ActionResult<ProductoDto>> UpdateImage(long id, IFormFile image) {
         if (image is null or { Length: 0 })
             return BadRequest(new { message = "Debe proporcionar un archivo de imagen" });
 
@@ -183,8 +173,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
-    public async Task<ActionResult<ProductoDto>> UpdatePartial(long id, [FromBody] ProductoPatchDto dto)
-    {
+    public async Task<ActionResult<ProductoDto>> UpdatePartial(long id, [FromBody] ProductoPatchDto dto) {
         var resultado = await mediator.Send(new UpdateProductoPartialCommand(id, dto));
         return resultado.Match(
             onSuccess: producto => producto,
@@ -214,8 +203,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
         long id,
         [FromQuery] DateTime? desde = null,
         [FromQuery] DateTime? hasta = null,
-        [FromQuery] int limit = 50)
-    {
+        [FromQuery] int limit = 50) {
         var resultado = await mediator.Send(new GetHistorialPreciosQuery(id, desde, hasta, limit));
 
         // Constructor explícito: el operador implícito T -> ActionResult<T> no se
@@ -242,8 +230,7 @@ public class ProductosController(IMediator mediator) : ControllerBase
     // ActionResult<object> y no ActionResult: en ASP.NET Core 10 ActionResult<T>
     // ya no hereda de ActionResult, así que ToHttpResult<T> no es convertible al
     // tipo no genérico. Con T = object el 204/401 y el mapeo de errores siguen iguales.
-    public async Task<ActionResult<object>> RegistrarVista(long id)
-    {
+    public async Task<ActionResult<object>> RegistrarVista(long id) {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))

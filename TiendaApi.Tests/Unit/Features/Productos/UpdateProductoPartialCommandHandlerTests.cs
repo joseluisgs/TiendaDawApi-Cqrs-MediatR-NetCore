@@ -12,11 +12,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
-public class UpdateProductoPartialCommandHandlerTests
-{
+public class UpdateProductoPartialCommandHandlerTests {
     [Test]
-    public async Task Handle_ProductoExistente_ActualizaSoloCamposProporcionados()
-    {
+    public async Task Handle_ProductoExistente_ActualizaSoloCamposProporcionados() {
         var repository = new Mock<IProductoRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -34,8 +32,7 @@ public class UpdateProductoPartialCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_ProductoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IProductoRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();

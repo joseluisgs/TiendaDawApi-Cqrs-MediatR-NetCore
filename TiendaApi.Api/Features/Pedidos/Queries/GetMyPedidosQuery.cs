@@ -17,12 +17,10 @@ public record GetMyPedidosQuery(long UserId)
 /// Handler de la query GetMyPedidosQuery.
 /// </summary>
 public class GetMyPedidosQueryHandler(IPedidosRepository repository)
-    : IRequestHandler<GetMyPedidosQuery, Result<IEnumerable<PedidoDto>, DomainError>>
-{
+    : IRequestHandler<GetMyPedidosQuery, Result<IEnumerable<PedidoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
-        GetMyPedidosQuery request, CancellationToken cancellationToken)
-    {
+        GetMyPedidosQuery request, CancellationToken cancellationToken) {
         var pedidos = await repository.FindByUserIdAsync(request.UserId);
         return Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos.ToDtoList());
     }

@@ -15,11 +15,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
-public class UpdateProductoCommandHandlerTests
-{
+public class UpdateProductoCommandHandlerTests {
     [Test]
-    public async Task Handle_ProductoExistente_DevuelveSuccess()
-    {
+    public async Task Handle_ProductoExistente_DevuelveSuccess() {
         var repository = new Mock<IProductoRepository>();
         var categoriaRepository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<ProductoRequestDto>>();
@@ -39,8 +37,7 @@ public class UpdateProductoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_ProductoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IProductoRepository>();
         var categoriaRepository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<ProductoRequestDto>>();

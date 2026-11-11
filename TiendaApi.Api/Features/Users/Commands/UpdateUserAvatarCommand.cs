@@ -24,12 +24,10 @@ public record UpdateUserAvatarCommand(long Id, string? AvatarUrl)
 public class UpdateUserAvatarCommandHandler(
     IUserRepository repository,
     ICacheService cacheService)
-    : IRequestHandler<UpdateUserAvatarCommand, Result<UserDto, DomainError>>
-{
+    : IRequestHandler<UpdateUserAvatarCommand, Result<UserDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<UserDto, DomainError>> Handle(
-        UpdateUserAvatarCommand request, CancellationToken cancellationToken)
-    {
+        UpdateUserAvatarCommand request, CancellationToken cancellationToken) {
         var user = await repository.FindByIdAsync(request.Id);
         if (user is null or { IsDeleted: true })
             return Result.Failure<UserDto, DomainError>(UsuarioError.NotFound(request.Id));
@@ -39,7 +37,7 @@ public class UpdateUserAvatarCommandHandler(
         var dto = updated.ToDto();
 
         await cacheService.RemoveAsync($"usuarios:{request.Id}");
-            
+
 
         return Result.Success<UserDto, DomainError>(dto);
     }

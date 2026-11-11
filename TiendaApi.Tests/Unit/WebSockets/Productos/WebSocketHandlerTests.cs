@@ -9,14 +9,12 @@ namespace TiendaApi.Tests.Unit.WebSockets.Productos;
 /// <summary>
 /// Tests unitarios para ProductosWebSocketHandler.
 /// </summary>
-public class WebSocketHandlerTests
-{
+public class WebSocketHandlerTests {
     private Mock<ILogger<ProductosWebSocketHandler>> _mockLogger = null!;
     private ProductosWebSocketHandler _handler = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mockLogger = new Mock<ILogger<ProductosWebSocketHandler>>();
         _handler = new ProductosWebSocketHandler(_mockLogger.Object);
     }
@@ -24,8 +22,7 @@ public class WebSocketHandlerTests
     #region Tests NotifyAsync (CREATE)
 
     [Test]
-    public async Task NotifyAsync_Create_SinConexiones_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Create_SinConexiones_NoLanzaExcepcion() {
         var producto = new ProductoDto(1, "Test Product", "Description", 99.99m, 10, null, new CategoriaResumenDto(1, "Categoria"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -37,8 +34,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_Create_ConProductoCompleto_NotificaConDatos()
-    {
+    public async Task NotifyAsync_Create_ConProductoCompleto_NotificaConDatos() {
         var producto = new ProductoDto(42, "Producto Test", "Descripción del producto", 99.99m, 10, "https://example.com/image.jpg", new CategoriaResumenDto(1, "Categoria"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -54,8 +50,7 @@ public class WebSocketHandlerTests
     #region Tests NotifyAsync (UPDATE)
 
     [Test]
-    public async Task NotifyAsync_Update_SinConexiones_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Update_SinConexiones_NoLanzaExcepcion() {
         var producto = new ProductoDto(1, "Test Product", "Description", 99.99m, 10, null, new CategoriaResumenDto(1, "Categoria"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -67,8 +62,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_Update_ConProductoCompleto_NotificaConDatos()
-    {
+    public async Task NotifyAsync_Update_ConProductoCompleto_NotificaConDatos() {
         var producto = new ProductoDto(42, "Producto Test Actualizado", "Nueva descripción", 149.99m, 20, "https://example.com/new-image.jpg", new CategoriaResumenDto(1, "Categoria"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -84,8 +78,7 @@ public class WebSocketHandlerTests
     #region Tests NotifyAsync (DELETE)
 
     [Test]
-    public async Task NotifyAsync_Delete_SinConexiones_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Delete_SinConexiones_NoLanzaExcepcion() {
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
             ProductoNotificationType.DELETED,
             123,
@@ -95,8 +88,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_Delete_ConIdValido_NotificaConId()
-    {
+    public async Task NotifyAsync_Delete_ConIdValido_NotificaConId() {
         var productoId = 456L;
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -112,8 +104,7 @@ public class WebSocketHandlerTests
     #region Tests de notificación con conexiones (simulado)
 
     [Test]
-    public async Task NotifyAsync_Create_ConProductoValido_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Create_ConProductoValido_NoLanzaExcepcion() {
         var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -125,8 +116,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_Update_ConProductoValido_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Update_ConProductoValido_NoLanzaExcepcion() {
         var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
@@ -138,8 +128,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_Delete_ConIdValido_NoLanzaExcepcion()
-    {
+    public async Task NotifyAsync_Delete_ConIdValido_NoLanzaExcepcion() {
         var act = async () => await _handler.NotifyAsync(new ProductoNotificacion(
             ProductoNotificationType.DELETED,
             999,
@@ -149,8 +138,7 @@ public class WebSocketHandlerTests
     }
 
     [Test]
-    public async Task NotifyAsync_TodosLosTipos_ProcesaSinErrores()
-    {
+    public async Task NotifyAsync_TodosLosTipos_ProcesaSinErrores() {
         var producto = new ProductoDto(1, "Test", "Desc", 10m, 5, null, new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         // CREATE

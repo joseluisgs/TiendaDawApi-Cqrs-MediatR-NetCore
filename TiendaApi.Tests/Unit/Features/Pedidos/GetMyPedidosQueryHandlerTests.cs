@@ -7,11 +7,9 @@ using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class GetMyPedidosQueryHandlerTests
-{
+public class GetMyPedidosQueryHandlerTests {
     [Test]
-    public async Task Handle_UsuarioConPedidos_DevuelveListaCorrecta()
-    {
+    public async Task Handle_UsuarioConPedidos_DevuelveListaCorrecta() {
         var repository = new Mock<IPedidosRepository>();
         repository.Setup(r => r.FindByUserIdAsync(1)).ReturnsAsync([new Pedido { UserId = 1, Estado = PedidoEstado.PENDIENTE, Total = 5m }]);
         var handler = new GetMyPedidosQueryHandler(repository.Object);
@@ -23,8 +21,7 @@ public class GetMyPedidosQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioSinPedidos_DevuelveListaVacia()
-    {
+    public async Task Handle_UsuarioSinPedidos_DevuelveListaVacia() {
         var repository = new Mock<IPedidosRepository>();
         repository.Setup(r => r.FindByUserIdAsync(1)).ReturnsAsync(Enumerable.Empty<Pedido>());
         var handler = new GetMyPedidosQueryHandler(repository.Object);

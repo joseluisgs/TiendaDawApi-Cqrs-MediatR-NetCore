@@ -14,26 +14,22 @@ using TiendaApi.Api.Features.Categorias.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
-public class CategoriasControllerTests
-{
+public class CategoriasControllerTests {
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
     private CategoriasController _controller = null!;
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _mediator = new Mock<IMediator>();
         _controller = new CategoriasController(_mediator.Object);
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
     }
 
     [Test]
-    public async Task GetAll_ConCategorias_RetornaOk()
-    {
-        var response = new PagedResult<CategoriaDto>
-        {
+    public async Task GetAll_ConCategorias_RetornaOk() {
+        var response = new PagedResult<CategoriaDto> {
             Items = [new CategoriaDto(1, "Electrónica", null, DateTime.UtcNow, DateTime.UtcNow)],
             TotalCount = 1,
             Page = 1,
@@ -50,8 +46,7 @@ public class CategoriasControllerTests
     }
 
     [Test]
-    public async Task Delete_ConCategoriaNoEncontrada_RetornaNotFound()
-    {
+    public async Task Delete_ConCategoriaNoEncontrada_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no")));
 
@@ -63,8 +58,7 @@ public class CategoriasControllerTests
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     [Test]
-    public async Task GetById_Exitoso_RetornaOkConLaCategoria()
-    {
+    public async Task GetById_Exitoso_RetornaOkConLaCategoria() {
         var categoria = new CategoriaDto(1, "Electrónica", null, DateTime.UtcNow, DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<CategoriaDto, DomainError>(categoria));
@@ -75,8 +69,7 @@ public class CategoriasControllerTests
     }
 
     [Test]
-    public async Task GetById_NoExiste_RetornaNotFound()
-    {
+    public async Task GetById_NoExiste_RetornaNotFound() {
         _mediator.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(new NotFoundError("no existe")));
 
@@ -86,8 +79,7 @@ public class CategoriasControllerTests
     }
 
     [Test]
-    public async Task Create_Exitoso_Retorna201ConLocation()
-    {
+    public async Task Create_Exitoso_Retorna201ConLocation() {
         var categoria = new CategoriaDto(1, "Nueva", null, DateTime.UtcNow, DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<CreateCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<CategoriaDto, DomainError>(categoria));
@@ -99,8 +91,7 @@ public class CategoriasControllerTests
     }
 
     [Test]
-    public async Task Create_ConErrorDeValidacion_RetornaBadRequest()
-    {
+    public async Task Create_ConErrorDeValidacion_RetornaBadRequest() {
         // Un nombre duplicado llega del handler como ValidationError -> 400
         _mediator.Setup(m => m.Send(It.IsAny<CreateCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(ValidationError.Create("nombre duplicado")));
@@ -111,8 +102,7 @@ public class CategoriasControllerTests
     }
 
     [Test]
-    public async Task Delete_Exitoso_Retorna204()
-    {
+    public async Task Delete_Exitoso_Retorna204() {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 

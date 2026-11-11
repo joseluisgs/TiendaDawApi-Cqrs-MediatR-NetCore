@@ -14,11 +14,9 @@ using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
-public class DeleteProductoCommandHandlerTests
-{
+public class DeleteProductoCommandHandlerTests {
     [Test]
-    public async Task Handle_ProductoExistente_DevuelveSuccessYPublicaNotification()
-    {
+    public async Task Handle_ProductoExistente_DevuelveSuccessYPublicaNotification() {
         var repository = new Mock<IProductoRepository>();
         var storageService = new Mock<IStorageService>();
         var mediator = new Mock<IMediator>();
@@ -37,8 +35,7 @@ public class DeleteProductoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_ProductoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IProductoRepository>();
         var storageService = new Mock<IStorageService>();
         var mediator = new Mock<IMediator>();

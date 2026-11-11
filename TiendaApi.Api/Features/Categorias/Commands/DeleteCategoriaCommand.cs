@@ -22,12 +22,10 @@ public class DeleteCategoriaCommandHandler(
     ICategoriaRepository repository,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>>
-{
+    : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>> {
     /// <inheritdoc/>
     public async Task<UnitResult<DomainError>> Handle(
-        DeleteCategoriaCommand request, CancellationToken cancellationToken)
-    {
+        DeleteCategoriaCommand request, CancellationToken cancellationToken) {
         var categoria = await repository.FindByIdAsync(request.Id);
         if (categoria is null)
             return UnitResult.Failure<DomainError>(CategoriaError.NotFound(request.Id));
@@ -35,8 +33,8 @@ public class DeleteCategoriaCommandHandler(
         await repository.DeleteAsync(request.Id);
 
         await cacheService.RemoveAsync($"categorias:{request.Id}");
-                await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
-            
+        await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
+
 
         return UnitResult.Success<DomainError>();
     }

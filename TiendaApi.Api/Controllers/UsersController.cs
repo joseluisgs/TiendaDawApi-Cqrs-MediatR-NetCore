@@ -25,8 +25,7 @@ namespace TiendaApi.Api.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
 [Produces("application/json")]
-public class UsersController(IMediator mediator, ILogger<UsersController> logger) : ControllerBase
-{
+public class UsersController(IMediator mediator, ILogger<UsersController> logger) : ControllerBase {
     /// <summary>
     /// Obtiene el listado paginado de usuarios con filtros y ordenación (solo administradores).
     /// </summary>
@@ -49,14 +48,12 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         [FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string sortBy = "id",
-        [FromQuery] string direction = "asc")
-    {
+        [FromQuery] string direction = "asc") {
         logger.LogInformation("Obteniendo todos los usuarios - Página: {Page}, Tamaño: {Size}", page, size);
         var filter = new UserFilterDto(username, email, isDeleted, page, size, sortBy, direction);
         var resultado = await mediator.Send(new GetAllUsersPagedQuery(filter));
         return resultado.Match(
-            onSuccess: pagedResult =>
-            {
+            onSuccess: pagedResult => {
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(pagedResult, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
                 return (ActionResult<PagedResult<UserDto>>)pagedResult;
@@ -74,8 +71,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> GetById(long id)
-    {
+    public async Task<ActionResult<UserDto>> GetById(long id) {
         logger.LogInformation("Obteniendo usuario con ID: {Id}", id);
         var resultado = await mediator.Send(new GetUserByIdQuery(id));
         return resultado.Match(
@@ -94,8 +90,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UserDto>> Create([FromBody] RegisterDto dto)
-    {
+    public async Task<ActionResult<UserDto>> Create([FromBody] RegisterDto dto) {
         logger.LogInformation("Creando nuevo usuario: {Username}", dto.Username);
         var resultado = await mediator.Send(new CreateUserCommand(dto));
         return resultado.Match(
@@ -116,8 +111,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UserDto>> Update(long id, [FromBody] UserUpdateDto dto)
-    {
+    public async Task<ActionResult<UserDto>> Update(long id, [FromBody] UserUpdateDto dto) {
         logger.LogInformation("Actualizando usuario con ID: {Id}", id);
         var resultado = await mediator.Send(new UpdateUserCommand(id, dto));
         return resultado.Match(
@@ -137,8 +131,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> UpdateAvatar(long id, [FromBody] AvatarUpdateDto dto)
-    {
+    public async Task<ActionResult<UserDto>> UpdateAvatar(long id, [FromBody] AvatarUpdateDto dto) {
         logger.LogInformation("Actualizando avatar de usuario con ID: {Id}", id);
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -163,14 +156,12 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Delete(long id)
-    {
+    public async Task<ActionResult> Delete(long id) {
         logger.LogInformation("Eliminando usuario con ID: {Id}", id);
         var resultado = await mediator.Send(new DeleteUserCommand(id));
         if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
-        return error switch
-        {
+        return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
@@ -184,8 +175,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> GetMyProfile()
-    {
+    public async Task<ActionResult<UserDto>> GetMyProfile() {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -206,8 +196,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> UpdateMyProfile([FromBody] UserUpdateDto dto)
-    {
+    public async Task<ActionResult<UserDto>> UpdateMyProfile([FromBody] UserUpdateDto dto) {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -226,8 +215,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult> DeleteMyProfile()
-    {
+    public async Task<ActionResult> DeleteMyProfile() {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -236,8 +224,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
         var resultado = await mediator.Send(new DeleteUserCommand(userId));
         if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
-        return error switch
-        {
+        return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })
@@ -255,8 +242,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> UpdateMyAvatar([FromBody] AvatarUpdateDto dto)
-    {
+    public async Task<ActionResult<UserDto>> UpdateMyAvatar([FromBody] AvatarUpdateDto dto) {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
@@ -280,8 +266,7 @@ public class UsersController(IMediator mediator, ILogger<UsersController> logger
     [ProducesResponseType(typeof(IReadOnlyList<VistaFeedDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<VistaFeedDto>>> GetMyFeed(
-        [FromQuery] int limit = 20)
-    {
+        [FromQuery] int limit = 20) {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });

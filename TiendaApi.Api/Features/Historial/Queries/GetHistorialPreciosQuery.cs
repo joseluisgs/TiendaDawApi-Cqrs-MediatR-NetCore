@@ -24,8 +24,7 @@ public record GetHistorialPreciosQuery(long ProductoId, DateTime? Desde, DateTim
 /// al estilo de la casa.
 /// </summary>
 public class GetHistorialPreciosQueryHandler(IHistorialService service)
-    : IRequestHandler<GetHistorialPreciosQuery, Result<IReadOnlyList<HistorialPrecioDto>, DomainError>>
-{
+    : IRequestHandler<GetHistorialPreciosQuery, Result<IReadOnlyList<HistorialPrecioDto>, DomainError>> {
     /// <inheritdoc/>
     public Task<Result<IReadOnlyList<HistorialPrecioDto>, DomainError>> Handle(
         GetHistorialPreciosQuery request, CancellationToken cancellationToken)

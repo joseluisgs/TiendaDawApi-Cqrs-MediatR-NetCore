@@ -15,8 +15,7 @@ namespace TiendaApi.Api.Services.Productos;
 /// Las claves y TTL de caché son idénticas a las del repositorio de PostgreSQL:
 /// el cliente no puede distinguir de dónde viene la respuesta.
 /// </summary>
-public interface IProductoService
-{
+public interface IProductoService {
     /// <summary>Productos paginados con filtros (REST <c>GET /productos</c> y GraphQL <c>productosPaged</c>) — con caché.</summary>
     /// <param name="filter">Filtros y paginación.</param>
     /// <returns>Resultado paginado de DTOs.</returns>

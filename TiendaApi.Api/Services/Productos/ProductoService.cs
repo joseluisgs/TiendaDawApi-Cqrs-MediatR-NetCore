@@ -19,8 +19,7 @@ public class ProductoService(
     IProductoReadRepository readRepository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IProductoService
-{
+    : IProductoService {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
 
@@ -48,8 +47,7 @@ public class ProductoService(
         Interlocked.Increment(ref _pagedCacheVersion);
 
     /// <inheritdoc/>
-    public async Task<PagedResult<ProductoDto>> GetPagedAsync(ProductoFilterDto filter)
-    {
+    public async Task<PagedResult<ProductoDto>> GetPagedAsync(ProductoFilterDto filter) {
         // 🎓 Clave versionada: al incrementar _pagedCacheVersion, todas las claves
         // viejas quedan huérfanas y mueren por TTL. No necesitamos RemoveByPrefix.
         var cacheKey = $"productos:paged:v{Volatile.Read(ref _pagedCacheVersion)}:{filter}";
@@ -58,19 +56,15 @@ public class ProductoService(
             return cached;
 
         var (productos, totalCount) = await readRepository.FindAllPagedAsync(filter);
-        var pagedResult = new PagedResult<ProductoDto>
-        {
+        var pagedResult = new PagedResult<ProductoDto> {
             Items = productos.ToDtoList(),
             TotalCount = totalCount,
             Page = filter.Page + 1,
             PageSize = filter.Size
         };
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, pagedResult, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });
@@ -79,8 +73,7 @@ public class ProductoService(
     }
 
     /// <inheritdoc/>
-    public async Task<ProductoDto?> GetByIdAsync(long id)
-    {
+    public async Task<ProductoDto?> GetByIdAsync(long id) {
         var cacheKey = $"productos:{id}";
         var cached = await cacheService.GetAsync<ProductoDto>(cacheKey);
         if (cached is not null)
@@ -92,11 +85,8 @@ public class ProductoService(
 
         var dto = producto.ToDto();
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });
@@ -105,8 +95,7 @@ public class ProductoService(
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<ProductoDto>> GetByCategoriaIdAsync(long categoriaId)
-    {
+    public async Task<IEnumerable<ProductoDto>> GetByCategoriaIdAsync(long categoriaId) {
         var cacheKey = $"productos:categoria:{categoriaId}";
         var cached = await cacheService.GetAsync<IEnumerable<ProductoDto>>(cacheKey);
         if (cached is not null)
@@ -115,11 +104,8 @@ public class ProductoService(
         var productos = await readRepository.FindByCategoriaIdAsync(categoriaId);
         var dtos = productos.ToDtoList().ToList();
 
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dtos, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, dtos, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

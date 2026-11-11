@@ -10,11 +10,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Users;
 
-public class DeleteUserCommandHandlerTests
-{
+public class DeleteUserCommandHandlerTests {
     [Test]
-    public async Task Handle_UsuarioExistente_DevuelveSuccess()
-    {
+    public async Task Handle_UsuarioExistente_DevuelveSuccess() {
         var repository = new Mock<IUserRepository>();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, IsDeleted = false });
         repository.Setup(r => r.UpdateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
@@ -27,8 +25,7 @@ public class DeleteUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_UsuarioNoExiste_DevuelveNotFound() {
         var repository = new Mock<IUserRepository>();
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((User?)null);
         var cacheService = new Mock<ICacheService>();
@@ -40,8 +37,7 @@ public class DeleteUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioExistente_InvalidaCache()
-    {
+    public async Task Handle_UsuarioExistente_InvalidaCache() {
         var repository = new Mock<IUserRepository>();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, IsDeleted = false });
         repository.Setup(r => r.UpdateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);

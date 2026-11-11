@@ -9,11 +9,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Auth;
 
-public class AuthCommandHandlerTests
-{
+public class AuthCommandHandlerTests {
     [Test]
-    public async Task SignUpCommandHandler_DelegaASuthService()
-    {
+    public async Task SignUpCommandHandler_DelegaASuthService() {
         var authService = new Mock<IAuthService>();
         var cacheService = new Mock<ICacheService>();
         var dto = new RegisterDto { Username = "juan", Email = "juan@test.com", Password = "password123" };
@@ -33,8 +31,7 @@ public class AuthCommandHandlerTests
     }
 
     [Test]
-    public async Task SignInCommandHandler_DelegaASuthService()
-    {
+    public async Task SignInCommandHandler_DelegaASuthService() {
         var authService = new Mock<IAuthService>();
         var dto = new LoginDto { Username = "juan", Password = "password123" };
 

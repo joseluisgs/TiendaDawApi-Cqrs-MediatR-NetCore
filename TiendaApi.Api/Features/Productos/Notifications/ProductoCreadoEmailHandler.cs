@@ -11,16 +11,13 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 public class ProductoCreadoEmailHandler(
     IEmailService emailService,
     IConfiguration configuration)
-    : INotificationHandler<ProductoCreadoNotification>
-{
+    : INotificationHandler<ProductoCreadoNotification> {
     /// <summary>
     /// Procesa el evento ProductoCreado y envía el email de notificación al administrador.
     /// </summary>
-    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
         var adminEmail = configuration["Smtp:AdminEmail"];
-        if (string.IsNullOrEmpty(adminEmail))
-        {
+        if (string.IsNullOrEmpty(adminEmail)) {
             Log.Warning("Email de admin no configurado, saltando notificación");
             return;
         }
@@ -29,8 +26,7 @@ public class ProductoCreadoEmailHandler(
         var content = EmailTemplates.ProductoCreado(producto.Nombre, producto.Precio, producto.Stock, producto.Id);
         var body = EmailTemplates.CreateBase("Nuevo Producto Creado", content);
 
-        var emailMessage = new EmailMessage
-        {
+        var emailMessage = new EmailMessage {
             To = adminEmail,
             Subject = "🆕 Nuevo Producto en Tienda DAW",
             Body = body,

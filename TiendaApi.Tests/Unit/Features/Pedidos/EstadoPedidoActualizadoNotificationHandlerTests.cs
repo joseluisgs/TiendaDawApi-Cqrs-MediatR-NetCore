@@ -7,11 +7,9 @@ using TiendaApi.Api.Services.Email;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class EstadoPedidoActualizadoNotificationHandlerTests
-{
+public class EstadoPedidoActualizadoNotificationHandlerTests {
     [Test]
-    public async Task EstadoPedidoActualizadoEmailHandler_EnviaEmailAlCliente()
-    {
+    public async Task EstadoPedidoActualizadoEmailHandler_EnviaEmailAlCliente() {
         // 📧 Matriz de emails: el cambio de estado lo provoca el admin desde
         // el panel; quien debe enterarse es el USUARIO dueño del pedido.
         var emailService = new Mock<IEmailService>();
@@ -32,8 +30,7 @@ public class EstadoPedidoActualizadoNotificationHandlerTests
     }
 
     [Test]
-    public async Task EstadoPedidoActualizadoEmailHandler_NoEnviaSiElDestinatarioNoTieneEmail()
-    {
+    public async Task EstadoPedidoActualizadoEmailHandler_NoEnviaSiElDestinatarioNoTieneEmail() {
         var emailService = new Mock<IEmailService>();
 
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
@@ -49,8 +46,7 @@ public class EstadoPedidoActualizadoNotificationHandlerTests
     }
 
     [Test]
-    public void EstadoPedidoActualizadoNotification_ContieneDatosCorrectos()
-    {
+    public void EstadoPedidoActualizadoNotification_ContieneDatosCorrectos() {
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
         var destinatario = new DestinatarioDto { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
         var items = new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) };

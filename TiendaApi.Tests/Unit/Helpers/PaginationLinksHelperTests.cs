@@ -13,14 +13,12 @@ namespace TiendaApi.Tests.Unit.Helpers;
 /// ultima NO hay next/last, y cada enlace reconstruye su propia query con
 /// page+size (y el orden si se paso) sin heredar la query original.
 /// </summary>
-public class PaginationLinksHelperTests
-{
+public class PaginationLinksHelperTests {
     /// <summary>
     /// Request de ejemplo: mismo host/puerto/path para todos los tests, para
     /// que las comparaciones de URL sean estables.
     /// </summary>
-    private static HttpRequest CrearRequest(string query = "")
-    {
+    private static HttpRequest CrearRequest(string query = "") {
         var context = new DefaultHttpContext();
         context.Request.Scheme = "http";
         context.Request.Host = new HostString("api.local", 8080);
@@ -33,8 +31,7 @@ public class PaginationLinksHelperTests
         => new() { Items = Array.Empty<string>(), Page = page, PageSize = pageSize, TotalCount = totalCount };
 
     [Test]
-    public void CreateLinkHeader_ConUnaPagina_DevuelveVacio()
-    {
+    public void CreateLinkHeader_ConUnaPagina_DevuelveVacio() {
         // Una sola pagina no necesita navegacion: header ausente (no ruido inutil)
         var resultado = CrearResultado(page: 1, pageSize: 10, totalCount: 10);
 
@@ -44,8 +41,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_PrimeraPagina_DejaSoloNextYLast()
-    {
+    public void CreateLinkHeader_PrimeraPagina_DejaSoloNextYLast() {
         // Page 1 de 5: no hay atras (first/prev) pero si adelante
         var resultado = CrearResultado(page: 1, pageSize: 10, totalCount: 50);
 
@@ -60,8 +56,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_UltimaPagina_DejaSoloFirstYPrev()
-    {
+    public void CreateLinkHeader_UltimaPagina_DejaSoloFirstYPrev() {
         // Page 5 de 5: no hay adelante pero si atras
         var resultado = CrearResultado(page: 5, pageSize: 10, totalCount: 50);
 
@@ -75,8 +70,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_PaginaIntermedia_DejaLosCuatroEnlaces()
-    {
+    public void CreateLinkHeader_PaginaIntermedia_DejaLosCuatroEnlaces() {
         // Page 3 de 5: navegacion completa en ambos sentidos
         var resultado = CrearResultado(page: 3, pageSize: 10, totalCount: 50);
 
@@ -94,8 +88,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_ConOrdenamiento_SeConservaEnCadaEnlace()
-    {
+    public void CreateLinkHeader_ConOrdenamiento_SeConservaEnCadaEnlace() {
         // El orden forma parte del estado de la lista: sin el, "siguiente"
         // volveria a la misma pagina con otro orden
         var resultado = CrearResultado(page: 2, pageSize: 20, totalCount: 100);
@@ -109,8 +102,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_QueryOriginal_NoSeHeredaEnLosEnlaces()
-    {
+    public void CreateLinkHeader_QueryOriginal_NoSeHeredaEnLosEnlaces() {
         // Los enlaces son autocontenidos (page+size[+orden]): arrastrar filtros
         // de la query original duplicaria el parametro si el cliente la re-enge
         var resultado = CrearResultado(page: 2, pageSize: 10, totalCount: 50);
@@ -123,8 +115,7 @@ public class PaginationLinksHelperTests
     }
 
     [Test]
-    public void CreateLinkHeader_PaginaFueraDeRango_NoLanza_YDevuelveVacio()
-    {
+    public void CreateLinkHeader_PaginaFueraDeRango_NoLanza_YDevuelveVacio() {
         // TotalCount=0 -> TotalPages=0 -> sin navegacion posible; el helper
         // responde vacio en vez de lanzar (su contrato es "header o nada")
         var resultado = CrearResultado(page: 1, pageSize: 10, totalCount: 0);

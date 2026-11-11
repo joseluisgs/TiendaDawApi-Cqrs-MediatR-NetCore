@@ -12,18 +12,15 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
-public class GetCategoriaByIdQueryHandlerTests
-{
-    private Mock<IConfiguration> CreateMockConfiguration()
-    {
+public class GetCategoriaByIdQueryHandlerTests {
+    private Mock<IConfiguration> CreateMockConfiguration() {
         var mockConfig = new Mock<IConfiguration>();
         mockConfig.Setup(c => c["CategoriaCacheTTLMinutes"]).Returns("60");
         return mockConfig;
     }
 
     [Test]
-    public async Task Handle_CategoriaExistente_DevuelveCategoria()
-    {
+    public async Task Handle_CategoriaExistente_DevuelveCategoria() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
@@ -38,8 +35,7 @@ public class GetCategoriaByIdQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_CategoriaNoExiste_DevuelveNotFound() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();

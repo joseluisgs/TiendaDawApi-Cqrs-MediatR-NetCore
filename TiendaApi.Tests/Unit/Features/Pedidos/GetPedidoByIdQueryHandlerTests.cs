@@ -14,18 +14,15 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class GetPedidoByIdQueryHandlerTests
-{
+public class GetPedidoByIdQueryHandlerTests {
     [Test]
-    public async Task Handle_PedidoExistente_DevuelvePedido()
-    {
+    public async Task Handle_PedidoExistente_DevuelvePedido() {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = new Mock<IConfiguration>();
         var objectId = ObjectId.GenerateNewId();
 
-        var pedido = new Pedido
-        {
+        var pedido = new Pedido {
             Id = objectId,
             UserId = 1,
             Estado = "Pendiente",
@@ -43,8 +40,7 @@ public class GetPedidoByIdQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_PedidoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = new Mock<IConfiguration>();

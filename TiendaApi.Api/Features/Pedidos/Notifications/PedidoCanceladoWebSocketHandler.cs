@@ -13,14 +13,12 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// ambos canales se disparan desde el mismo <c>mediator.Publish</c>.
 /// </summary>
 public class PedidoCanceladoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
-    : INotificationHandler<PedidoCanceladoNotification>
-{
+    : INotificationHandler<PedidoCanceladoNotification> {
     /// <summary>
     /// Procesa el evento PedidoCancelado y notifica por WebSocket al usuario
     /// dueño y a todos los administradores.
     /// </summary>
-    public async Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) {
         await webSocketHandler.NotifyUserAndAdminsAsync(notification.UserId, new PedidoNotificacion(
             PedidoNotificationType.ELIMINADO,
             notification.PedidoId,

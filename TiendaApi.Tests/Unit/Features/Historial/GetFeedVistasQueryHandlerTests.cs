@@ -13,19 +13,16 @@ namespace TiendaApi.Tests.Unit.Features.Historial;
 /// Tests de GetFeedVistasQueryHandler. Una particion vacia es una respuesta
 /// valida: lista vacia, nunca un error.
 /// </summary>
-public class GetFeedVistasQueryHandlerTests
-{
+public class GetFeedVistasQueryHandlerTests {
     private readonly Mock<IHistorialService> _service = new();
     private readonly GetFeedVistasQueryHandler _handler;
 
-    public GetFeedVistasQueryHandlerTests()
-    {
+    public GetFeedVistasQueryHandlerTests() {
         _handler = new GetFeedVistasQueryHandler(_service.Object);
     }
 
     [Test]
-    public async Task Handle_FeedDisponible_DevuelveLaListaDeLaFachada()
-    {
+    public async Task Handle_FeedDisponible_DevuelveLaListaDeLaFachada() {
         var feed = new List<VistaFeedDto> { new(DateTime.UtcNow, 1, "Laptop Dell XPS 15") };
         _service.Setup(s => s.GetFeedVistasAsync(2, 20)).ReturnsAsync(feed);
 
@@ -35,8 +32,7 @@ public class GetFeedVistasQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinActividad_DevuelveVacia_NoError()
-    {
+    public async Task Handle_SinActividad_DevuelveVacia_NoError() {
         _service.Setup(s => s.GetFeedVistasAsync(2, 20))
             .ReturnsAsync(new List<VistaFeedDto>());
 
@@ -46,8 +42,7 @@ public class GetFeedVistasQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_CassandraCaida_NoLanza_DevuelveVacia()
-    {
+    public async Task Handle_CassandraCaida_NoLanza_DevuelveVacia() {
         // Cadena completa: handler -> HistorialService REAL -> repo que REVIENTA.
         var historialRepository = new Mock<IHistorialRepository>();
         historialRepository.Setup(h => h.GetFeedVistasAsync(It.IsAny<long>(), It.IsAny<int>()))

@@ -11,12 +11,10 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 /// solo se añade este listener especializado.
 /// </summary>
 public class ProductoEliminadoSignalRHandler(IHubContext<ProductosHub> hubContext)
-    : INotificationHandler<ProductoEliminadoNotification>
-{
+    : INotificationHandler<ProductoEliminadoNotification> {
     /// <inheritdoc/>
     public Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.Clients.All.SendAsync("ProductoEliminado", new
-        {
+        hubContext.Clients.All.SendAsync("ProductoEliminado", new {
             productoId = notification.ProductoId,
             tipo = "PRODUCTO_ELIMINADO",
             timestamp = DateTime.UtcNow

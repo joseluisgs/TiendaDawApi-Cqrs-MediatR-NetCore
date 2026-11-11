@@ -31,8 +31,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Productos.Services;
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
-public class ProductoHandlerIntegrationTests
-{
+public class ProductoHandlerIntegrationTests {
     private const string DatabaseName = "it_producto_handler";
     private string _connectionString = string.Empty;
     private string _mongoConnectionString = string.Empty;
@@ -41,25 +40,21 @@ public class ProductoHandlerIntegrationTests
     private long _categoriaId;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
-    {
+    public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
-    public async Task OneTimeTearDown()
-    {
+    public async Task OneTimeTearDown() {
         await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
-    public async Task Setup()
-    {
+    public async Task Setup() {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", _connectionString },
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
@@ -85,8 +80,7 @@ public class ProductoHandlerIntegrationTests
         // contenedor gana). AddRepositories registra el real, que exige ISession de
         // Cassandra; estos tests prueban los handlers de productos, no Cassandra
         // (la serie real la cubren los tests de integración con Testcontainers.Cassandra).
-        services.AddScoped<IHistorialRepository>(sp =>
-        {
+        services.AddScoped<IHistorialRepository>(sp => {
             var mockHistorial = new Mock<IHistorialRepository>();
             mockHistorial.Setup(h => h.RegistrarPrecioAsync(It.IsAny<long>(), It.IsAny<double>()))
                 .Returns(Task.CompletedTask);
@@ -121,13 +115,11 @@ public class ProductoHandlerIntegrationTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
+    public void TearDown() {
         _provider?.Dispose();
     }
 
-    private static ProductoRequestDto NuevoProductoDto(string nombre) => new()
-    {
+    private static ProductoRequestDto NuevoProductoDto(string nombre) => new() {
         Nombre = nombre,
         Descripcion = "Producto de prueba",
         Precio = 99.99m,
@@ -136,8 +128,7 @@ public class ProductoHandlerIntegrationTests
     };
 
     [Test]
-    public async Task GetAll_SinProductos_RetornaResultadoPaginado()
-    {
+    public async Task GetAll_SinProductos_RetornaResultadoPaginado() {
         var filter = new ProductoFilterDto(null, null, null, null, null, 0, 10, "id", "asc");
 
         var result = await _mediator!.Send(new GetAllProductosQuery(filter));
@@ -148,8 +139,7 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Create_ConDatosValidos_RetornaProductoCreado()
-    {
+    public async Task Create_ConDatosValidos_RetornaProductoCreado() {
         var dto = NuevoProductoDto("Laptop Test");
         dto = dto with { CategoriaId = _categoriaId };
 
@@ -162,8 +152,7 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task GetById_ConProductoExistente_RetornaProducto()
-    {
+    public async Task GetById_ConProductoExistente_RetornaProducto() {
         var createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Buscar Test") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
@@ -175,22 +164,19 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task GetById_ConProductoNoExistente_RetornaNotFound()
-    {
+    public async Task GetById_ConProductoNoExistente_RetornaNotFound() {
         var result = await _mediator!.Send(new GetProductoByIdQuery(999999));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
-    public async Task Update_ConDatosValidos_RetornaProductoActualizado()
-    {
+    public async Task Update_ConDatosValidos_RetornaProductoActualizado() {
         var createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Original") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var updateDto = new ProductoRequestDto
-        {
+        var updateDto = new ProductoRequestDto {
             Nombre = "Actualizado",
             Descripcion = "Producto actualizado",
             Precio = 149.99m,
@@ -204,8 +190,7 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Delete_ConProductoExistente_RetornaExito()
-    {
+    public async Task Delete_ConProductoExistente_RetornaExito() {
         var createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Eliminar Test") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
@@ -219,10 +204,8 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Create_ConPrecioCero_RetornaErrorValidacion()
-    {
-        var dto = new ProductoRequestDto
-        {
+    public async Task Create_ConPrecioCero_RetornaErrorValidacion() {
+        var dto = new ProductoRequestDto {
             Nombre = "Producto Precio Cero",
             Descripcion = "No debería crearse",
             Precio = 0m,
@@ -236,10 +219,8 @@ public class ProductoHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Create_ConStockNegativo_RetornaErrorValidacion()
-    {
-        var dto = new ProductoRequestDto
-        {
+    public async Task Create_ConStockNegativo_RetornaErrorValidacion() {
+        var dto = new ProductoRequestDto {
             Nombre = "Producto Stock Negativo",
             Descripcion = "No debería crearse",
             Precio = 99.99m,

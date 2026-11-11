@@ -16,12 +16,10 @@ public record GetAllPedidosListQuery : IRequest<Result<IEnumerable<PedidoDto>, D
 /// Handler de la query GetAllPedidosListQuery.
 /// </summary>
 public class GetAllPedidosListQueryHandler(IPedidosRepository repository)
-    : IRequestHandler<GetAllPedidosListQuery, Result<IEnumerable<PedidoDto>, DomainError>>
-{
+    : IRequestHandler<GetAllPedidosListQuery, Result<IEnumerable<PedidoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<IEnumerable<PedidoDto>, DomainError>> Handle(
-        GetAllPedidosListQuery request, CancellationToken cancellationToken)
-    {
+        GetAllPedidosListQuery request, CancellationToken cancellationToken) {
         var pedidos = await repository.FindAllAsync();
         return Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos.ToDtoList());
     }

@@ -16,11 +16,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Users;
 
-public class CreateUserCommandHandlerTests
-{
+public class CreateUserCommandHandlerTests {
     [Test]
-    public async Task Handle_ComandoValido_DevuelveSuccessYPublicaNotification()
-    {
+    public async Task Handle_ComandoValido_DevuelveSuccessYPublicaNotification() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<RegisterDto>>();
         var mediator = new Mock<IMediator>();
@@ -39,8 +37,7 @@ public class CreateUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ValidacionFalla_DevuelveValidationError()
-    {
+    public async Task Handle_ValidacionFalla_DevuelveValidationError() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<RegisterDto>>();
         var mediator = new Mock<IMediator>();
@@ -56,8 +53,7 @@ public class CreateUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsernameExistente_DevuelveError()
-    {
+    public async Task Handle_UsernameExistente_DevuelveError() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<RegisterDto>>();
         var mediator = new Mock<IMediator>();
@@ -73,8 +69,7 @@ public class CreateUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_EmailExistente_DevuelveError()
-    {
+    public async Task Handle_EmailExistente_DevuelveError() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<RegisterDto>>();
         var mediator = new Mock<IMediator>();

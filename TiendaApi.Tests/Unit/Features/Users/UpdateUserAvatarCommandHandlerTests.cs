@@ -12,11 +12,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Users;
 
-public class UpdateUserAvatarCommandHandlerTests
-{
+public class UpdateUserAvatarCommandHandlerTests {
     [Test]
-    public async Task Handle_UsuarioExistente_ActualizaAvatar()
-    {
+    public async Task Handle_UsuarioExistente_ActualizaAvatar() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
 
@@ -31,8 +29,7 @@ public class UpdateUserAvatarCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_UsuarioNoExiste_DevuelveNotFound() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
 
@@ -46,8 +43,7 @@ public class UpdateUserAvatarCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioEliminado_DevuelveNotFound()
-    {
+    public async Task Handle_UsuarioEliminado_DevuelveNotFound() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
 

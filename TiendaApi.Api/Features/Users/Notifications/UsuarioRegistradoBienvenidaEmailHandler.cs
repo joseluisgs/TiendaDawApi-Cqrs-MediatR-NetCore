@@ -10,15 +10,12 @@ namespace TiendaApi.Api.Features.Users.Notifications;
 /// Este handler añade el efecto lateral sin acoplar la lógica principal.
 /// </summary>
 public class UsuarioRegistradoBienvenidaEmailHandler(IEmailService emailService)
-    : INotificationHandler<UsuarioRegistradoNotification>
-{
+    : INotificationHandler<UsuarioRegistradoNotification> {
     /// <inheritdoc/>
-    public Task Handle(UsuarioRegistradoNotification notification, CancellationToken cancellationToken)
-    {
+    public Task Handle(UsuarioRegistradoNotification notification, CancellationToken cancellationToken) {
         var content = $"<p>Hola <strong>{notification.Usuario.Username}</strong>, te damos la bienvenida a Tienda DAW.</p>";
         var body = EmailTemplates.CreateBase("Bienvenido a Tienda DAW", content);
-        return emailService.EnqueueEmailAsync(new EmailMessage
-        {
+        return emailService.EnqueueEmailAsync(new EmailMessage {
             To = notification.Usuario.Email,
             Subject = "🎉 Bienvenido a Tienda DAW",
             Body = body,

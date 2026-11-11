@@ -15,11 +15,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
-public class CreateCategoriaCommandHandlerTests
-{
+public class CreateCategoriaCommandHandlerTests {
     [Test]
-    public async Task Handle_ComandoValido_DevuelveSuccess()
-    {
+    public async Task Handle_ComandoValido_DevuelveSuccess() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Dispositivos electrónicos" };
@@ -35,8 +33,7 @@ public class CreateCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ValidacionFalla_DevuelveValidationError()
-    {
+    public async Task Handle_ValidacionFalla_DevuelveValidationError() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var dto = new CategoriaRequestDto { Nombre = "", Descripcion = "Test" };
@@ -52,8 +49,7 @@ public class CreateCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_NombreDuplicado_DevuelveError()
-    {
+    public async Task Handle_NombreDuplicado_DevuelveError() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var dto = new CategoriaRequestDto { Nombre = "Electrónica" };

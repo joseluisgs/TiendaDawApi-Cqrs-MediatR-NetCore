@@ -28,8 +28,7 @@ public class UpdateProductoPartialCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdateProductoPartialCommand, Result<ProductoDto, DomainError>>
-{
+    : IRequestHandler<UpdateProductoPartialCommand, Result<ProductoDto, DomainError>> {
     private const int StockBajoUmbral = 10;
 
     /// <summary>
@@ -38,8 +37,7 @@ public class UpdateProductoPartialCommandHandler(
     /// dejar el flujo lineal (leer -> capturar estado -> patch -> persistir ->
     /// efectos).
     /// </summary>
-    private static void AplicarPatch(Producto producto, ProductoPatchDto dto)
-    {
+    private static void AplicarPatch(Producto producto, ProductoPatchDto dto) {
         if (!string.IsNullOrWhiteSpace(dto.Nombre)) producto.Nombre = dto.Nombre;
         if (!string.IsNullOrWhiteSpace(dto.Descripcion)) producto.Descripcion = dto.Descripcion;
         if (dto.Precio.HasValue && dto.Precio.Value > 0) producto.Precio = dto.Precio.Value;
@@ -53,8 +51,7 @@ public class UpdateProductoPartialCommandHandler(
 
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
-        UpdateProductoPartialCommand request, CancellationToken cancellationToken)
-    {
+        UpdateProductoPartialCommand request, CancellationToken cancellationToken) {
         var producto = await repository.FindByIdAsync(request.Id);
         if (producto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
@@ -70,8 +67,7 @@ public class UpdateProductoPartialCommandHandler(
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
 
-        if (request.Dto.Stock.HasValue && dto.Stock <= StockBajoUmbral)
-        {
+        if (request.Dto.Stock.HasValue && dto.Stock <= StockBajoUmbral) {
             await mediator.Publish(new ProductoStockBajoNotification(dto, StockBajoUmbral), cancellationToken);
         }
 

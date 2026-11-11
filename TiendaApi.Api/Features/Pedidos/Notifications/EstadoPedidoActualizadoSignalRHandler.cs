@@ -9,16 +9,13 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// Handler que difunde por SignalR el cambio de estado de un pedido.
 /// </summary>
 public class EstadoPedidoActualizadoSignalRHandler(IHubContext<PedidosHub> hubContext)
-    : INotificationHandler<EstadoPedidoActualizadoNotification>
-{
+    : INotificationHandler<EstadoPedidoActualizadoNotification> {
     /// <inheritdoc/>
-    public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) {
         Log.Information("📟 [SIGNALR] Recibida notificación EstadoPedidoActualizado para ID: {PedidoId}, NuevoEstado: {Estado}",
             notification.Pedido.Id, notification.NuevoEstado);
 
-        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoActualizado", new
-        {
+        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoActualizado", new {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
             estado = notification.NuevoEstado,

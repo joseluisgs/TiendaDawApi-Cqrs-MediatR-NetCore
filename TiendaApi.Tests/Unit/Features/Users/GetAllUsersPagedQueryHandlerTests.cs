@@ -12,24 +12,20 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Users;
 
-public class GetAllUsersPagedQueryHandlerTests
-{
-    private Mock<IConfiguration> CreateMockConfiguration()
-    {
+public class GetAllUsersPagedQueryHandlerTests {
+    private Mock<IConfiguration> CreateMockConfiguration() {
         var mockConfig = new Mock<IConfiguration>();
         mockConfig.Setup(c => c["UsuarioCacheTTLMinutes"]).Returns("60");
         return mockConfig;
     }
 
     [Test]
-    public async Task Handle_UsuariosExisten_DevuelvePagedResult()
-    {
+    public async Task Handle_UsuariosExisten_DevuelvePagedResult() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
         var filter = new UserFilterDto(null, null, null, 0, 10, "id", "asc");
-        var users = new List<User>
-        {
+        var users = new List<User> {
             new() { Id = 1, UserName = "juan" },
             new() { Id = 2, UserName = "maria" }
         };
@@ -44,8 +40,7 @@ public class GetAllUsersPagedQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinUsuarios_DevuelveListaVacia()
-    {
+    public async Task Handle_SinUsuarios_DevuelveListaVacia() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
@@ -61,8 +56,7 @@ public class GetAllUsersPagedQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes()
-    {
+    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();

@@ -14,8 +14,7 @@ namespace TiendaApi.Api.Data.Seed.Sql;
 /// - "Identity": UserManager (PBKDF2) con las MISMAS credenciales
 /// El modo solo cambia el algoritmo del hash: mismo usuario y contraseña en ambos.
 /// </summary>
-public class SqlSeeder
-{
+public class SqlSeeder {
     private readonly TiendaDbContext _context;
     private readonly ILogger<SqlSeeder> _logger;
     private readonly IConfiguration _configuration;
@@ -28,8 +27,7 @@ public class SqlSeeder
     /// <param name="logger">Logger de la aplicación.</param>
     /// <param name="configuration">Configuración (Auth:Mode).</param>
     /// <param name="scopeFactory">Factory de scopes (UserManager/RoleManager en modo Identity).</param>
-    public SqlSeeder(TiendaDbContext context, ILogger<SqlSeeder> logger, IConfiguration configuration, IServiceScopeFactory scopeFactory)
-    {
+    public SqlSeeder(TiendaDbContext context, ILogger<SqlSeeder> logger, IConfiguration configuration, IServiceScopeFactory scopeFactory) {
         _context = context;
         _logger = logger;
         _configuration = configuration;
@@ -39,10 +37,8 @@ public class SqlSeeder
     /// <summary>
     /// Sembrar datos iniciales si no existen.
     /// </summary>
-    public async Task SeedAsync()
-    {
-        try
-        {
+    public async Task SeedAsync() {
+        try {
             _logger.LogInformation("Sembrando datos iniciales en PostgreSQL...");
 
             await SeedUsersAsync();
@@ -51,19 +47,15 @@ public class SqlSeeder
             await SeedProductosAsync();
 
             _logger.LogInformation("Datos de PostgreSQL sembrados correctamente");
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             _logger.LogWarning(ex, "Error al sembrar datos en PostgreSQL");
         }
     }
 
-    private async Task SeedUsersAsync()
-    {
+    private async Task SeedUsersAsync() {
         var authMode = _configuration["Auth:Mode"] ?? "Custom";
 
-        if (authMode == "Identity")
-        {
+        if (authMode == "Identity") {
             // 🔐 Modo Identity: usar UserManager para generar hashes PBKDF2 compatibles.
             // Los hashes BCrypt hardcoded NO funcionan con Identity (usa PBKDF2).
             using var scope = _scopeFactory.CreateScope();
@@ -71,10 +63,8 @@ public class SqlSeeder
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<long>>>();
 
             // AddToRoleAsync lanza excepción si el rol no existe → crearlos antes.
-            foreach (var role in new[] { UserRoles.ADMIN, UserRoles.USER })
-            {
-                if (!await roleManager.RoleExistsAsync(role))
-                {
+            foreach (var role in new[] { UserRoles.ADMIN, UserRoles.USER }) {
+                if (!await roleManager.RoleExistsAsync(role)) {
                     await roleManager.CreateAsync(new IdentityRole<long>(role));
                     _logger.LogInformation("Rol Identity creado: {Role}", role);
                 }
@@ -85,26 +75,21 @@ public class SqlSeeder
             // modo solo determina el algoritmo del hash, nunca quién puede entrar.
             // La semilla solo fija username/email/rol/credencial (el modelo no
             // tiene campos de perfil).
-            var identityUsers = new List<(User User, string Password)>
-            {
+            var identityUsers = new List<(User User, string Password)> {
                 (new() { UserName = SeedCredentials.AdminUsername, Email = "admin@tienda.com", Role = UserRoles.ADMIN },
                     SeedCredentials.AdminPassword),
                 (new() { UserName = SeedCredentials.UserUsername, Email = "userdaw@tienda.com", Role = UserRoles.USER },
                     SeedCredentials.UserPassword)
             };
 
-            foreach (var (user, password) in identityUsers)
-            {
+            foreach (var (user, password) in identityUsers) {
                 var result = await userManager.CreateAsync(user, password);
-                if (result.Succeeded)
-                {
+                if (result.Succeeded) {
                     if (user.Role == UserRoles.ADMIN)
                         await userManager.AddToRoleAsync(user, UserRoles.ADMIN);
                     _logger.LogInformation("Usuario Identity creado: {Email} (contraseña seed: {Password})",
                         user.Email, password);
-                }
-                else
-                {
+                } else {
                     _logger.LogWarning("Error creando usuario {Email}: {Errors}",
                         user.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
@@ -115,10 +100,8 @@ public class SqlSeeder
         // Modo Custom (default): hash BCrypt calculado en el momento desde
         // SeedCredentials — la MISMA contraseña que en Identity, solo cambia
         // el algoritmo del hash. Sin hashes hardcoded que puedan divergir.
-        var users = new List<User>
-        {
-            new()
-            {
+        var users = new List<User> {
+            new() {
                 UserName = SeedCredentials.AdminUsername,
                 Email = "admin@tienda.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(SeedCredentials.AdminPassword, workFactor: 11),
@@ -127,8 +110,7 @@ public class SqlSeeder
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             },
-            new()
-            {
+            new() {
                 UserName = SeedCredentials.UserUsername,
                 Email = "userdaw@tienda.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(SeedCredentials.UserPassword, workFactor: 11),
@@ -144,28 +126,23 @@ public class SqlSeeder
         _logger.LogInformation("Insertados {Count} usuarios de ejemplo", users.Count);
     }
 
-    private async Task SeedCategoriasAsync()
-    {
-        var categorias = new List<Categoria>
-        {
-            new()
-            {
+    private async Task SeedCategoriasAsync() {
+        var categorias = new List<Categoria> {
+            new() {
                 Nombre = "Electrónica",
                 Descripcion = "Dispositivos electrónicos y gadgets",
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             },
-            new()
-            {
+            new() {
                 Nombre = "Ropa",
                 Descripcion = "Prendas de vestir para todas las edades",
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             },
-            new()
-            {
+            new() {
                 Nombre = "Libros",
                 Descripcion = "Libros de todos los géneros y temáticas",
                 IsDeleted = false,
@@ -179,15 +156,12 @@ public class SqlSeeder
         _logger.LogInformation("Insertadas {Count} categorías de ejemplo", categorias.Count);
     }
 
-    private async Task SeedProveedoresAsync()
-    {
+    private async Task SeedProveedoresAsync() {
         // Los códigos son fijos y no aleatorios: la semilla debe ser determinista para que
         // los tests E2E puedan referenciarlos. La generación aleatoria estilo YouTube es el
         // camino por defecto cuando un cliente crea un proveedor sin enviar código.
-        var proveedores = new List<Proveedor>
-            {
-                new()
-                {
+        var proveedores = new List<Proveedor> {
+                new() {
                     Codigo = "TiendaDAW01",
                     Nombre = "Tienda DAW Interna",
                     Descripcion = "Proveedor interno para material de laboratorio",
@@ -196,8 +170,7 @@ public class SqlSeeder
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
-                new()
-                {
+                new() {
                     Codigo = "Distribuc01",
                     Nombre = "Distribuciones DAW",
                     Descripcion = "Distribuidor general de electrónica y periféricos",
@@ -206,8 +179,7 @@ public class SqlSeeder
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
-                new()
-                {
+                new() {
                     Codigo = "Editorial01",
                     Nombre = "Editorial Código Limpio",
                     Descripcion = "Librería técnica especializada",
@@ -224,12 +196,9 @@ public class SqlSeeder
     }
 
 
-    private async Task SeedProductosAsync()
-    {
-        var productos = new List<Producto>
-        {
-            new()
-            {
+    private async Task SeedProductosAsync() {
+        var productos = new List<Producto> {
+            new() {
                 Nombre = "Laptop Dell XPS 15",
                 Descripcion = "Laptop de alto rendimiento",
                 Precio = 1299.99m,
@@ -241,8 +210,7 @@ public class SqlSeeder
                 UpdatedAt = DateTime.UtcNow,
                 RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             },
-            new()
-            {
+            new() {
                 Nombre = "Camiseta Nike",
                 Descripcion = "Camiseta deportiva",
                 Precio = 29.99m,
@@ -254,8 +222,7 @@ public class SqlSeeder
                 UpdatedAt = DateTime.UtcNow,
                 RowVersion = new byte[] { 2, 3, 4, 5, 6, 7, 8, 9 }
             },
-            new()
-            {
+            new() {
                 Nombre = "Clean Code",
                 Descripcion = "Libro de Robert C. Martin",
                 Precio = 42.99m,

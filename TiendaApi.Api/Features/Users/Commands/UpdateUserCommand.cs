@@ -24,27 +24,23 @@ public class UpdateUserCommandHandler(
     IUserRepository repository,
     IValidator<UserUpdateDto> validator,
     ICacheService cacheService)
-    : IRequestHandler<UpdateUserCommand, Result<UserDto, DomainError>>
-{
+    : IRequestHandler<UpdateUserCommand, Result<UserDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<UserDto, DomainError>> Handle(
-        UpdateUserCommand request, CancellationToken cancellationToken)
-    {
+        UpdateUserCommand request, CancellationToken cancellationToken) {
         var user = await repository.FindByIdAsync(request.Id);
         if (user is null or { IsDeleted: true })
             return Result.Failure<UserDto, DomainError>(UsuarioError.NotFound(request.Id));
 
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
             return Result.Failure<UserDto, DomainError>(UsuarioError.ValidacionConCampos(errors));
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Dto.Email) && request.Dto.Email != user.Email)
-        {
+        if (!string.IsNullOrWhiteSpace(request.Dto.Email) && request.Dto.Email != user.Email) {
             var existing = await repository.FindByEmailAsync(request.Dto.Email);
             if (existing is not null && existing.Id != request.Id)
                 return Result.Failure<UserDto, DomainError>(UsuarioError.EmailExistente(request.Dto.Email));
@@ -58,7 +54,7 @@ public class UpdateUserCommandHandler(
         var dto = updated.ToDto();
 
         await cacheService.RemoveAsync($"usuarios:{request.Id}");
-            
+
 
         return Result.Success<UserDto, DomainError>(dto);
     }

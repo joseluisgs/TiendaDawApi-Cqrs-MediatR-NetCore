@@ -27,12 +27,10 @@ public class UpdateMyPedidoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdateMyPedidoCommand, Result<PedidoDto, DomainError>>
-{
+    : IRequestHandler<UpdateMyPedidoCommand, Result<PedidoDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<PedidoDto, DomainError>> Handle(
-        UpdateMyPedidoCommand request, CancellationToken cancellationToken)
-    {
+        UpdateMyPedidoCommand request, CancellationToken cancellationToken) {
         var pedido = await repository.FindByIdAsync(request.Id);
         if (pedido is null)
             return Result.Failure<PedidoDto, DomainError>(PedidoError.NotFound(request.Id));

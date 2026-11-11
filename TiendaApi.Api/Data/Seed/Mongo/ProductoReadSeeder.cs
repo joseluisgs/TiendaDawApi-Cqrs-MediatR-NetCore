@@ -25,8 +25,7 @@ public class ProductoReadSeeder(
     IMongoDatabase database,
     IConfiguration configuration,
     ILogger<ProductoReadSeeder> logger
-)
-{
+) {
     private readonly string _collectionName =
         configuration["MongoDbSettings:ProductosCollection"] ?? "productos_read";
 
@@ -34,16 +33,14 @@ public class ProductoReadSeeder(
     /// Sincroniza PostgreSQL → MongoDB.
     /// </summary>
     /// <param name="isDevelopment">true = drop + bulk insert; false = upsert + poda.</param>
-    public async Task SeedAsync(bool isDevelopment)
-    {
+    public async Task SeedAsync(bool isDevelopment) {
         var productos = (await productoRepository.FindAllAsync())
             .Select(p => p.ToRead())
             .ToList();
 
         var collection = database.GetCollection<ProductoRead>(_collectionName);
 
-        if (isDevelopment)
-        {
+        if (isDevelopment) {
             logger.LogInformation(
                 "[DESARROLLO] Sincronizando read model de productos: drop + bulk insert ({Count})...",
                 productos.Count);
@@ -61,8 +58,7 @@ public class ProductoReadSeeder(
             "[PRODUCCIÓN] Sincronizando read model de productos: upsert + poda ({Count})...",
             productos.Count);
 
-        foreach (var producto in productos)
-        {
+        foreach (var producto in productos) {
             await collection.ReplaceOneAsync(
                 p => p.Id == producto.Id,
                 producto,

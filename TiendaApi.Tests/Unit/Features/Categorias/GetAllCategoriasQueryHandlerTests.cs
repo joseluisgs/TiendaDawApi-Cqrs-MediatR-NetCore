@@ -12,24 +12,20 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
-public class GetAllCategoriasQueryHandlerTests
-{
-    private Mock<IConfiguration> CreateMockConfiguration()
-    {
+public class GetAllCategoriasQueryHandlerTests {
+    private Mock<IConfiguration> CreateMockConfiguration() {
         var mockConfig = new Mock<IConfiguration>();
         mockConfig.Setup(c => c["CategoriaCacheTTLMinutes"]).Returns("60");
         return mockConfig;
     }
 
     [Test]
-    public async Task Handle_CategoriasExisten_DevuelvePagedResult()
-    {
+    public async Task Handle_CategoriasExisten_DevuelvePagedResult() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
         var filter = new CategoriaFilterDto { Page = 0, Size = 10 };
-        var categorias = new List<Categoria>
-        {
+        var categorias = new List<Categoria> {
             new() { Id = 1, Nombre = "Electrónica" },
             new() { Id = 2, Nombre = "Ropa" }
         };
@@ -45,8 +41,7 @@ public class GetAllCategoriasQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinCategorias_DevuelveListaVacia()
-    {
+    public async Task Handle_SinCategorias_DevuelveListaVacia() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
@@ -62,8 +57,7 @@ public class GetAllCategoriasQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes()
-    {
+    public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
         var configuration = CreateMockConfiguration();
