@@ -15,19 +15,15 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class UpdateMyPedidoCommandHandlerTests
-{
-    private Pedido CreateTestPedido(long userId, string estado)
-    {
-        return new Pedido
-        {
+public class UpdateMyPedidoCommandHandlerTests {
+    private Pedido CreateTestPedido(long userId, string estado) {
+        return new Pedido {
             Id = ObjectId.GenerateNewId(),
             UserId = userId,
             Estado = estado,
             Total = 100m,
             DireccionEnvio = "Calle 123",
-            Destinatario = new Destinatario
-            {
+            Destinatario = new Destinatario {
                 NombreCompleto = "Juan Pérez",
                 Email = "juan@test.com",
                 Direccion = new Direccion { Calle = "Calle", Ciudad = "Madrid", Pais = "España" }
@@ -37,8 +33,7 @@ public class UpdateMyPedidoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoPropioEnPendiente_Actualiza()
-    {
+    public async Task Handle_PedidoPropioEnPendiente_Actualiza() {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
@@ -55,8 +50,7 @@ public class UpdateMyPedidoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoPertenece_DevuelveError()
-    {
+    public async Task Handle_PedidoNoPertenece_DevuelveError() {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
@@ -72,8 +66,7 @@ public class UpdateMyPedidoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoEnPendiente_DevuelveError()
-    {
+    public async Task Handle_PedidoNoEnPendiente_DevuelveError() {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
@@ -89,8 +82,7 @@ public class UpdateMyPedidoCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoPropioEnPendiente_PublicaNotificacionDeTiempoReal()
-    {
+    public async Task Handle_PedidoPropioEnPendiente_PublicaNotificacionDeTiempoReal() {
         // 🎓 Antes este comando no publicaba NADA: la actualización propia no
         // llegaba ni por WebSocket ni por SignalR. Ahora debe publicarse la
         // notificación que dispara ambos canales (dueño + admins).

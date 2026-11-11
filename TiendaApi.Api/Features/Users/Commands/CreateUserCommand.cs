@@ -27,15 +27,12 @@ public class CreateUserCommandHandler(
     IValidator<RegisterDto> validator,
     IMediator mediator,
     ICacheService cacheService)
-    : IRequestHandler<CreateUserCommand, Result<UserDto, DomainError>>
-{
+    : IRequestHandler<CreateUserCommand, Result<UserDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<UserDto, DomainError>> Handle(
-        CreateUserCommand request, CancellationToken cancellationToken)
-    {
+        CreateUserCommand request, CancellationToken cancellationToken) {
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -56,7 +53,7 @@ public class CreateUserCommandHandler(
         var saved = await repository.SaveAsync(user);
         var dto = saved.ToDto();
 
-        await cacheService.RemoveAsync($"usuarios:{saved.Id}"); 
+        await cacheService.RemoveAsync($"usuarios:{saved.Id}");
 
         await mediator.Publish(new UsuarioRegistradoNotification(dto), cancellationToken);
         return Result.Success<UserDto, DomainError>(dto);

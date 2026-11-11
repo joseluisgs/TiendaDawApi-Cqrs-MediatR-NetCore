@@ -9,15 +9,12 @@ using TiendaApi.Api.Data;
 
 #nullable disable
 
-namespace TiendaApi.Api.Migrations
-{
+namespace TiendaApi.Api.Migrations {
     [DbContext(typeof(TiendaDbContext))]
     [Migration("20261101101303_InitialCreate")]
-    partial class InitialCreate
-    {
+    partial class InitialCreate {
         /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
+        protected override void BuildTargetModel(ModelBuilder modelBuilder) {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "10.0.12")
@@ -25,8 +22,7 @@ namespace TiendaApi.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<long>", b => {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
@@ -54,8 +50,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b => {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
@@ -78,8 +73,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<long>", b => {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
@@ -102,8 +96,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetUserClaims", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<long>", b => {
                     b.Property<string>("LoginProvider")
                         .HasColumnType("text");
 
@@ -123,8 +116,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<long>", b => {
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
@@ -138,8 +130,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetUserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<long>", b => {
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
@@ -157,8 +148,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Categoria", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Categoria", b => {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
@@ -195,8 +185,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("categorias", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Producto", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Producto", b => {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
@@ -261,8 +250,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("productos", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Proveedor", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Proveedor", b => {
                     b.Property<string>("Codigo")
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(11)
@@ -302,8 +290,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("proveedores", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.ReplicaMarca", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.ReplicaMarca", b => {
                     b.Property<string>("Nombre")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
@@ -316,8 +303,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("replica_marcas", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.User", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.User", b => {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
@@ -415,8 +401,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.UserLogin", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.UserLogin", b => {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
@@ -458,8 +443,7 @@ namespace TiendaApi.Api.Migrations
                     b.ToTable("user_logins", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b => {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<long>", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
@@ -467,8 +451,7 @@ namespace TiendaApi.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<long>", b => {
                     b.HasOne("TiendaApi.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -476,8 +459,7 @@ namespace TiendaApi.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<long>", b => {
                     b.HasOne("TiendaApi.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -485,8 +467,7 @@ namespace TiendaApi.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<long>", b => {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<long>", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
@@ -500,8 +481,7 @@ namespace TiendaApi.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<long>", b =>
-                {
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<long>", b => {
                     b.HasOne("TiendaApi.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -509,8 +489,7 @@ namespace TiendaApi.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Producto", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Producto", b => {
                     b.HasOne("TiendaApi.Api.Models.Categoria", "Categoria")
                         .WithMany("Productos")
                         .HasForeignKey("CategoriaId")
@@ -527,8 +506,7 @@ namespace TiendaApi.Api.Migrations
                     b.Navigation("Proveedor");
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.UserLogin", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.UserLogin", b => {
                     b.HasOne("TiendaApi.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -538,13 +516,11 @@ namespace TiendaApi.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Categoria", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Categoria", b => {
                     b.Navigation("Productos");
                 });
 
-            modelBuilder.Entity("TiendaApi.Api.Models.Proveedor", b =>
-                {
+            modelBuilder.Entity("TiendaApi.Api.Models.Proveedor", b => {
                     b.Navigation("Productos");
                 });
 #pragma warning restore 612, 618

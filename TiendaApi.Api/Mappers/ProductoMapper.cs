@@ -7,8 +7,7 @@ namespace TiendaApi.Api.Mappers;
 /// <summary>
 /// Mapper para convertir entre Producto y sus DTOs.
 /// </summary>
-public static class ProductoMapper
-{
+public static class ProductoMapper {
     /// <summary>Convierte Producto a ProductoDto.</summary>
     public static ProductoDto ToDto(this Producto producto) =>
         new(
@@ -68,8 +67,7 @@ public static class ProductoMapper
     /// Used por el sync de eventos: la notificación no lleva IsDeleted
     /// (solo los productos no eliminados se crean/actualizan), así que se asume false.
     /// </summary>
-    public static ProductoRead ToRead(this ProductoDto dto) => new()
-    {
+    public static ProductoRead ToRead(this ProductoDto dto) => new() {
         Id = dto.Id,
         Nombre = dto.Nombre,
         Descripcion = dto.Descripcion,
@@ -78,8 +76,7 @@ public static class ProductoMapper
         Imagen = dto.Imagen,
         IsDeleted = false,
         CategoriaId = dto.Categoria.Id,
-        Categoria = new CategoriaRead
-        {
+        Categoria = new CategoriaRead {
             Id = dto.Categoria.Id,
             Nombre = dto.Categoria.Nombre,
             Descripcion = dto.Categoria.Descripcion
@@ -87,8 +84,7 @@ public static class ProductoMapper
         ProveedorId = dto.Proveedor?.Codigo,
         Proveedor = dto.Proveedor is null
             ? new ProveedorRead()
-            : new ProveedorRead
-            {
+            : new ProveedorRead {
                 Codigo = dto.Proveedor.Codigo,
                 Nombre = dto.Proveedor.Nombre,
                 Descripcion = dto.Proveedor.Descripcion
@@ -102,8 +98,7 @@ public static class ProductoMapper
     /// Proyecta la entidad de PostgreSQL al modelo de lectura de MongoDB.
     /// Used por el seeder de arranque; requiere Categoria y Proveedor cargados (Include).
     /// </summary>
-    public static ProductoRead ToRead(this Producto producto) => new()
-    {
+    public static ProductoRead ToRead(this Producto producto) => new() {
         Id = producto.Id,
         Nombre = producto.Nombre,
         Descripcion = producto.Descripcion,
@@ -112,8 +107,7 @@ public static class ProductoMapper
         Imagen = producto.Imagen,
         IsDeleted = producto.IsDeleted,
         CategoriaId = producto.CategoriaId,
-        Categoria = new CategoriaRead
-        {
+        Categoria = new CategoriaRead {
             Id = producto.CategoriaId,
             Nombre = producto.Categoria?.Nombre ?? string.Empty,
             Descripcion = producto.Categoria?.Descripcion
@@ -121,8 +115,7 @@ public static class ProductoMapper
         ProveedorId = producto.Proveedor?.Codigo,
         Proveedor = producto.Proveedor is null
             ? new ProveedorRead()
-            : new ProveedorRead
-            {
+            : new ProveedorRead {
                 Codigo = producto.Proveedor.Codigo,
                 Nombre = producto.Proveedor.Nombre,
                 Descripcion = producto.Proveedor.Descripcion
@@ -133,8 +126,7 @@ public static class ProductoMapper
     };
 
     /// <summary>Convierte ProductoRequestDto a Producto.</summary>
-    public static Producto ToEntity(this ProductoRequestDto dto) => new()
-    {
+    public static Producto ToEntity(this ProductoRequestDto dto) => new() {
         Nombre = dto.Nombre,
         Descripcion = dto.Descripcion,
         Precio = dto.Precio,
@@ -147,8 +139,7 @@ public static class ProductoMapper
     };
 
     /// <summary>Actualiza Producto desde ProductoRequestDto.</summary>
-    public static void UpdateEntity(this ProductoRequestDto dto, Producto producto)
-    {
+    public static void UpdateEntity(this ProductoRequestDto dto, Producto producto) {
         producto.Nombre = dto.Nombre;
         producto.Descripcion = dto.Descripcion;
         producto.Precio = dto.Precio;

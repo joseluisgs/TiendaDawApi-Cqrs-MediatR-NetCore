@@ -31,15 +31,12 @@ public class CreateProductoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>>
-{
+    : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
-        CreateProductoCommand request, CancellationToken cancellationToken)
-    {
+        CreateProductoCommand request, CancellationToken cancellationToken) {
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -47,11 +44,9 @@ public class CreateProductoCommandHandler(
         }
 
         var categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
-        if (categoriaExists is null)
-        {
+        if (categoriaExists is null) {
             return Result.Failure<ProductoDto, DomainError>(
-                ProductoError.ValidacionConCampos(new Dictionary<string, string[]>
-                {
+                ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
                     { "CategoriaId", new[] { $"La categoría con ID {request.Dto.CategoriaId} no fue encontrada" } }
                 })
             );

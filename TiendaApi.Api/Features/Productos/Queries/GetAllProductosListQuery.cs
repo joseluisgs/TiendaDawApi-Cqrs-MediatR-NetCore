@@ -18,12 +18,10 @@ public record GetAllProductosListQuery()
 /// Handler de la query GetAllProductosListQuery.
 /// </summary>
 public class GetAllProductosListQueryHandler(IProductoService service)
-    : IRequestHandler<GetAllProductosListQuery, Result<IReadOnlyList<ProductoDto>, DomainError>>
-{
+    : IRequestHandler<GetAllProductosListQuery, Result<IReadOnlyList<ProductoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<IReadOnlyList<ProductoDto>, DomainError>> Handle(
-        GetAllProductosListQuery request, CancellationToken cancellationToken)
-    {
+        GetAllProductosListQuery request, CancellationToken cancellationToken) {
         var productos = await service.GetAllAsync();
         var dtos = productos.Select(p => p.ToDto()).ToList();
         return Result.Success<IReadOnlyList<ProductoDto>, DomainError>(dtos);

@@ -27,12 +27,10 @@ public class DeleteProductoCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<DeleteProductoCommand, UnitResult<DomainError>>
-{
+    : IRequestHandler<DeleteProductoCommand, UnitResult<DomainError>> {
     /// <inheritdoc/>
     public async Task<UnitResult<DomainError>> Handle(
-        DeleteProductoCommand request, CancellationToken cancellationToken)
-    {
+        DeleteProductoCommand request, CancellationToken cancellationToken) {
         var producto = await repository.FindByIdAsync(request.Id);
         if (producto is null)
             return UnitResult.Failure<DomainError>(ProductoError.NotFound(request.Id));

@@ -27,17 +27,14 @@ namespace TiendaApi.Api.GraphQL.Mutations;
 /// como en el endpoint REST PATCH. Un mutation que inyecta repositorios se
 /// salta la capa de negocio y duplica lógica entre REST y GraphQL.
 /// </summary>
-public class ProductoMutation
-{
+public class ProductoMutation {
     /// <summary>Crea un nuevo producto.</summary>
     [Authorize(policy: "AdminOnly")]
     public async Task<ProductoDto> CreateProducto(
         CreateProductoInput input,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
-        var dto = new ProductoRequestDto
-        {
+        CancellationToken ct = default) {
+        var dto = new ProductoRequestDto {
             Nombre = input.Nombre,
             Descripcion = input.Descripcion ?? string.Empty,
             Precio = input.Precio,
@@ -67,10 +64,8 @@ public class ProductoMutation
         long id,
         UpdateProductoInput input,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
-        var patch = new ProductoPatchDto
-        {
+        CancellationToken ct = default) {
+        var patch = new ProductoPatchDto {
             Nombre = input.Nombre,
             Descripcion = input.Descripcion,
             Precio = input.Precio,
@@ -92,8 +87,7 @@ public class ProductoMutation
     public async Task<bool> DeleteProducto(
         long id,
         [Service] IMediator mediator,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var result = await mediator.Send(new DeleteProductoCommand(id), ct);
         if (result.IsFailure)
             throw new Exception(result.Error.Message);

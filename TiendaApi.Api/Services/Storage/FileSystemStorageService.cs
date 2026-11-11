@@ -14,8 +14,7 @@ namespace TiendaApi.Api.Services.Storage;
 /// Los ficheiros se guardan en wwwroot/{Storage:UploadPath}/{folder} para acceso web directo.
 /// Por defecto: wwwroot/uploads/{folder} (configurable).
 /// </summary>
-public class FileSystemStorageService : IStorageService
-{
+public class FileSystemStorageService : IStorageService {
     private readonly string _rootPath;
     private readonly string _uploadPath;
     private readonly long _maxFileSize;
@@ -30,8 +29,7 @@ public class FileSystemStorageService : IStorageService
     /// <param name="configuration">Configuración de la aplicación.</param>
     /// <param name="logger">Logger de la aplicación.</param>
     /// <param name="env">Entorno web (provee la ruta de wwwroot).</param>
-    public FileSystemStorageService(IConfiguration configuration, ILogger<FileSystemStorageService> logger, IWebHostEnvironment env)
-    {
+    public FileSystemStorageService(IConfiguration configuration, ILogger<FileSystemStorageService> logger, IWebHostEnvironment env) {
         _logger = logger;
 
         // Configuración desde appsettings.json (ruta relativa a wwwroot)
@@ -46,8 +44,7 @@ public class FileSystemStorageService : IStorageService
         _rootPath = System.IO.Path.Combine(env.WebRootPath, _uploadPath);
 
         // Crear directorio si no existe
-        if (!Directory.Exists(_rootPath))
-        {
+        if (!Directory.Exists(_rootPath)) {
             Directory.CreateDirectory(_rootPath);
         }
 
@@ -57,8 +54,7 @@ public class FileSystemStorageService : IStorageService
     /// <summary>
     /// Genera un nombre de ficheiro único usando timestamp y GUID.
     /// </summary>
-    private static string GenerateUniqueFilename(string originalFilename)
-    {
+    private static string GenerateUniqueFilename(string originalFilename) {
         var extension = System.IO.Path.GetExtension(originalFilename).ToLowerInvariant();
         var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
@@ -71,36 +67,30 @@ public class FileSystemStorageService : IStorageService
     /// <summary>
     /// Valida que el ficheiro cumpla con las restricciones configuradas.
     /// </summary>
-    private UnitResult<DomainError> ValidateFile(IFormFile file)
-    {
-        if (file is null or { Length: 0 })
-        {
+    private UnitResult<DomainError> ValidateFile(IFormFile file) {
+        if (file is null or { Length: 0 }) {
             return UnitResult.Failure<DomainError>(StorageError.ArchivoVacio());
         }
 
-        if (file.Length > _maxFileSize)
-        {
+        if (file.Length > _maxFileSize) {
             return UnitResult.Failure<DomainError>(
                 StorageError.ArchivoMuyGrande());
         }
 
         var extension = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!_allowedExtensions.Contains(extension))
-        {
+        if (!_allowedExtensions.Contains(extension)) {
             return UnitResult.Failure<DomainError>(
                 StorageError.ExtensionNoPermitida());
         }
 
         var contentType = file.ContentType?.ToLowerInvariant();
-        if (contentType == null || !_allowedContentTypes.Any(ct => contentType.Contains(ct.Split('/')[1])))
-        {
+        if (contentType == null || !_allowedContentTypes.Any(ct => contentType.Contains(ct.Split('/')[1]))) {
             return UnitResult.Failure<DomainError>(
                 StorageError.TipoContenidoNoPermitido());
         }
 
         var filename = System.IO.Path.GetFileName(file.FileName);
-        if (filename.Contains("..") || filename.Contains('/') || filename.Contains('\\'))
-        {
+        if (filename.Contains("..") || filename.Contains('/') || filename.Contains('\\')) {
             return UnitResult.Failure<DomainError>(StorageError.NombreArchivoInvalido());
         }
 
@@ -112,16 +102,13 @@ public class FileSystemStorageService : IStorageService
     /// </summary>
     /// <param name="file">Fichero subido por el cliente.</param>
     /// <param name="folder">Carpeta de destino dentro del almacén.</param>
-    public Task<Result<string, DomainError>> SaveFileAsync(IFormFile file, string folder)
-    {
+    public Task<Result<string, DomainError>> SaveFileAsync(IFormFile file, string folder) {
         var validation = ValidateFile(file);
-        if (validation.IsFailure)
-        {
+        if (validation.IsFailure) {
             return Task.FromResult(Result.Failure<string, DomainError>(validation.Error));
         }
 
-        try
-        {
+        try {
             // Generar nombre único
             var filename = GenerateUniqueFilename(file.FileName);
 
@@ -139,9 +126,7 @@ public class FileSystemStorageService : IStorageService
             _logger.LogInformation("Archivo guardado: {Path}", relativePath);
 
             return Task.FromResult(Result.Success<string, DomainError>(relativePath));
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             _logger.LogError(ex, "Error guardando archivo");
             return Task.FromResult(Result.Failure<string, DomainError>(
                 StorageError.ErrorGuardando()));
@@ -152,27 +137,21 @@ public class FileSystemStorageService : IStorageService
     /// Elimina del disco el fichero indicado si existe.
     /// </summary>
     /// <param name="filename">Ruta relativa o nombre del fichero a eliminar.</param>
-    public Task<Result<bool, DomainError>> DeleteFileAsync(string filename)
-    {
-        if (string.IsNullOrEmpty(filename))
-        {
+    public Task<Result<bool, DomainError>> DeleteFileAsync(string filename) {
+        if (string.IsNullOrEmpty(filename)) {
             return Task.FromResult(Result.Success<bool, DomainError>(true));
         }
 
-        try
-        {
+        try {
             var fullPath = GetFullPath(filename);
 
-            if (File.Exists(fullPath))
-            {
+            if (File.Exists(fullPath)) {
                 File.Delete(fullPath);
                 _logger.LogInformation("Archivo eliminado: {Filename}", filename);
             }
 
             return Task.FromResult(Result.Success<bool, DomainError>(true));
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             _logger.LogError(ex, "Error eliminando archivo {Filename}", filename);
             return Task.FromResult(Result.Failure<bool, DomainError>(
                 StorageError.ErrorEliminando()));
@@ -183,8 +162,7 @@ public class FileSystemStorageService : IStorageService
     /// Indica si el fichero existe en el almacén.
     /// </summary>
     /// <param name="filename">Ruta relativa o nombre del fichero.</param>
-    public bool FileExists(string filename)
-    {
+    public bool FileExists(string filename) {
         if (string.IsNullOrEmpty(filename))
             return false;
 
@@ -196,8 +174,7 @@ public class FileSystemStorageService : IStorageService
     /// Resuelve la ruta absoluta en disco de un fichero del almacén.
     /// </summary>
     /// <param name="filename">Ruta relativa o nombre del fichero.</param>
-    public string GetFullPath(string filename)
-    {
+    public string GetFullPath(string filename) {
         if (System.IO.Path.IsPathRooted(filename))
             return filename;
 
@@ -219,8 +196,7 @@ public class FileSystemStorageService : IStorageService
     /// </summary>
     /// <param name="filename">Nombre del fichero.</param>
     /// <param name="folder">Carpeta de destino (por defecto, productos).</param>
-    public string GetRelativePath(string filename, string folder = "productos")
-    {
+    public string GetRelativePath(string filename, string folder = "productos") {
         return $"/{_uploadPath}/{folder}/{filename}";
     }
 }

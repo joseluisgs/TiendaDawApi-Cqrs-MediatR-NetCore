@@ -14,11 +14,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
-public class UpdateCategoriaCommandHandlerTests
-{
+public class UpdateCategoriaCommandHandlerTests {
     [Test]
-    public async Task Handle_CategoriaExistente_DevuelveSuccess()
-    {
+    public async Task Handle_CategoriaExistente_DevuelveSuccess() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
@@ -37,8 +35,7 @@ public class UpdateCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ActualizaNombreYDescripcion_DevuelveSuccess()
-    {
+    public async Task Handle_ActualizaNombreYDescripcion_DevuelveSuccess() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
@@ -60,8 +57,7 @@ public class UpdateCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_CategoriaNoExiste_DevuelveNotFound() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();
@@ -78,8 +74,7 @@ public class UpdateCategoriaCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_NombreDuplicado_DevuelveError()
-    {
+    public async Task Handle_NombreDuplicado_DevuelveError() {
         var repository = new Mock<ICategoriaRepository>();
         var validator = new Mock<IValidator<CategoriaRequestDto>>();
         var cacheService = new Mock<ICacheService>();

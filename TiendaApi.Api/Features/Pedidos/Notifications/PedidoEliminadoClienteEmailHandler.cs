@@ -12,11 +12,9 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// admin no se notifica su propia acción (lo ve en el panel y en tiempo real).
 /// </summary>
 public class PedidoEliminadoClienteEmailHandler(IEmailService emailService)
-    : INotificationHandler<PedidoEliminadoNotification>
-{
+    : INotificationHandler<PedidoEliminadoNotification> {
     /// <inheritdoc/>
-    public Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken)
-    {
+    public Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken) {
         var destinatario = notification.Destinatario;
         if (string.IsNullOrWhiteSpace(destinatario?.Email)) return Task.CompletedTask;
 
@@ -28,8 +26,7 @@ public class PedidoEliminadoClienteEmailHandler(IEmailService emailService)
         Log.Information("📧 [EMAIL] Aviso de eliminación encolado para el cliente: {PedidoId} -> {Email}",
             notification.PedidoId, destinatario.Email);
 
-        return emailService.EnqueueEmailAsync(new EmailMessage
-        {
+        return emailService.EnqueueEmailAsync(new EmailMessage {
             To = destinatario.Email,
             Subject = $"🚫 Tu pedido #{notification.PedidoId} ha sido cancelado",
             Body = EmailTemplates.CreateBase($"Pedido #{notification.PedidoId} cancelado", content),

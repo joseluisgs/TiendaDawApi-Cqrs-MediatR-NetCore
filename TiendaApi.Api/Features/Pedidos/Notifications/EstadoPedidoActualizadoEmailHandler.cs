@@ -12,11 +12,9 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// porque los cambios de estado los provoca él desde el panel.
 /// </summary>
 public class EstadoPedidoActualizadoEmailHandler(IEmailService emailService)
-    : INotificationHandler<EstadoPedidoActualizadoNotification>
-{
+    : INotificationHandler<EstadoPedidoActualizadoNotification> {
     /// <inheritdoc/>
-    public Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken)
-    {
+    public Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) {
         var destinatario = notification.Pedido.Destinatario;
         if (string.IsNullOrWhiteSpace(destinatario?.Email)) return Task.CompletedTask;
 
@@ -29,8 +27,7 @@ public class EstadoPedidoActualizadoEmailHandler(IEmailService emailService)
         Log.Information("📧 [EMAIL] Cambio de estado encolado para el cliente: {PedidoId} -> {Email} ({Estado})",
             notification.Pedido.Id, destinatario.Email, notification.NuevoEstado);
 
-        return emailService.EnqueueEmailAsync(new EmailMessage
-        {
+        return emailService.EnqueueEmailAsync(new EmailMessage {
             To = destinatario.Email,
             Subject = $"📦 Pedido #{notification.Pedido.Id} - {notification.NuevoEstado}",
             Body = EmailTemplates.CreateBase("Cambio de Estado de Pedido", content),

@@ -22,18 +22,15 @@ namespace TiendaApi.Api.Infrastructures;
 /// La diferencia es CÓMO se genera y valida la contraseña internamente.
 /// Es el único dueño del registro de IAuthService (un solo sitio decide).
 /// </summary>
-public static class AuthenticationConfig
-{
+public static class AuthenticationConfig {
     /// <summary>
     /// Configura autenticación según el modo seleccionado.
     /// </summary>
-    public static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
-    {
+    public static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration) {
         var authMode = configuration["Auth:Mode"] ?? "Custom";
         Log.Information("🔐 Configurando autenticación... Modo: {Mode}", authMode);
 
-        if (authMode == "Identity")
-        {
+        if (authMode == "Identity") {
             return AddIdentityAuthentication(services, configuration);
         }
 
@@ -43,8 +40,7 @@ public static class AuthenticationConfig
     /// <summary>
     /// Modo Custom: BCrypt manual + JWT Bearer (el enfoque original).
     /// </summary>
-    private static IServiceCollection AddCustomAuthentication(IServiceCollection services, IConfiguration configuration)
-    {
+    private static IServiceCollection AddCustomAuthentication(IServiceCollection services, IConfiguration configuration) {
         Log.Information("🔐 Modo Custom: BCrypt + JWT Bearer");
 
         var jwtKey = configuration["Jwt:Key"]
@@ -53,10 +49,8 @@ public static class AuthenticationConfig
         var jwtAudience = configuration["Jwt:Audience"] ?? "TiendaApi";
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
+        .AddJwtBearer(options => {
+            options.TokenValidationParameters = new TokenValidationParameters {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                 ValidateIssuer = true,
@@ -80,8 +74,7 @@ public static class AuthenticationConfig
     /// Modo Identity: ASP.NET Core Identity + JWT Bearer.
     /// Identity maneja passwords (PBKDF2), lockout, user store, etc.
     /// </summary>
-    private static IServiceCollection AddIdentityAuthentication(IServiceCollection services, IConfiguration configuration)
-    {
+    private static IServiceCollection AddIdentityAuthentication(IServiceCollection services, IConfiguration configuration) {
         Log.Information("🔐 Modo Identity: ASP.NET Core Identity + JWT Bearer");
 
         var jwtKey = configuration["Jwt:Key"]
@@ -97,8 +90,7 @@ public static class AuthenticationConfig
         // iban al handler de cookies → redirect /Account/Login (401) en todo
         // endpoint de admin. AddRoles + AddSignInManager añaden lo necesario
         // para roles y CheckPasswordSignInAsync sin tocar el DefaultScheme.
-        services.AddIdentityCore<User>(options =>
-        {
+        services.AddIdentityCore<User>(options => {
             options.Password.RequireDigit = true;
             options.Password.RequireLowercase = true;
             options.Password.RequireUppercase = true;
@@ -121,8 +113,7 @@ public static class AuthenticationConfig
         // 🎓 Defensa en profundidad: aunque AddIdentityCore no ensucia el
         // DefaultScheme, lo fijamos explícitamente a Bearer para que ningún
         // registro futuro (u otra librería) pueda cambiar el comportamiento.
-        services.AddAuthentication(options =>
-        {
+        services.AddAuthentication(options => {
             options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -130,10 +121,8 @@ public static class AuthenticationConfig
         });
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
+        .AddJwtBearer(options => {
+            options.TokenValidationParameters = new TokenValidationParameters {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                 ValidateIssuer = true,
@@ -156,8 +145,7 @@ public static class AuthenticationConfig
     /// <summary>
     /// Políticas de autorización (comunes a ambos modos).
     /// </summary>
-    private static void AddAuthorizationPolicies(IServiceCollection services)
-    {
+    private static void AddAuthorizationPolicies(IServiceCollection services) {
         Log.Information("🛡️ Configurando políticas de autorización...");
         // 🎓 Todas las políticas declaran el esquema Bearer EXPLÍCITAMENTE.
         // Aunque el modo Identity usa AddIdentityCore (que NO ensucia el

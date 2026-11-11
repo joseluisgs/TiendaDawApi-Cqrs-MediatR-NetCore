@@ -11,15 +11,12 @@ using TiendaApi.Api.Repositories.Pedidos;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class GetAllPedidosQueryHandlerTests
-{
+public class GetAllPedidosQueryHandlerTests {
     [Test]
-    public async Task Handle_PedidosExisten_DevuelvePagedResult()
-    {
+    public async Task Handle_PedidosExisten_DevuelvePagedResult() {
         var repository = new Mock<IPedidosRepository>();
 
-        var pedidos = new List<Pedido>
-        {
+        var pedidos = new List<Pedido> {
             new() { Id = ObjectId.GenerateNewId(), Estado = "Pendiente" },
             new() { Id = ObjectId.GenerateNewId(), Estado = "Enviado" }
         };
@@ -35,8 +32,7 @@ public class GetAllPedidosQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_SinPedidos_DevuelveListaVacia()
-    {
+    public async Task Handle_SinPedidos_DevuelveListaVacia() {
         var repository = new Mock<IPedidosRepository>();
         repository.Setup(r => r.FindAllPagedAsync(0, 10)).ReturnsAsync((new List<Pedido>(), 0));
 

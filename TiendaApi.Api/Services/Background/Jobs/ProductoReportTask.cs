@@ -22,8 +22,7 @@ public class ProductoReportTask(
     IEmailService emailService,
     ILogger<ProductoReportTask> logger,
     IConfiguration configuration
-) : IProductoReportTask
-{
+) : IProductoReportTask {
     private readonly int _days = configuration.GetValue<int>("Scheduler:ProductoReportDays", 7);
     private readonly bool _isDevelopment = configuration.GetValue<bool>("IsDevelopment");
 
@@ -31,13 +30,11 @@ public class ProductoReportTask(
     /// Ejecuta el reporte de productos nuevos.
     /// </summary>
     /// <returns>UnitResult con error en caso de fallo.</returns>
-    public async Task<UnitResult<DomainError>> ExecuteAsync()
-    {
+    public async Task<UnitResult<DomainError>> ExecuteAsync() {
         logger.LogInformation("Ejecutando reporte de productos - Modo: {Modo}",
             _isDevelopment ? "DESARROLLO" : "PRODUCCION");
 
-        if (_isDevelopment)
-        {
+        if (_isDevelopment) {
             logger.LogInformation("Servicio de Background esta funcionando - Modo desarrollo");
             return UnitResult.Success<DomainError>();
         }
@@ -49,8 +46,7 @@ public class ProductoReportTask(
     /// <summary>
     /// Obtiene productos creados en los últimos X días.
     /// </summary>
-    private async Task<Result<IEnumerable<ProductoRead>, DomainError>> GetRecentlyCreatedProductsAsync()
-    {
+    private async Task<Result<IEnumerable<ProductoRead>, DomainError>> GetRecentlyCreatedProductsAsync() {
         logger.LogDebug("Obteniendo productos de los ultimos {Dias} dias", _days);
 
         var productos = await productoService.GetRecentlyCreatedAsync(_days);
@@ -62,10 +58,8 @@ public class ProductoReportTask(
     /// <summary>
     /// Envía emails a todos los usuarios activos con los productos nuevos.
     /// </summary>
-    private async Task<UnitResult<DomainError>> SendEmailsToActiveUsersAsync(IEnumerable<ProductoRead> productos)
-    {
-        if (!productos.Any())
-        {
+    private async Task<UnitResult<DomainError>> SendEmailsToActiveUsersAsync(IEnumerable<ProductoRead> productos) {
+        if (!productos.Any()) {
             logger.LogInformation("No hay productos nuevos para reportar");
             return UnitResult.Success<DomainError>();
         }
@@ -74,16 +68,13 @@ public class ProductoReportTask(
 
         var usuarios = await userRepository.GetActiveUsersAsync();
 
-        if (!usuarios.Any())
-        {
+        if (!usuarios.Any()) {
             logger.LogInformation("No hay usuarios activos para enviar reportes");
             return UnitResult.Success<DomainError>();
         }
 
-        foreach (var user in usuarios)
-        {
-            var email = new EmailMessage
-            {
+        foreach (var user in usuarios) {
+            var email = new EmailMessage {
                 To = user.Email ?? string.Empty,
                 Subject = $"Novedades en Tienda: {productos.Count()} productos nuevos",
                 Body = GenerateHtmlEmail(productos, user.UserName ?? string.Empty),
@@ -101,8 +92,7 @@ public class ProductoReportTask(
     /// <summary>
     /// Genera el cuerpo del email en formato HTML.
     /// </summary>
-    private static string GenerateHtmlEmail(IEnumerable<ProductoRead> productos, string userName)
-    {
+    private static string GenerateHtmlEmail(IEnumerable<ProductoRead> productos, string userName) {
         var productosHtml = string.Concat(productos.Select(p => string.Format(@"
             <div style=""border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;"">
                 <h3 style=""margin: 0 0 10px 0;"">{0}</h3>

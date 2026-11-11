@@ -24,15 +24,13 @@ public class GetPedidoByIdQueryHandler(
     IPedidosRepository repository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IRequestHandler<GetPedidoByIdQuery, Result<PedidoDto, DomainError>>
-{
+    : IRequestHandler<GetPedidoByIdQuery, Result<PedidoDto, DomainError>> {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:PedidoCacheTTLMinutes"] ?? "5"));
 
     /// <inheritdoc/>
     public async Task<Result<PedidoDto, DomainError>> Handle(
-        GetPedidoByIdQuery request, CancellationToken cancellationToken)
-    {
+        GetPedidoByIdQuery request, CancellationToken cancellationToken) {
         var cacheKey = $"pedidos:{request.Id}";
         var cached = await cacheService.GetAsync<PedidoDto>(cacheKey);
         if (cached is not null)
@@ -43,11 +41,8 @@ public class GetPedidoByIdQueryHandler(
             return Result.Failure<PedidoDto, DomainError>(PedidoError.NotFound(request.Id));
 
         var dto = pedido.ToDto();
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

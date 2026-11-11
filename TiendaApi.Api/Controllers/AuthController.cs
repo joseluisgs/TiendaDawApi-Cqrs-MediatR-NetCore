@@ -26,8 +26,7 @@ public class AuthController(
     IAuthenticationSchemeProvider schemeProvider,
     IAuthenticationService authenticationService,
     ILogger<AuthController> logger
-) : ControllerBase
-{
+) : ControllerBase {
     /// <summary>
     /// Registra un nuevo usuario en el sistema.
     /// </summary>
@@ -35,8 +34,7 @@ public class AuthController(
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<AuthResponseDto>> SignUp([FromBody] RegisterDto dto)
-    {
+    public async Task<ActionResult<AuthResponseDto>> SignUp([FromBody] RegisterDto dto) {
         logger.LogInformation("Signup request received for user: {Username}", dto.Username);
 
         var resultado = await mediator.Send(new SignUpCommand(dto));
@@ -53,8 +51,7 @@ public class AuthController(
     [HttpPost("signin")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthResponseDto>> SignIn([FromBody] LoginDto dto)
-    {
+    public async Task<ActionResult<AuthResponseDto>> SignIn([FromBody] LoginDto dto) {
         logger.LogInformation("Petición de inicio de sesión recibida para usuario: {Username}", dto.Username);
 
         var resultado = await mediator.Send(new SignInCommand(dto));
@@ -74,11 +71,9 @@ public class AuthController(
     [HttpGet("external/{provider}")]
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ExternalLogin([FromRoute] string provider)
-    {
+    public async Task<IActionResult> ExternalLogin([FromRoute] string provider) {
         var scheme = await schemeProvider.GetSchemeAsync(provider);
-        if (scheme is null)
-        {
+        if (scheme is null) {
             logger.LogWarning("Proveedor OAuth no configurado: {Provider}", provider);
             return NotFound($"Proveedor '{provider}' no está configurado");
         }
@@ -98,24 +93,21 @@ public class AuthController(
     [HttpGet("external-callback")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<AuthResponseDto>> ExternalLoginCallback()
-    {
+    public async Task<ActionResult<AuthResponseDto>> ExternalLoginCallback() {
         // 🎓 NO autenticar contra un esquema fijo que pueda no estar registrado:
         // AuthenticateAsync con un esquema sin registrar LANZA excepción (→ 500
         // vía manejador global). Iteramos SOLO los esquemas que hayan quedado
         // registrados; si las puertas OAuth están desactivadas no hay ninguno
         // y el resultado es el BadRequest controlado de abajo (400).
         AuthenticateResult authenticateResult = AuthenticateResult.NoResult();
-        foreach (var scheme in await schemeProvider.GetAllSchemesAsync())
-        {
+        foreach (var scheme in await schemeProvider.GetAllSchemesAsync()) {
             if (scheme.Name is "Bearer" or "Cookies") continue;
             authenticateResult = await authenticationService.AuthenticateAsync(
                 HttpContext, scheme.Name);
             if (authenticateResult.Succeeded) break;
         }
 
-        if (!authenticateResult.Succeeded || authenticateResult.Principal is null)
-        {
+        if (!authenticateResult.Succeeded || authenticateResult.Principal is null) {
             logger.LogWarning("Login externo falló: sin principal autenticado");
             return BadRequest("No se pudo autenticar con el proveedor externo");
         }

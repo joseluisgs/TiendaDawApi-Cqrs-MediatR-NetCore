@@ -13,11 +13,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Users;
 
-public class UpdateUserCommandHandlerTests
-{
+public class UpdateUserCommandHandlerTests {
     [Test]
-    public async Task Handle_UsuarioExistente_DevuelveSuccess()
-    {
+    public async Task Handle_UsuarioExistente_DevuelveSuccess() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<UserUpdateDto>>();
         var cacheService = new Mock<ICacheService>();
@@ -33,8 +31,7 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_UsuarioNoExiste_DevuelveNotFound() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<UserUpdateDto>>();
         var cacheService = new Mock<ICacheService>();
@@ -49,8 +46,7 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_UsuarioEliminado_DevuelveNotFound()
-    {
+    public async Task Handle_UsuarioEliminado_DevuelveNotFound() {
         var repository = new Mock<IUserRepository>();
         var validator = new Mock<IValidator<UserUpdateDto>>();
         var cacheService = new Mock<ICacheService>();

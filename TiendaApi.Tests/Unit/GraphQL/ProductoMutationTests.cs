@@ -23,14 +23,12 @@ namespace TiendaApi.Tests.Unit.GraphQL;
 [TestFixture]
 [Category("Unit")]
 [Category("GraphQL")]
-public class ProductoMutationTests
-{
+public class ProductoMutationTests {
     private Mock<IMediator> _mediatorMock = null!;
     private ProductoMutation _mutation = null!;
 
     [SetUp]
-    public void Setup()
-    {
+    public void Setup() {
         _mediatorMock = new Mock<IMediator>();
         _mutation = new ProductoMutation();
     }
@@ -42,8 +40,7 @@ public class ProductoMutationTests
     #region CreateProducto Tests
 
     [Test]
-    public async Task CreateProducto_ConDtoValido_RetornaProductoCreado()
-    {
+    public async Task CreateProducto_ConDtoValido_RetornaProductoCreado() {
         ProductoRequestDto? dtoEnviado = null;
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
@@ -51,8 +48,7 @@ public class ProductoMutationTests
                 (req, _) => dtoEnviado = ((CreateProductoCommand)req).Dto)
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(NuevoProducto()));
 
-        var input = new CreateProductoInput
-        {
+        var input = new CreateProductoInput {
             Nombre = "Nuevo Producto",
             Precio = 99.99m,
             Stock = 10,
@@ -68,8 +64,7 @@ public class ProductoMutationTests
     }
 
     [Test]
-    public async Task CreateProducto_ConErrorValidacion_LanzaExcepcion()
-    {
+    public async Task CreateProducto_ConErrorValidacion_LanzaExcepcion() {
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(new BusinessRuleError("Error")));
@@ -86,8 +81,7 @@ public class ProductoMutationTests
     #region UpdateProducto Tests
 
     [Test]
-    public async Task UpdateProducto_ConInputParcial_MapeaElPatchYDelegaEnElComando()
-    {
+    public async Task UpdateProducto_ConInputParcial_MapeaElPatchYDelegaEnElComando() {
         long productoId = 1;
         UpdateProductoPartialCommand? comandoRecibido = null;
 
@@ -117,8 +111,7 @@ public class ProductoMutationTests
     }
 
     [Test]
-    public async Task UpdateProducto_ConProductoNoExistente_LanzaExcepcion()
-    {
+    public async Task UpdateProducto_ConProductoNoExistente_LanzaExcepcion() {
         long productoId = 999;
 
         _mediatorMock
@@ -138,8 +131,7 @@ public class ProductoMutationTests
     #region DeleteProducto Tests
 
     [Test]
-    public async Task DeleteProducto_ConProductoExistente_RetornaTrue()
-    {
+    public async Task DeleteProducto_ConProductoExistente_RetornaTrue() {
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<DomainError>());
@@ -150,8 +142,7 @@ public class ProductoMutationTests
     }
 
     [Test]
-    public async Task DeleteProducto_ConProductoNoExistente_LanzaExcepcion()
-    {
+    public async Task DeleteProducto_ConProductoNoExistente_LanzaExcepcion() {
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("No encontrado")));

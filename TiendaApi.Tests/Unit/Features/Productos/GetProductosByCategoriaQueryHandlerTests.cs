@@ -11,18 +11,15 @@ using TiendaApi.Api.Services.Productos;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
-public class GetProductosByCategoriaQueryHandlerTests
-{
+public class GetProductosByCategoriaQueryHandlerTests {
     [Test]
-    public async Task Handle_CategoriaExistente_DevuelveProductos()
-    {
+    public async Task Handle_CategoriaExistente_DevuelveProductos() {
         var service = new Mock<IProductoService>();
         var categoriaRepo = new Mock<ICategoriaRepository>();
 
         categoriaRepo.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1 });
 
-        service.Setup(s => s.GetByCategoriaIdAsync(1)).ReturnsAsync(new List<ProductoDto>
-        {
+        service.Setup(s => s.GetByCategoriaIdAsync(1)).ReturnsAsync(new List<ProductoDto> {
             new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow)
         });
 
@@ -37,8 +34,7 @@ public class GetProductosByCategoriaQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaNoExiste_DevuelveError()
-    {
+    public async Task Handle_CategoriaNoExiste_DevuelveError() {
         var service = new Mock<IProductoService>();
         var categoriaRepo = new Mock<ICategoriaRepository>();
 

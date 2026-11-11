@@ -24,15 +24,13 @@ public class GetCategoriaByIdQueryHandler(
     ICategoriaRepository repository,
     ICacheService cacheService,
     IConfiguration configuration)
-    : IRequestHandler<GetCategoriaByIdQuery, Result<CategoriaDto, DomainError>>
-{
+    : IRequestHandler<GetCategoriaByIdQuery, Result<CategoriaDto, DomainError>> {
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:CategoriaCacheTTLMinutes"] ?? "10"));
 
     /// <inheritdoc/>
     public async Task<Result<CategoriaDto, DomainError>> Handle(
-        GetCategoriaByIdQuery request, CancellationToken cancellationToken)
-    {
+        GetCategoriaByIdQuery request, CancellationToken cancellationToken) {
         var cacheKey = $"categorias:{request.Id}";
         var cached = await cacheService.GetAsync<CategoriaDto>(cacheKey);
         if (cached is not null)
@@ -43,11 +41,8 @@ public class GetCategoriaByIdQueryHandler(
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NotFound(request.Id));
 
         var dto = categoria.ToDto();
-        _ = Task.Run(async () =>
-        {
-            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); }
-            catch (Exception ex)
-            {
+        _ = Task.Run(async () => {
+            try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");
             }
         });

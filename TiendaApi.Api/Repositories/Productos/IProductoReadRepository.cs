@@ -10,8 +10,7 @@ namespace TiendaApi.Api.Repositories.Productos;
 /// nativo, al estilo de <c>PedidosNativeRepository</c>. PostgreSQL sigue siendo
 /// la fuente de verdad: aquí solo se lee la réplica desnormalizada.
 /// </summary>
-public interface IProductoReadRepository
-{
+public interface IProductoReadRepository {
     /// <summary>Obtiene todos los productos no eliminados ordenados por nombre (GraphQL <c>productos</c>).</summary>
     /// <returns>Colección de productos del read model.</returns>
     Task<IEnumerable<ProductoRead>> FindAllAsync();

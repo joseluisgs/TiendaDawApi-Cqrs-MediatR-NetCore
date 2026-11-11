@@ -20,19 +20,16 @@ namespace TiendaApi.Tests.Unit.Features.Historial;
 /// handler -> servicio -> repositorio mockeado, verificando que la cadena
 /// devuelve el Result de dominio sin excepciones.
 /// </summary>
-public class GetHistorialPreciosQueryHandlerTests
-{
+public class GetHistorialPreciosQueryHandlerTests {
     private readonly Mock<IHistorialService> _service = new();
     private readonly GetHistorialPreciosQueryHandler _handler;
 
-    public GetHistorialPreciosQueryHandlerTests()
-    {
+    public GetHistorialPreciosQueryHandlerTests() {
         _handler = new GetHistorialPreciosQueryHandler(_service.Object);
     }
 
     [Test]
-    public async Task Handle_SerieDisponible_DevuelveLaSerieDeLaFachada()
-    {
+    public async Task Handle_SerieDisponible_DevuelveLaSerieDeLaFachada() {
         var serie = new List<HistorialPrecioDto> { new(DateTime.UtcNow, 1299.99) };
         _service.Setup(s => s.GetHistorialPreciosAsync(1, null, null, 50))
             .ReturnsAsync(Result.Success<IReadOnlyList<HistorialPrecioDto>, DomainError>(serie));
@@ -45,8 +42,7 @@ public class GetHistorialPreciosQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoNoExiste_PropagaElNotFoundDeLaFachada()
-    {
+    public async Task Handle_ProductoNoExiste_PropagaElNotFoundDeLaFachada() {
         _service.Setup(s => s.GetHistorialPreciosAsync(999, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<int>()))
             .ReturnsAsync(Result.Failure<IReadOnlyList<HistorialPrecioDto>, DomainError>(
                 ProductoError.NotFound(999)));
@@ -59,8 +55,7 @@ public class GetHistorialPreciosQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_CassandraCaida_NoLanza_DevuelveSerieVacia()
-    {
+    public async Task Handle_CassandraCaida_NoLanza_DevuelveSerieVacia() {
         // Cadena completa: handler -> HistorialService REAL -> repo que REVIENTA.
         var productoRepository = new Mock<IProductoRepository>();
         productoRepository.Setup(r => r.FindByIdAsync(1))

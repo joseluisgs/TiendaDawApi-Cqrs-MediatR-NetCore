@@ -9,13 +9,11 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// Handler que notifica por WebSocket cuando se elimina un pedido.
 /// </summary>
 public class PedidoEliminadoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
-    : INotificationHandler<PedidoEliminadoNotification>
-{
+    : INotificationHandler<PedidoEliminadoNotification> {
     /// <summary>
     /// Procesa el evento PedidoEliminado y notifica por WebSocket al usuario y a los administradores.
     /// </summary>
-    public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken) {
         await webSocketHandler.NotifyUserAndAdminsAsync(notification.UserId, new PedidoNotificacion(
             PedidoNotificationType.ELIMINADO,
             notification.PedidoId,

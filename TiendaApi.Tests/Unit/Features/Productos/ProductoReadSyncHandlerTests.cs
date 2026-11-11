@@ -21,8 +21,7 @@ namespace TiendaApi.Tests.Unit.Features.Productos;
 [TestFixture]
 [Category("Unit")]
 [Category("Sync")]
-public class ProductoReadSyncHandlerTests
-{
+public class ProductoReadSyncHandlerTests {
     private Mock<IProductoReadRepository> _readRepository = null!;
     private Mock<ILogger<ProductoReadSyncHandler>> _logger = null!;
     private ProductoReadSyncHandler _handler = null!;
@@ -35,16 +34,14 @@ public class ProductoReadSyncHandlerTests
         new DateTime(2026, 1, 15, 12, 30, 0, DateTimeKind.Utc));
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _readRepository = new Mock<IProductoReadRepository>();
         _logger = new Mock<ILogger<ProductoReadSyncHandler>>();
         _handler = new ProductoReadSyncHandler(_readRepository.Object, _logger.Object);
     }
 
     [Test]
-    public async Task Handle_ProductoCreado_UpsertaDocumentoDesnormalizado()
-    {
+    public async Task Handle_ProductoCreado_UpsertaDocumentoDesnormalizado() {
         await _handler.Handle(new ProductoCreadoNotification(Producto), CancellationToken.None);
 
         _readRepository.Verify(r => r.UpsertAsync(It.Is<ProductoRead>(p =>
@@ -62,8 +59,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoActualizado_UpsertaDocumento()
-    {
+    public async Task Handle_ProductoActualizado_UpsertaDocumento() {
         await _handler.Handle(new ProductoActualizadoNotification(Producto, Producto.Precio), CancellationToken.None);
 
         _readRepository.Verify(r => r.UpsertAsync(It.Is<ProductoRead>(p =>
@@ -72,8 +68,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_ProductoEliminado_MarcaSoftDelete()
-    {
+    public async Task Handle_ProductoEliminado_MarcaSoftDelete() {
         await _handler.Handle(new ProductoEliminadoNotification(42), CancellationToken.None);
 
         _readRepository.Verify(r => r.SoftDeleteAsync(42), Times.Once);
@@ -81,8 +76,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_CategoriaActualizada_PropagaNombreYDescripcionEmbebidos()
-    {
+    public async Task Handle_CategoriaActualizada_PropagaNombreYDescripcionEmbebidos() {
         await _handler.Handle(
             new CategoriaActualizadaNotification(7, "Tecnología", "Electrónica y periféricos"),
             CancellationToken.None);
@@ -92,8 +86,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_FalloDeMongo_NoPropagaExcepcion()
-    {
+    public async Task Handle_FalloDeMongo_NoPropagaExcepcion() {
         // PG ya commiteó: la respuesta no depende del read model; el handler
         // solo registra el resultado del upsert.
         _readRepository
@@ -107,8 +100,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_FalloDeMongoEnSoftDelete_NoPropagaExcepcion()
-    {
+    public async Task Handle_FalloDeMongoEnSoftDelete_NoPropagaExcepcion() {
         _readRepository
             .Setup(r => r.SoftDeleteAsync(It.IsAny<long>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));
@@ -120,8 +112,7 @@ public class ProductoReadSyncHandlerTests
     }
 
     [Test]
-    public async Task Handle_FalloDeMongoEnCategoria_NoPropagaExcepcion()
-    {
+    public async Task Handle_FalloDeMongoEnCategoria_NoPropagaExcepcion() {
         _readRepository
             .Setup(r => r.UpdateCategoriaNombreAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string?>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));

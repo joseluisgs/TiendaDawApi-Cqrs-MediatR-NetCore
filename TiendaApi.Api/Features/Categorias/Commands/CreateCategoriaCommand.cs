@@ -25,15 +25,12 @@ public class CreateCategoriaCommandHandler(
     ICategoriaRepository repository,
     IValidator<CategoriaRequestDto> validator,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<CreateCategoriaCommand, Result<CategoriaDto, DomainError>>
-{
+    : IRequestHandler<CreateCategoriaCommand, Result<CategoriaDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<CategoriaDto, DomainError>> Handle(
-        CreateCategoriaCommand request, CancellationToken cancellationToken)
-    {
+        CreateCategoriaCommand request, CancellationToken cancellationToken) {
         var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -47,7 +44,7 @@ public class CreateCategoriaCommandHandler(
         var dto = saved.ToDto();
 
         await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
-            
+
 
         return Result.Success<CategoriaDto, DomainError>(dto);
     }

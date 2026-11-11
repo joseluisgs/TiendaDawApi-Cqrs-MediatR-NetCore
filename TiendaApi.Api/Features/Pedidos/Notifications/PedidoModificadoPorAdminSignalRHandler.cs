@@ -10,15 +10,12 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// un administrador (grupos dueño + admins, nunca Clients.All).
 /// </summary>
 public class PedidoModificadoPorAdminSignalRHandler(IHubContext<PedidosHub> hubContext)
-    : INotificationHandler<PedidoModificadoPorAdminNotification>
-{
+    : INotificationHandler<PedidoModificadoPorAdminNotification> {
     /// <inheritdoc/>
-    public async Task Handle(PedidoModificadoPorAdminNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoModificadoPorAdminNotification notification, CancellationToken cancellationToken) {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoModificadoPorAdmin para ID: {PedidoId}", notification.Pedido.Id);
 
-        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoActualizado", new
-        {
+        await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoActualizado", new {
             pedidoId = notification.Pedido.Id,
             userId = notification.Pedido.UserId,
             estado = notification.Pedido.Estado,

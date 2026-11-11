@@ -30,8 +30,7 @@ namespace TiendaApi.Api.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
 [Produces("application/json")]
-public class CategoriasController(IMediator mediator) : ControllerBase
-{
+public class CategoriasController(IMediator mediator) : ControllerBase {
     /// <summary>
     /// Obtiene el listado paginado de categorías con filtros y ordenación.
     /// </summary>
@@ -51,10 +50,8 @@ public class CategoriasController(IMediator mediator) : ControllerBase
         [FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string sortBy = "id",
-        [FromQuery] string direction = "asc")
-    {
-        var filter = new CategoriaFilterDto
-        {
+        [FromQuery] string direction = "asc") {
+        var filter = new CategoriaFilterDto {
             Nombre = nombre,
             IsDeleted = isDeleted,
             Page = page,
@@ -65,8 +62,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
 
         var resultado = await mediator.Send(new GetAllCategoriasQuery(filter));
         return resultado.Match(
-            onSuccess: categorias =>
-            {
+            onSuccess: categorias => {
                 // ETag lo gestiona OutputCache ([OutputCache] attribute)
                 var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
                 if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
@@ -84,8 +80,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(CategoriaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    public async Task<ActionResult<CategoriaDto>> GetById(long id)
-    {
+    public async Task<ActionResult<CategoriaDto>> GetById(long id) {
         var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
             onSuccess: categoria => (ActionResult<CategoriaDto>)categoria,
@@ -103,8 +98,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CategoriaDto>> Create([FromBody] CategoriaRequestDto dto)
-    {
+    public async Task<ActionResult<CategoriaDto>> Create([FromBody] CategoriaRequestDto dto) {
         var resultado = await mediator.Send(new CreateCategoriaCommand(dto));
         return resultado.Match(
             onSuccess: categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
@@ -124,8 +118,7 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CategoriaDto>> Update(long id, [FromBody] CategoriaRequestDto dto)
-    {
+    public async Task<ActionResult<CategoriaDto>> Update(long id, [FromBody] CategoriaRequestDto dto) {
         var resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
         return resultado.Match(
             onSuccess: categoria => categoria,
@@ -142,13 +135,11 @@ public class CategoriasController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Delete(long id)
-    {
+    public async Task<ActionResult> Delete(long id) {
         var resultado = await mediator.Send(new DeleteCategoriaCommand(id));
         if (resultado.IsSuccess) return NoContent();
         var error = resultado.Error;
-        return error switch
-        {
+        return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = error.Message })

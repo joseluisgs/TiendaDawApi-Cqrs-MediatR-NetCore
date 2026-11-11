@@ -30,12 +30,10 @@ public class UpdateProductoImageCommandHandler(
     IMediator mediator,
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
-    : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>>
-{
+    : IRequestHandler<UpdateProductoImageCommand, Result<ProductoDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
-        UpdateProductoImageCommand request, CancellationToken cancellationToken)
-    {
+        UpdateProductoImageCommand request, CancellationToken cancellationToken) {
         var producto = await repository.FindByIdAsync(request.Id);
         if (producto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));

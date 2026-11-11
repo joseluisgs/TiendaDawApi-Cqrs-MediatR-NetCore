@@ -14,16 +14,14 @@ namespace TiendaApi.Api.Infrastructures;
 /// <summary>
 /// Extension methods para inicialización de base de datos.
 /// </summary>
-public static class DatabaseInitializationExtensions
-{
+public static class DatabaseInitializationExtensions {
     /// <summary>
     /// Inicializa la base de datos PostgreSQL y MongoDB.
     /// Desarrollo: Elimina y recrea la BD, siembra datos.
     /// Producción: Aplica las migraciones de EF Core pendientes (solo lo pendiente,
     /// sin perder datos de BDs vivas).
     /// </summary>
-    public static async Task InitializeDatabaseAsync(this WebApplication app, bool isDevelopment)
-    {
+    public static async Task InitializeDatabaseAsync(this WebApplication app, bool isDevelopment) {
         Log.Information("🗄️ Inicializando base de datos...");
 
         using var scope = app.Services.CreateScope();
@@ -31,8 +29,7 @@ public static class DatabaseInitializationExtensions
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-        if (isDevelopment)
-        {
+        if (isDevelopment) {
             logger.LogWarning("🗄️ [DESARROLLO] Eliminando y recreando base de datos...");
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
@@ -42,15 +39,12 @@ public static class DatabaseInitializationExtensions
             // y pedidos) la vuelven a poblar desde cero. Sin este paso,
             // MongoDbSeeder solo siembra si está vacío y la BD acumulaba
             // pedidos entre corridas de las suites E2E.
-            try
-            {
+            try {
                 var mongoDbName = configuration["MongoDbSettings:DatabaseName"] ?? "tienda";
                 var mongoClient = scope.ServiceProvider.GetRequiredService<IMongoClient>();
                 await mongoClient.DropDatabaseAsync(mongoDbName);
                 logger.LogInformation("🗂️ [DESARROLLO] MongoDB '{Database}' eliminado (se siembra a continuación)", mongoDbName);
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 // Mongo puede no estar disponible aún: mismo criterio que el resto
                 // de siembras Mongo, no bloquea el arranque (se reintenta en cada reinicio).
                 logger.LogWarning(ex, "No se pudo reiniciar MongoDB en desarrollo");
@@ -61,9 +55,7 @@ public static class DatabaseInitializationExtensions
             await sqlSeeder.SeedAsync();
 
             logger.LogInformation("✅ Base de datos recreada con datos semilla");
-        }
-        else
-        {
+        } else {
             // Producción: EF Core Migrations — Migrate() aplica solo lo
             // pendiente, por lo que una BD viva actualiza sin perder datos.
             await ApplyPendingMigrationsAsync(context, logger);
@@ -72,38 +64,29 @@ public static class DatabaseInitializationExtensions
         // Sincronizar el read model de productos PostgreSQL → MongoDB (dev y prod).
         // Sin esto, las queries de productos (REST/GraphQL/reporte) no encontrarían datos:
         // la creación por seeder/migraciones no dispara los Domain Events de sincronización.
-        try
-        {
+        try {
             var productoReadSeeder = scope.ServiceProvider.GetRequiredService<ProductoReadSeeder>();
             await productoReadSeeder.SeedAsync(isDevelopment);
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             // La siembra del read model no bloquea el arranque (mismo criterio
             // que el seeder de pedidos): es una proyección con log propio.
             Log.Error(ex, "Fallo al sembrar el read model de productos en MongoDB");
         }
 
         // Seed MongoDB solo en desarrollo
-        if (isDevelopment)
-        {
+        if (isDevelopment) {
             var mongoImpl = configuration["Pedidos:RepositoryType"] ?? "MongoDbNative";
 
-            if (mongoImpl == "MongoDbNative")
-            {
+            if (mongoImpl == "MongoDbNative") {
                 var mongoSeeder = scope.ServiceProvider.GetService<Data.Seed.Mongo.MongoDbSeeder>();
-                if (mongoSeeder != null)
-                {
+                if (mongoSeeder != null) {
                     Log.Information("🌱 Sembrando datos de pedidos en MongoDB (Native)...");
                     await mongoSeeder.SeedAsync();
                     Log.Information("✅ Datos de pedidos sembrados");
                 }
-            }
-            else
-            {
+            } else {
                 var mongoSeeder = scope.ServiceProvider.GetService<Data.Seed.Mongo.MongoDbEfCoreSeeder>();
-                if (mongoSeeder != null)
-                {
+                if (mongoSeeder != null) {
                     Log.Information("🌱 Sembrando datos de pedidos en MongoDB (EfCore)...");
                     await mongoSeeder.SeedAsync();
                     Log.Information("✅ Datos de pedidos sembrados");
@@ -126,15 +109,12 @@ public static class DatabaseInitializationExtensions
     /// </summary>
     /// <param name="context">DbContext a migrar.</param>
     /// <param name="logger">Logger para dejar constancia del baseline.</param>
-    private static async Task ApplyPendingMigrationsAsync(TiendaDbContext context, Microsoft.Extensions.Logging.ILogger logger)
-    {
+    private static async Task ApplyPendingMigrationsAsync(TiendaDbContext context, Microsoft.Extensions.Logging.ILogger logger) {
         var pending = (await context.Database.GetPendingMigrationsAsync()).ToList();
 
-        if (pending.Count > 0 && await CategoriasTableExistsAsync(context))
-        {
+        if (pending.Count > 0 && await CategoriasTableExistsAsync(context)) {
             var initial = pending.FirstOrDefault(m => m.EndsWith("_InitialCreate", StringComparison.Ordinal));
-            if (initial is not null)
-            {
+            if (initial is not null) {
                 await context.Database.ExecuteSqlRawAsync(
                     """
                     CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
@@ -161,8 +141,7 @@ public static class DatabaseInitializationExtensions
     /// Indica si la tabla del esquema de la API (<c>categorias</c>) ya existe en la BD.
     /// Se usa para distinguir una BD de esta aplicación de una BD ajena o vacía.
     /// </summary>
-    private static async Task<bool> CategoriasTableExistsAsync(TiendaDbContext context)
-    {
+    private static async Task<bool> CategoriasTableExistsAsync(TiendaDbContext context) {
         // 🎓 La conexión la gestiona el DbContext (scoped); no disposear aquí.
         // El warning del analizador es falso positivo en este caso.
         var connection = context.Database.GetDbConnection();

@@ -16,21 +16,18 @@ namespace TiendaApi.Tests.Unit.Infrastructures;
 [TestFixture]
 [Category("Unit")]
 [Category("Infrastructure")]
-public class RepositoriesConfigTests
-{
+public class RepositoriesConfigTests {
     private Mock<IConfiguration> _mockConfiguration = null!;
     private ServiceCollection _services = null!;
 
     [SetUp]
-    public void SetUp()
-    {
+    public void SetUp() {
         _mockConfiguration = new Mock<IConfiguration>();
         _services = new ServiceCollection();
     }
 
     [Test]
-    public void AddRepositories_MongoDbNative_RegistraPedidosNativeRepository()
-    {
+    public void AddRepositories_MongoDbNative_RegistraPedidosNativeRepository() {
         // Arrange - "Pedidos:RepositoryType" es el formato correcto
         _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns("MongoDbNative");
 
@@ -43,8 +40,7 @@ public class RepositoriesConfigTests
     }
 
     [Test]
-    public void AddRepositories_MongoDbEfCore_RegistraPedidosEfCoreRepository()
-    {
+    public void AddRepositories_MongoDbEfCore_RegistraPedidosEfCoreRepository() {
         // Arrange
         _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns("MongoDbEfCore");
 
@@ -57,8 +53,7 @@ public class RepositoriesConfigTests
     }
 
     [Test]
-    public void AddRepositories_SinConfiguracion_RegistraPedidosNativeRepositoryPorDefecto()
-    {
+    public void AddRepositories_SinConfiguracion_RegistraPedidosNativeRepositoryPorDefecto() {
         // Arrange - devuelve null cuando no hay configuración
         _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns((string)null!);
 
@@ -71,8 +66,7 @@ public class RepositoriesConfigTests
     }
 
     [Test]
-    public void AddRepositories_Siempre_RegistraRepositoriosDeCategorias()
-    {
+    public void AddRepositories_Siempre_RegistraRepositoriosDeCategorias() {
         // Arrange
         _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns("MongoDbNative");
 
@@ -84,8 +78,7 @@ public class RepositoriesConfigTests
     }
 
     [Test]
-    public void AddRepositories_Siempre_RegistraProductoReadRepository_EnAmbasRamas()
-    {
+    public void AddRepositories_Siempre_RegistraProductoReadRepository_EnAmbasRamas() {
         // Arrange — la rama "MongoDbEfCore" es el caso no por defecto
         _mockConfiguration.Setup(c => c["Pedidos:RepositoryType"]).Returns("MongoDbEfCore");
 

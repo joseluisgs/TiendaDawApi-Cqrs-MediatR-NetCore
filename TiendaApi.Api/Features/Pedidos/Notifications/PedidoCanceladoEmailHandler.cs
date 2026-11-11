@@ -11,13 +11,11 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 public class PedidoCanceladoEmailHandler(
     IEmailService emailService,
     IConfiguration configuration)
-    : INotificationHandler<PedidoCanceladoNotification>
-{
+    : INotificationHandler<PedidoCanceladoNotification> {
     /// <summary>
     /// Procesa la cancelación de un pedido y envía el email de aviso al administrador.
     /// </summary>
-    public async Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) {
         var adminEmail = configuration["Smtp:AdminEmail"];
         if (string.IsNullOrEmpty(adminEmail)) return;
 
@@ -28,8 +26,7 @@ public class PedidoCanceladoEmailHandler(
         );
         var body = EmailTemplates.CreateBase("Pedido Cancelado por Usuario", content);
 
-        var emailMessage = new EmailMessage
-        {
+        var emailMessage = new EmailMessage {
             To = adminEmail,
             Subject = $"🚫 Pedido #{notification.PedidoId} Cancelado por Usuario",
             Body = body,

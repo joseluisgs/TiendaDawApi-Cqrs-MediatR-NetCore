@@ -8,8 +8,7 @@ namespace TiendaApi.Api.Data.Seed.Mongo;
 /// <summary>
 /// Seeder que inserta pedidos de ejemplo directamente en MongoDB.
 /// </summary>
-public class MongoDbSeeder
-{
+public class MongoDbSeeder {
     private readonly IMongoCollection<Pedido> _pedidosCollection;
     private readonly ILogger<MongoDbSeeder> _logger;
 
@@ -18,8 +17,7 @@ public class MongoDbSeeder
     /// </summary>
     /// <param name="pedidosCollection">Colección de pedidos de MongoDB.</param>
     /// <param name="logger">Logger de la aplicación.</param>
-    public MongoDbSeeder(IMongoCollection<Pedido> pedidosCollection, ILogger<MongoDbSeeder> logger)
-    {
+    public MongoDbSeeder(IMongoCollection<Pedido> pedidosCollection, ILogger<MongoDbSeeder> logger) {
         _pedidosCollection = pedidosCollection;
         _logger = logger;
     }
@@ -27,51 +25,38 @@ public class MongoDbSeeder
     /// <summary>
     /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
     /// </summary>
-    public async Task SeedAsync()
-    {
-        try
-        {
+    public async Task SeedAsync() {
+        try {
             var count = await _pedidosCollection.CountDocumentsAsync(_ => true);
 
-            if (count == 0)
-            {
+            if (count == 0) {
                 _logger.LogInformation("Sembrando datos iniciales de pedidos en MongoDB...");
 
                 await SeedPedidosAsync();
 
                 _logger.LogInformation("Datos de pedidos sembrados correctamente");
-            }
-            else
-            {
+            } else {
                 _logger.LogInformation("MongoDB ya contiene pedidos, omitiendo sembrado");
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             _logger.LogWarning(ex, "Error al sembrar datos en MongoDB (puede que el servicio no esté disponible)");
         }
     }
 
-    private async Task SeedPedidosAsync()
-    {
-        var pedidos = new List<Pedido>
-        {
-            new()
-            {
+    private async Task SeedPedidosAsync() {
+        var pedidos = new List<Pedido> {
+            new() {
                 Id = ObjectId.GenerateNewId(),
                 UserId = 2,
-                Items = new List<PedidoItem>
-                {
-                    new()
-                    {
+                Items = new List<PedidoItem> {
+                    new() {
                         ProductoId = 1,
                         NombreProducto = "Laptop Dell XPS 15",
                         Cantidad = 1,
                         Precio = 1299.99m,
                         Subtotal = 1299.99m
                     },
-                    new()
-                    {
+                    new() {
                         ProductoId = 3,
                         NombreProducto = "Clean Code",
                         Cantidad = 2,
@@ -86,14 +71,11 @@ public class MongoDbSeeder
                 CreatedAt = DateTime.UtcNow.AddDays(-5),
                 UpdatedAt = DateTime.UtcNow.AddDays(-2)
             },
-            new()
-            {
+            new() {
                 Id = ObjectId.GenerateNewId(),
                 UserId = 2,
-                Items = new List<PedidoItem>
-                {
-                    new()
-                    {
+                Items = new List<PedidoItem> {
+                    new() {
                         ProductoId = 2,
                         NombreProducto = "Camiseta Nike",
                         Cantidad = 3,
@@ -108,14 +90,11 @@ public class MongoDbSeeder
                 CreatedAt = DateTime.UtcNow.AddDays(-1),
                 UpdatedAt = DateTime.UtcNow
             },
-            new()
-            {
+            new() {
                 Id = ObjectId.GenerateNewId(),
                 UserId = 2,
-                Items = new List<PedidoItem>
-                {
-                    new()
-                    {
+                Items = new List<PedidoItem> {
+                    new() {
                         ProductoId = 1,
                         NombreProducto = "Laptop Dell XPS 15",
                         Cantidad = 1,
@@ -140,8 +119,7 @@ public class MongoDbSeeder
 /// <summary>
 /// Seeder que inserta pedidos de ejemplo en MongoDB usando EF Core.
 /// </summary>
-public class MongoDbEfCoreSeeder
-{
+public class MongoDbEfCoreSeeder {
     private readonly TiendaMongoContext _context;
     private readonly ILogger<MongoDbEfCoreSeeder> _logger;
 
@@ -150,8 +128,7 @@ public class MongoDbEfCoreSeeder
     /// </summary>
     /// <param name="context">Contexto de MongoDB.</param>
     /// <param name="logger">Logger de la aplicación.</param>
-    public MongoDbEfCoreSeeder(TiendaMongoContext context, ILogger<MongoDbEfCoreSeeder> logger)
-    {
+    public MongoDbEfCoreSeeder(TiendaMongoContext context, ILogger<MongoDbEfCoreSeeder> logger) {
         _context = context;
         _logger = logger;
     }
@@ -159,24 +136,18 @@ public class MongoDbEfCoreSeeder
     /// <summary>
     /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
     /// </summary>
-    public async Task SeedAsync()
-    {
-        try
-        {
+    public async Task SeedAsync() {
+        try {
             var count = _context.Pedidos.Count();
 
-            if (count == 0)
-            {
+            if (count == 0) {
                 _logger.LogInformation("Sembrando datos iniciales de pedidos en MongoDB (EfCore)...");
 
-                var pedidos = new List<Pedido>
-                {
-                    new()
-                    {
+                var pedidos = new List<Pedido> {
+                    new() {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
-                        Items = new List<PedidoItem>
-                        {
+                        Items = new List<PedidoItem> {
                             new() { ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m, Subtotal = 1299.99m },
                             new() { ProductoId = 3, NombreProducto = "Clean Code", Cantidad = 2, Precio = 42.99m, Subtotal = 85.98m }
                         },
@@ -187,12 +158,10 @@ public class MongoDbEfCoreSeeder
                         CreatedAt = DateTime.UtcNow.AddDays(-5),
                         UpdatedAt = DateTime.UtcNow.AddDays(-2)
                     },
-                    new()
-                    {
+                    new() {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
-                        Items = new List<PedidoItem>
-                        {
+                        Items = new List<PedidoItem> {
                             new() { ProductoId = 2, NombreProducto = "Camiseta Nike", Cantidad = 3, Precio = 29.99m, Subtotal = 89.97m }
                         },
                         Total = 89.97m,
@@ -202,12 +171,10 @@ public class MongoDbEfCoreSeeder
                         CreatedAt = DateTime.UtcNow.AddDays(-1),
                         UpdatedAt = DateTime.UtcNow
                     },
-                    new()
-                    {
+                    new() {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
-                        Items = new List<PedidoItem>
-                        {
+                        Items = new List<PedidoItem> {
                             new() { ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m, Subtotal = 1299.99m }
                         },
                         Total = 1299.99m,
@@ -222,14 +189,10 @@ public class MongoDbEfCoreSeeder
                 _context.Pedidos.AddRange(pedidos);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Insertados {Count} pedidos de ejemplo", pedidos.Count);
-            }
-            else
-            {
+            } else {
                 _logger.LogInformation("MongoDB ya contiene pedidos, omitiendo sembrado");
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             _logger.LogWarning(ex, "Error al sembrar datos en MongoDB EfCore");
         }
     }

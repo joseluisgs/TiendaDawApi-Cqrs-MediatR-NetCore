@@ -22,12 +22,10 @@ public record SignUpCommand(RegisterDto Dto)
 /// </summary>
 public class SignUpCommandHandler(
     IAuthService authService)
-    : IRequestHandler<SignUpCommand, Result<AuthResponseDto, DomainError>>
-{
+    : IRequestHandler<SignUpCommand, Result<AuthResponseDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<AuthResponseDto, DomainError>> Handle(
-        SignUpCommand request, CancellationToken cancellationToken)
-    {
+        SignUpCommand request, CancellationToken cancellationToken) {
         var result = await authService.SignUpAsync(request.Dto);
         if (result.IsFailure)
             return result;
@@ -46,8 +44,7 @@ public record SignInCommand(LoginDto Dto)
 /// Handler del comando SignInCommand.
 /// </summary>
 public class SignInCommandHandler(IAuthService authService)
-    : IRequestHandler<SignInCommand, Result<AuthResponseDto, DomainError>>
-{
+    : IRequestHandler<SignInCommand, Result<AuthResponseDto, DomainError>> {
     /// <inheritdoc/>
     public Task<Result<AuthResponseDto, DomainError>> Handle(
         SignInCommand request, CancellationToken cancellationToken)

@@ -8,13 +8,11 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 /// Handler que escucha ProductoActualizadoNotification y notifica por WebSocket.
 /// </summary>
 public class ProductoActualizadoWebSocketHandler(ProductosWebSocketHandler webSocketHandler)
-    : INotificationHandler<ProductoActualizadoNotification>
-{
+    : INotificationHandler<ProductoActualizadoNotification> {
     /// <summary>
     /// Procesa el evento ProductoActualizado y notifica el cambio por WebSocket.
     /// </summary>
-    public async Task Handle(ProductoActualizadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(ProductoActualizadoNotification notification, CancellationToken cancellationToken) {
         Log.Information("📡 [WEBSOCKET] Recibida notificación ProductoActualizado para ID: {ProductoId}", notification.Producto.Id);
 
         await webSocketHandler.NotifyAsync(new ProductoNotificacion(

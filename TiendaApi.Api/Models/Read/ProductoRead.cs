@@ -14,8 +14,7 @@ namespace TiendaApi.Api.Models.Read;
 /// PostgreSQL sigue siendo la fuente de verdad: la sincronización se realiza con
 /// Domain Events (MediatR) y el seeder de arranque.
 /// </summary>
-public class ProductoRead
-{
+public class ProductoRead {
     /// <summary>Identificador del producto (mismo Id que en PostgreSQL, no autoincremental aquí).</summary>
     [BsonId]
     [BsonRepresentation(BsonType.Int64)]
@@ -65,8 +64,7 @@ public class ProductoRead
 /// Sub-documento de categoría embebido en <see cref="ProductoRead"/>.
 /// Conserva lo mínimo que sirve REST/GraphQL: id, nombre y descripción.
 /// </summary>
-public class CategoriaRead
-{
+public class CategoriaRead {
     /// <summary>Id de la categoría (FK a PostgreSQL).</summary>
     public long Id { get; set; }
 
@@ -85,8 +83,7 @@ public class CategoriaRead
 /// Conserva lo mínimo que sirve REST/GraphQL: código, nombre y descripción.
 /// Codigo vacío cuando el producto no tiene proveedor.
 /// </summary>
-public class ProveedorRead
-{
+public class ProveedorRead {
     /// <summary>Código de 11 caracteres del proveedor (FK a PostgreSQL).</summary>
     public string Codigo { get; set; } = string.Empty;
 

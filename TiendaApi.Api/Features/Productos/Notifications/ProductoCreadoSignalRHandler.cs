@@ -12,15 +12,12 @@ namespace TiendaApi.Api.Features.Productos.Notifications;
 /// Este comportamiento se añade ampliando el sistema con un nuevo handler.
 /// </summary>
 public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
-    : INotificationHandler<ProductoCreadoNotification>
-{
+    : INotificationHandler<ProductoCreadoNotification> {
     /// <inheritdoc/>
-    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
         Log.Information("📡 SignalR: Recibida notificación ProductoCreado para ID: {ProductoId}", notification.Producto.Id);
 
-        await hubContext.Clients.All.SendAsync("ProductoCreado", new
-        {
+        await hubContext.Clients.All.SendAsync("ProductoCreado", new {
             productoId = notification.Producto.Id,
             nombre = notification.Producto.Nombre,
             descripcion = notification.Producto.Descripcion,

@@ -20,12 +20,10 @@ public record GetProductoByIdQuery(long Id)
 /// (caché + MongoDB). El handler conserva el mapeo de errores.
 /// </summary>
 public class GetProductoByIdQueryHandler(IProductoService service)
-    : IRequestHandler<GetProductoByIdQuery, Result<ProductoDto, DomainError>>
-{
+    : IRequestHandler<GetProductoByIdQuery, Result<ProductoDto, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<ProductoDto, DomainError>> Handle(
-        GetProductoByIdQuery request, CancellationToken cancellationToken)
-    {
+        GetProductoByIdQuery request, CancellationToken cancellationToken) {
         var dto = await service.GetByIdAsync(request.Id);
         if (dto is null)
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));

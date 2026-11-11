@@ -18,12 +18,10 @@ public record GetAllCategoriasListQuery()
 /// Handler de la query GetAllCategoriasListQuery.
 /// </summary>
 public class GetAllCategoriasListQueryHandler(ICategoriaRepository repository)
-    : IRequestHandler<GetAllCategoriasListQuery, Result<IReadOnlyList<CategoriaDto>, DomainError>>
-{
+    : IRequestHandler<GetAllCategoriasListQuery, Result<IReadOnlyList<CategoriaDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<IReadOnlyList<CategoriaDto>, DomainError>> Handle(
-        GetAllCategoriasListQuery request, CancellationToken cancellationToken)
-    {
+        GetAllCategoriasListQuery request, CancellationToken cancellationToken) {
         var categorias = await repository.FindAllAsync();
         var dtos = categorias.Select(c => c.ToDto()).ToList();
         return Result.Success<IReadOnlyList<CategoriaDto>, DomainError>(dtos);

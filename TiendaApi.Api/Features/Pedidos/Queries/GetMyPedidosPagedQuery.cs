@@ -18,20 +18,17 @@ public record GetMyPedidosPagedQuery(long UserId, int Page, int Size)
 /// Handler de la query GetMyPedidosPagedQuery.
 /// </summary>
 public class GetMyPedidosPagedQueryHandler(IPedidosRepository repository)
-    : IRequestHandler<GetMyPedidosPagedQuery, Result<PagedResult<PedidoDto>, DomainError>>
-{
+    : IRequestHandler<GetMyPedidosPagedQuery, Result<PagedResult<PedidoDto>, DomainError>> {
     /// <inheritdoc/>
     public async Task<Result<PagedResult<PedidoDto>, DomainError>> Handle(
-        GetMyPedidosPagedQuery request, CancellationToken cancellationToken)
-    {
+        GetMyPedidosPagedQuery request, CancellationToken cancellationToken) {
         // 🛡️ Clamp defensivo: GraphQL construye la query en código sin pasar
         // por validación REST. El límite se aplica aquí como única verdad funcional.
         var size = Math.Clamp(request.Size, 1, 100);
         var page = Math.Max(request.Page, 0);
 
         var (pedidos, totalCount) = await repository.FindByUserIdPagedAsync(request.UserId, page, size);
-        return Result.Success<PagedResult<PedidoDto>, DomainError>(new PagedResult<PedidoDto>
-        {
+        return Result.Success<PagedResult<PedidoDto>, DomainError>(new PagedResult<PedidoDto> {
             Items = pedidos.ToDtoList(),
             TotalCount = totalCount,
             Page = page + 1,

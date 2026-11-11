@@ -13,14 +13,12 @@ namespace TiendaApi.Api.Features.Pedidos.Notifications;
 /// canales se disparan desde el mismo <c>mediator.Publish</c>.
 /// </summary>
 public class EstadoPedidoActualizadoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
-    : INotificationHandler<EstadoPedidoActualizadoNotification>
-{
+    : INotificationHandler<EstadoPedidoActualizadoNotification> {
     /// <summary>
     /// Procesa el evento EstadoPedidoActualizado y notifica por WebSocket al
     /// usuario dueño y a todos los administradores.
     /// </summary>
-    public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken)
-    {
+    public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) {
         var pedido = notification.Pedido;
         await webSocketHandler.NotifyUserAndAdminsAsync(pedido.UserId, new PedidoNotificacion(
             PedidoNotificationType.ESTADO_ACTUALIZADO,

@@ -19,8 +19,7 @@ public record RegistrarVistaCommand(long UsuarioId, long ProductoId)
 /// Q-B queda en la fachada, sin lógica añadida en el handler.
 /// </summary>
 public class RegistrarVistaCommandHandler(IHistorialService service)
-    : IRequestHandler<RegistrarVistaCommand, UnitResult<DomainError>>
-{
+    : IRequestHandler<RegistrarVistaCommand, UnitResult<DomainError>> {
     /// <inheritdoc/>
     public Task<UnitResult<DomainError>> Handle(
         RegistrarVistaCommand request, CancellationToken cancellationToken)

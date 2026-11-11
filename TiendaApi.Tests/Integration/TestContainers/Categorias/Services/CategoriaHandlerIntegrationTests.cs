@@ -24,8 +24,7 @@ namespace TiendaApi.Tests.Integration.TestContainers.Categorias.Services;
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
-public class CategoriaHandlerIntegrationTests
-{
+public class CategoriaHandlerIntegrationTests {
     private const string DatabaseName = "it_categoria_handler";
     private string _connectionString = string.Empty;
     private string _mongoConnectionString = string.Empty;
@@ -33,25 +32,21 @@ public class CategoriaHandlerIntegrationTests
     private IMediator? _mediator;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
-    {
+    public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
     }
 
     [OneTimeTearDown]
-    public async Task OneTimeTearDown()
-    {
+    public async Task OneTimeTearDown() {
         await AssemblyContainerFixture.DropPostgresDatabaseAsync(DatabaseName);
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
     [SetUp]
-    public async Task Setup()
-    {
+    public async Task Setup() {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", _connectionString },
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
@@ -86,14 +81,12 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
+    public void TearDown() {
         _provider?.Dispose();
     }
 
     [Test]
-    public async Task GetAll_SinCategorias_RetornaResultadoPaginado()
-    {
+    public async Task GetAll_SinCategorias_RetornaResultadoPaginado() {
         var result = await _mediator!.Send(new GetAllCategoriasQuery(new CategoriaFilterDto()));
 
         result.IsSuccess.Should().BeTrue();
@@ -102,8 +95,7 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Create_ConDatosValidos_RetornaCategoriaCreada()
-    {
+    public async Task Create_ConDatosValidos_RetornaCategoriaCreada() {
         var dto = new CategoriaRequestDto { Nombre = "Electronica Test" };
 
         var result = await _mediator!.Send(new CreateCategoriaCommand(dto));
@@ -115,8 +107,7 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task GetById_ConCategoriaExistente_RetornaCategoria()
-    {
+    public async Task GetById_ConCategoriaExistente_RetornaCategoria() {
         var createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Buscar Test" }));
         createResult.IsSuccess.Should().BeTrue();
@@ -128,16 +119,14 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task GetById_ConCategoriaNoExistente_RetornaNotFound()
-    {
+    public async Task GetById_ConCategoriaNoExistente_RetornaNotFound() {
         var result = await _mediator!.Send(new GetCategoriaByIdQuery(999999));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
-    public async Task Update_ConDatosValidos_RetornaCategoriaActualizada()
-    {
+    public async Task Update_ConDatosValidos_RetornaCategoriaActualizada() {
         var createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Original" }));
         createResult.IsSuccess.Should().BeTrue();
@@ -150,8 +139,7 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Delete_ConCategoriaExistente_RetornaExito()
-    {
+    public async Task Delete_ConCategoriaExistente_RetornaExito() {
         var createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Eliminar Test" }));
         createResult.IsSuccess.Should().BeTrue();
@@ -165,8 +153,7 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task Create_ConNombreDuplicado_RetornaConflicto()
-    {
+    public async Task Create_ConNombreDuplicado_RetornaConflicto() {
         var dto = new CategoriaRequestDto { Nombre = "Duplicado Test" };
         await _mediator!.Send(new CreateCategoriaCommand(dto));
 
@@ -176,10 +163,8 @@ public class CategoriaHandlerIntegrationTests
     }
 
     [Test]
-    public async Task GetAll_ConFiltro_RetornaResultadosPaginados()
-    {
-        for (var i = 0; i < 5; i++)
-        {
+    public async Task GetAll_ConFiltro_RetornaResultadosPaginados() {
+        for (var i = 0; i < 5; i++) {
             await _mediator!.Send(new CreateCategoriaCommand(
                 new CategoriaRequestDto { Nombre = $"Paged Test {i}" }));
         }

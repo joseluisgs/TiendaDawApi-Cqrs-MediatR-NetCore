@@ -12,11 +12,9 @@ using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
-public class DeletePedidoAdminCommandHandlerTests
-{
+public class DeletePedidoAdminCommandHandlerTests {
     [Test]
-    public async Task Handle_PedidoExistente_DevuelveSuccess()
-    {
+    public async Task Handle_PedidoExistente_DevuelveSuccess() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
@@ -33,8 +31,7 @@ public class DeletePedidoAdminCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_PedidoNoExiste_DevuelveNotFound()
-    {
+    public async Task Handle_PedidoNoExiste_DevuelveNotFound() {
         var repository = new Mock<IPedidosRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();

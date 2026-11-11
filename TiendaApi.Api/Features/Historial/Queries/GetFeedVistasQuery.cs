@@ -18,8 +18,7 @@ public record GetFeedVistasQuery(long UsuarioId, int Limit)
 /// Handler de GetFeedVistasQuery. Delega en la fachada IHistorialService.
 /// </summary>
 public class GetFeedVistasQueryHandler(IHistorialService service)
-    : IRequestHandler<GetFeedVistasQuery, IReadOnlyList<VistaFeedDto>>
-{
+    : IRequestHandler<GetFeedVistasQuery, IReadOnlyList<VistaFeedDto>> {
     /// <inheritdoc/>
     public Task<IReadOnlyList<VistaFeedDto>> Handle(
         GetFeedVistasQuery request, CancellationToken cancellationToken)
