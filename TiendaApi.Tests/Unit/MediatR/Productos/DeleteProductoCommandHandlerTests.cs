@@ -1,0 +1,55 @@
+using CSharpFunctionalExtensions;
+using FluentAssertions;
+using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
+using Moq;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.MediatR.Productos.Commands;
+using TiendaApi.Api.MediatR.Productos.Notifications;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Storage;
+
+namespace TiendaApi.Tests.Unit.MediatR.Productos;
+
+public class DeleteProductoCommandHandlerTests {
+    [Test]
+    public async Task Handle_ProductoExistente_DevuelveSuccessYPublicaNotification() {
+        var repository = new Mock<IProductoRepository>();
+        var storageService = new Mock<IStorageService>();
+        var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
+
+        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Imagen = "img.jpg" });
+        repository.Setup(r => r.DeleteAsync(1)).Returns(Task.CompletedTask);
+
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
+
+        UnitResult<DomainError> result = await handler.Handle(new DeleteProductoCommand(1), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        mediator.Verify(m => m.Publish(It.IsAny<ProductoEliminadoNotification>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task Handle_ProductoNoExiste_DevuelveNotFound() {
+        var repository = new Mock<IProductoRepository>();
+        var storageService = new Mock<IStorageService>();
+        var mediator = new Mock<IMediator>();
+        var cacheService = new Mock<ICacheService>();
+
+        repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
+
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
+
+        UnitResult<DomainError> result = await handler.Handle(new DeleteProductoCommand(999), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+    }
+}

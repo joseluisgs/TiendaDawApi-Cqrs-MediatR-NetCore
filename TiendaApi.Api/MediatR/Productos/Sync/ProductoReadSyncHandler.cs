@@ -1,0 +1,94 @@
+using MediatR;
+using TiendaApi.Api.MediatR.Categorias.Notifications;
+using TiendaApi.Api.MediatR.Productos.Notifications;
+using TiendaApi.Api.MediatR.Proveedores.Notifications;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Repositories.Productos;
+
+namespace TiendaApi.Api.MediatR.Productos.Sync;
+
+/// <summary>
+///     Handler de sincronización del read model de productos (CQRS).
+///     Escucha las notificaciones publicadas por los commands (que escriben en
+///     PostgreSQL) y replica los cambios en MongoDB (<c>productos_read</c>).
+///     🎓 PG = fuente de verdad: el comando ya está commiteado cuando se publica.
+///     Por eso cada Handle envuelve la operación en try/catch y solo registra el
+///     resultado: el read model es una proyección del comando ya commiteado, con
+///     su propio ciclo de reparación (seeder de arranque + job reparador).
+///     Se registra automáticamente por el barrido de MediatR
+///     (RegisterServicesFromAssemblyContaining&lt;Program&gt;).
+/// </summary>
+public class ProductoReadSyncHandler(
+    IProductoReadRepository readRepository,
+    ILogger<ProductoReadSyncHandler> logger
+) : INotificationHandler<ProductoCreadoNotification>
+    , INotificationHandler<ProductoActualizadoNotification>
+    , INotificationHandler<ProductoEliminadoNotification>
+    , INotificationHandler<CategoriaActualizadaNotification>
+    , INotificationHandler<ProveedorActualizadaNotification> {
+    /// <inheritdoc />
+    public async Task Handle(CategoriaActualizadaNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug(
+                "Sync: categoría {Id} actualizada a '{Nombre}' → updateMany en MongoDB",
+                notification.CategoriaId, notification.NuevoNombre);
+            await readRepository.UpdateCategoriaNombreAsync(
+                notification.CategoriaId, notification.NuevoNombre, notification.NuevaDescripcion);
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al propagar renombre de categoría {Id} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.CategoriaId);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task Handle(ProveedorActualizadaNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug(
+                "Sync: proveedor {Codigo} actualizado a '{Nombre}' → updateMany en MongoDB",
+                notification.Codigo, notification.NuevoNombre);
+            await readRepository.UpdateProveedorNombreAsync(
+                notification.Codigo, notification.NuevoNombre, notification.NuevaDescripcion);
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al propagar renombre de proveedor {Codigo} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.Codigo);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task Handle(ProductoActualizadoNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug("Sync: producto actualizado {Id} → MongoDB", notification.Producto.Id);
+            await readRepository.UpsertAsync(notification.Producto.ToRead());
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al replicar producto actualizado {Id} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.Producto.Id);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug("Sync: producto creado {Id} → MongoDB", notification.Producto.Id);
+            await readRepository.UpsertAsync(notification.Producto.ToRead());
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al replicar producto creado {Id} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.Producto.Id);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task Handle(ProductoEliminadoNotification notification, CancellationToken cancellationToken) {
+        try {
+            logger.LogDebug("Sync: producto eliminado {Id} → soft-delete en MongoDB", notification.ProductoId);
+            await readRepository.SoftDeleteAsync(notification.ProductoId);
+        } catch (Exception ex) {
+            logger.LogError(ex,
+                "Sync: fallo al replicar producto eliminado {Id} en MongoDB (PG ya commiteado, el seeder repara)",
+                notification.ProductoId);
+        }
+    }
+}

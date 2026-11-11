@@ -8,8 +8,8 @@ using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Features.Categorias.Commands;
-using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.MediatR.Categorias.Commands;
+using TiendaApi.Api.MediatR.Categorias.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 

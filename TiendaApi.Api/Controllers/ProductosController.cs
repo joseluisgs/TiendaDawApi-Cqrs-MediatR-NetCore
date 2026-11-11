@@ -10,10 +10,10 @@ using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Extensions;
-using TiendaApi.Api.Features.Historial.Commands;
-using TiendaApi.Api.Features.Historial.Queries;
-using TiendaApi.Api.Features.Productos.Commands;
-using TiendaApi.Api.Features.Productos.Queries;
+using TiendaApi.Api.MediatR.Historial.Commands;
+using TiendaApi.Api.MediatR.Historial.Queries;
+using TiendaApi.Api.MediatR.Productos.Commands;
+using TiendaApi.Api.MediatR.Productos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
 
 namespace TiendaApi.Api.Controllers;

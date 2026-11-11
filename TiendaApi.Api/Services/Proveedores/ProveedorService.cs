@@ -8,7 +8,7 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Proveedores;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Proveedores;
-using TiendaApi.Api.Features.Proveedores.Notifications;
+using TiendaApi.Api.MediatR.Proveedores.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Proveedores;

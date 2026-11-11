@@ -8,7 +8,7 @@ using TiendaApi.Api.Dtos.Auth;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Extensions;
-using TiendaApi.Api.Features.Auth.Commands;
+using TiendaApi.Api.MediatR.Auth.Commands;
 using TiendaApi.Api.Services.Auth;
 
 namespace TiendaApi.Api.Controllers;

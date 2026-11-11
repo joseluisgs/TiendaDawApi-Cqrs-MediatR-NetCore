@@ -11,10 +11,10 @@ using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
-using TiendaApi.Api.Features.Historial.Commands;
-using TiendaApi.Api.Features.Historial.Queries;
-using TiendaApi.Api.Features.Productos.Commands;
-using TiendaApi.Api.Features.Productos.Queries;
+using TiendaApi.Api.MediatR.Historial.Commands;
+using TiendaApi.Api.MediatR.Historial.Queries;
+using TiendaApi.Api.MediatR.Productos.Commands;
+using TiendaApi.Api.MediatR.Productos.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 

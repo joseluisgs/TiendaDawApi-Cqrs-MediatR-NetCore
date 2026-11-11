@@ -8,8 +8,8 @@ using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Extensions;
-using TiendaApi.Api.Features.Categorias.Commands;
-using TiendaApi.Api.Features.Categorias.Queries;
+using TiendaApi.Api.MediatR.Categorias.Commands;
+using TiendaApi.Api.MediatR.Categorias.Queries;
 using TiendaApi.Api.Helpers.Pagination;
 using TiendaApi.Api.Models;
 
