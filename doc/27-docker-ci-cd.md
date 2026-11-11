@@ -1,13 +1,13 @@
 # 🐳 Docker y CI/CD en TiendaDawApi (CQRS)
 
+## 1. El Dockerfile (multi-stage)
+
 > Contenedores para desarrollo/producción + el pipeline de GitHub Actions real
 > del repositorio (`.github/workflows/ci.yml`). Todo tomado de los ficheros
 > reales; el Dockerfile y el workflow son **idénticos** a los del proyecto
 > origen (TiendaDawApi-NetCore).
 
 ---
-
-## 1. El Dockerfile (multi-stage)
 
 Fichero: `TiendaApi.Api/Dockerfile`.
 
