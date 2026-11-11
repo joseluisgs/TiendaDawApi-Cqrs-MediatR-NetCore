@@ -3,7 +3,7 @@ using HotChocolate.Authorization;
 using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Features.Productos.Commands;
+using TiendaApi.Api.MediatR.Productos.Commands;
 using TiendaApi.Api.GraphQL.Inputs;
 
 namespace TiendaApi.Api.GraphQL.Mutations;

@@ -7,9 +7,9 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Features.Categorias.Queries;
-using TiendaApi.Api.Features.Pedidos.Queries;
-using TiendaApi.Api.Features.Productos.Queries;
+using TiendaApi.Api.MediatR.Categorias.Queries;
+using TiendaApi.Api.MediatR.Pedidos.Queries;
+using TiendaApi.Api.MediatR.Productos.Queries;
 
 namespace TiendaApi.Api.GraphQL.Queries;
 

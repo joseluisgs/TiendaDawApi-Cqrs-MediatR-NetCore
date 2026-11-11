@@ -1,0 +1,66 @@
+using CSharpFunctionalExtensions;
+using FluentAssertions;
+using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.OutputCaching;
+using Moq;
+using TiendaApi.Api.Dtos.Categorias;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.MediatR.Categorias.Commands;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Categorias;
+
+namespace TiendaApi.Tests.Unit.MediatR.Categorias;
+
+public class CreateCategoriaCommandHandlerTests {
+    [Test]
+    public async Task Handle_ComandoValido_DevuelveSuccess() {
+        var repository = new Mock<ICategoriaRepository>();
+        var validator = new Mock<IValidator<CategoriaRequestDto>>();
+        var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Dispositivos electrónicos" };
+        validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
+        repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(false);
+        repository.Setup(r => r.SaveAsync(It.IsAny<Categoria>()))
+            .ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
+
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ValidacionFalla_DevuelveValidationError() {
+        var repository = new Mock<ICategoriaRepository>();
+        var validator = new Mock<IValidator<CategoriaRequestDto>>();
+        var dto = new CategoriaRequestDto { Nombre = "", Descripcion = "Test" };
+        validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ValidationResult([new ValidationFailure("Nombre", "obligatorio")]));
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
+
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        repository.Verify(r => r.SaveAsync(It.IsAny<Categoria>()), Times.Never);
+    }
+
+    [Test]
+    public async Task Handle_NombreDuplicado_DevuelveError() {
+        var repository = new Mock<ICategoriaRepository>();
+        var validator = new Mock<IValidator<CategoriaRequestDto>>();
+        var dto = new CategoriaRequestDto { Nombre = "Electrónica" };
+        validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
+        repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(true);
+        var outputCacheStore = new Mock<IOutputCacheStore>();
+        var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
+
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+    }
+}

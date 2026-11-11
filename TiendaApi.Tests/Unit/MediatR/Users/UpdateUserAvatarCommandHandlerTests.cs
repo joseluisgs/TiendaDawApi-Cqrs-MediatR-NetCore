@@ -1,0 +1,60 @@
+using CSharpFunctionalExtensions;
+using FluentAssertions;
+using Moq;
+using TiendaApi.Api.Dtos.Usuarios;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.MediatR.Users.Commands;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Usuarios;
+using TiendaApi.Api.Services.Cache;
+
+namespace TiendaApi.Tests.Unit.MediatR.Users;
+
+public class UpdateUserAvatarCommandHandlerTests {
+    [Test]
+    public async Task Handle_UsuarioExistente_ActualizaAvatar() {
+        var repository = new Mock<IUserRepository>();
+        var cacheService = new Mock<ICacheService>();
+
+        repository.Setup(r => r.FindByIdAsync(1))
+            .ReturnsAsync(new User { Id = 1, Avatar = "old-avatar.jpg", IsDeleted = false });
+        repository.Setup(r => r.UpdateAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+
+        var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
+
+        Result<UserDto, DomainError> result =
+            await handler.Handle(new UpdateUserAvatarCommand(1, "new-avatar.jpg"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_UsuarioNoExiste_DevuelveNotFound() {
+        var repository = new Mock<IUserRepository>();
+        var cacheService = new Mock<ICacheService>();
+
+        repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((User?)null);
+
+        var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
+
+        Result<UserDto, DomainError> result =
+            await handler.Handle(new UpdateUserAvatarCommand(999, "new-avatar.jpg"), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_UsuarioEliminado_DevuelveNotFound() {
+        var repository = new Mock<IUserRepository>();
+        var cacheService = new Mock<ICacheService>();
+
+        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new User { Id = 1, IsDeleted = true });
+
+        var handler = new UpdateUserAvatarCommandHandler(repository.Object, cacheService.Object);
+
+        Result<UserDto, DomainError> result =
+            await handler.Handle(new UpdateUserAvatarCommand(1, "new-avatar.jpg"), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+    }
+}

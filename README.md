@@ -797,7 +797,7 @@ TiendaDawApi-Cqrs-MediatR-NetCore/
 ├── TiendaApi.Api/                    # Proyecto Principal (ASP.NET Core 10)
 │   ├── Program.cs                    # Configuración de Pipeline, DI y MediatR
 │   ├── Controllers/                  # Controladores REST que usan IMediator
-│   ├── Features/                     # CQRS Handlers con MediatR
+│   ├── MediatR/                     # CQRS Handlers con MediatR
 │   │   ├── Auth/                     # Commands de autenticación
 │   │   ├── Categorias/               # Commands, Queries y Notifications de categorías
 │   │   ├── Productos/                # Commands, Queries, Notifications y Sync del read model
@@ -1240,7 +1240,7 @@ sequenceDiagram
 ### Estructura de Funcionalidades
 
 ```
-Features/
+MediatR/
 ├── Auth/
 │   └── Commands/
 │       └── LoginCommand.cs

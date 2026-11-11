@@ -11,9 +11,9 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Features.Historial.Queries;
-using TiendaApi.Api.Features.Users.Commands;
-using TiendaApi.Api.Features.Users.Queries;
+using TiendaApi.Api.MediatR.Historial.Queries;
+using TiendaApi.Api.MediatR.Users.Commands;
+using TiendaApi.Api.MediatR.Users.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 

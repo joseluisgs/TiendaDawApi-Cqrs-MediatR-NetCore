@@ -9,8 +9,8 @@ using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Extensions;
-using TiendaApi.Api.Features.Pedidos.Commands;
-using TiendaApi.Api.Features.Pedidos.Queries;
+using TiendaApi.Api.MediatR.Pedidos.Commands;
+using TiendaApi.Api.MediatR.Pedidos.Queries;
 using TiendaApi.Api.Helpers.Pagination;
 using TiendaApi.Api.Models;
 

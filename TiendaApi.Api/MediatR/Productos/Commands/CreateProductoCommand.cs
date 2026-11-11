@@ -1,0 +1,75 @@
+using CSharpFunctionalExtensions;
+using FluentValidation;
+using FluentValidation.Results;
+using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
+using Serilog;
+using TiendaApi.Api.Dtos.Productos;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.MediatR.Productos.Notifications;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
+
+namespace TiendaApi.Api.MediatR.Productos.Commands;
+
+/// <summary>
+///     Comando para crear un nuevo producto.
+/// </summary>
+public record CreateProductoCommand(ProductoRequestDto Dto)
+    : IRequest<Result<ProductoDto, DomainError>>;
+
+/// <summary>
+///     Handler del comando CreateProductoCommand.
+/// </summary>
+public class CreateProductoCommandHandler(
+    IProductoRepository productoRepository,
+    ICategoriaRepository categoriaRepository,
+    IValidator<ProductoRequestDto> validator,
+    IMediator mediator,
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
+    : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>> {
+    /// <inheritdoc />
+    public async Task<Result<ProductoDto, DomainError>> Handle(
+        CreateProductoCommand request, CancellationToken cancellationToken) {
+        ValidationResult validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        if (!validationResult.IsValid) {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
+        }
+
+        Categoria? categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
+        if (categoriaExists is null) {
+            return Result.Failure<ProductoDto, DomainError>(
+                ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
+                    { "CategoriaId", new[] { $"La categoría con ID {request.Dto.CategoriaId} no fue encontrada" } }
+                })
+            );
+        }
+
+        Producto saved = await productoRepository.SaveAsync(request.Dto.ToEntity());
+        ProductoDto dto = saved.ToDto();
+
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
+        // Si invalidamos antes, un lector puede repueblar la caché con el modelo de lectura viejo.
+        await mediator.Publish(new ProductoCreadoNotification(dto), cancellationToken);
+
+        await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+
+        // 🎓 Invalidar caché de paginación por versión (clave versionada).
+        // Las claves viejas quedan huérfanas y mueren por TTL.
+        ProductoService.InvalidatePagedCache();
+
+        Log.Information("✅ Notificación publicada y caché invalidada para producto ID: {ProductoId}", dto.Id);
+
+        return Result.Success<ProductoDto, DomainError>(dto);
+    }
+}
