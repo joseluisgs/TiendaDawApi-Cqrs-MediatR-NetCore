@@ -1,24 +1,24 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Serilog;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Usuarios;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Users.Queries;
 
 /// <summary>
-/// Query para obtener todos los usuarios paginados con filtros.
+///     Query para obtener todos los usuarios paginados con filtros.
 /// </summary>
 public record GetAllUsersPagedQuery(UserFilterDto Filter)
     : IRequest<Result<PagedResult<UserDto>, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetAllUsersPagedQuery.
+///     Handler de la query GetAllUsersPagedQuery.
 /// </summary>
 public class GetAllUsersPagedQueryHandler(
     IUserRepository repository,
@@ -28,16 +28,17 @@ public class GetAllUsersPagedQueryHandler(
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:UsuarioCacheTTLMinutes"] ?? "10"));
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<PagedResult<UserDto>, DomainError>> Handle(
         GetAllUsersPagedQuery request, CancellationToken cancellationToken) {
         // La key incluye todos los filtros del record (ToString automático de C#)
-        var cacheKey = $"usuarios:paged:{request.Filter}";
-        var cached = await cacheService.GetAsync<PagedResult<UserDto>>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"usuarios:paged:{request.Filter}";
+        PagedResult<UserDto>? cached = await cacheService.GetAsync<PagedResult<UserDto>>(cacheKey);
+        if (cached is not null) {
             return Result.Success<PagedResult<UserDto>, DomainError>(cached);
+        }
 
-        var (users, totalCount) = await repository.FindAllPagedAsync(request.Filter);
+        (IEnumerable<User> users, int totalCount) = await repository.FindAllPagedAsync(request.Filter);
         var pagedResult = new PagedResult<UserDto> {
             Items = users.ToDtoList(),
             TotalCount = totalCount,

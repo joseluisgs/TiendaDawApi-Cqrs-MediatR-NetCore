@@ -4,11 +4,10 @@ using TiendaApi.Api.Models.Read;
 namespace TiendaApi.Api.Repositories.Productos;
 
 /// <summary>
-/// Contrato del repositorio lector de productos (CQRS — lado de lectura).
-///
-/// Implementado sobre MongoDB (colección <c>productos_read</c>) con el driver
-/// nativo, al estilo de <c>PedidosNativeRepository</c>. PostgreSQL sigue siendo
-/// la fuente de verdad: aquí solo se lee la réplica desnormalizada.
+///     Contrato del repositorio lector de productos (CQRS — lado de lectura).
+///     Implementado sobre MongoDB (colección <c>productos_read</c>) con el driver
+///     nativo, al estilo de <c>PedidosNativeRepository</c>. PostgreSQL sigue siendo
+///     la fuente de verdad: aquí solo se lee la réplica desnormalizada.
 /// </summary>
 public interface IProductoReadRepository {
     /// <summary>Obtiene todos los productos no eliminados ordenados por nombre (GraphQL <c>productos</c>).</summary>
@@ -16,9 +15,9 @@ public interface IProductoReadRepository {
     Task<IEnumerable<ProductoRead>> FindAllAsync();
 
     /// <summary>
-    /// Obtiene productos paginados con filtros. Replica la semántica del repositorio de
-    /// PostgreSQL: <c>LIKE</c> case-sensitive para nombre/categoría, filtro global de
-    /// soft-delete salvo que <c>filter.IsDeleted</c> indique lo contrario, y whitelist de orden.
+    ///     Obtiene productos paginados con filtros. Replica la semántica del repositorio de
+    ///     PostgreSQL: <c>LIKE</c> case-sensitive para nombre/categoría, filtro global de
+    ///     soft-delete salvo que <c>filter.IsDeleted</c> indique lo contrario, y whitelist de orden.
     /// </summary>
     /// <param name="filter">Filtros de búsqueda y paginación.</param>
     /// <returns>Tupla con items y total.</returns>

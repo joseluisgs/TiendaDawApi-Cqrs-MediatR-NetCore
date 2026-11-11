@@ -1,6 +1,6 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Serilog;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
@@ -8,19 +8,18 @@ using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
-using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
 /// <summary>
-/// Comando para actualizar el estado de un pedido (admin).
+///     Comando para actualizar el estado de un pedido (admin).
 /// </summary>
 public record UpdatePedidoEstadoCommand(string Id, string NuevoEstado)
     : IRequest<Result<PedidoDto, DomainError>>;
 
 /// <summary>
-/// Handler del comando UpdatePedidoEstadoCommand.
+///     Handler del comando UpdatePedidoEstadoCommand.
 /// </summary>
 public class UpdatePedidoEstadoCommandHandler(
     IPedidosRepository repository,
@@ -28,21 +27,26 @@ public class UpdatePedidoEstadoCommandHandler(
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdatePedidoEstadoCommand, Result<PedidoDto, DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<PedidoDto, DomainError>> Handle(
         UpdatePedidoEstadoCommand request, CancellationToken cancellationToken) {
-        var validEstados = new[] { PedidoEstado.PENDIENTE, PedidoEstado.PROCESANDO, PedidoEstado.ENVIADO, PedidoEstado.ENTREGADO, PedidoEstado.CANCELADO };
-        if (!validEstados.Contains(request.NuevoEstado))
-            return Result.Failure<PedidoDto, DomainError>(PedidoError.EstadoInvalido(request.NuevoEstado, validEstados));
+        string[] validEstados = new[] {
+            PedidoEstado.PENDIENTE, PedidoEstado.PROCESANDO, PedidoEstado.ENVIADO, PedidoEstado.ENTREGADO,
+            PedidoEstado.CANCELADO
+        };
+        if (!validEstados.Contains(request.NuevoEstado)) {
+            return Result.Failure<PedidoDto, DomainError>(PedidoError.EstadoInvalido(request.NuevoEstado,
+                validEstados));
+        }
 
-        var pedido = await repository.FindByIdAsync(request.Id);
-        if (pedido is null)
+        Pedido? pedido = await repository.FindByIdAsync(request.Id);
+        if (pedido is null) {
             return Result.Failure<PedidoDto, DomainError>(PedidoError.NotFound(request.Id));
+        }
 
         pedido.Estado = request.NuevoEstado;
-        var updated = await repository.UpdateAsync(pedido);
-        var dto = updated.ToDto();
-
+        Pedido updated = await repository.UpdateAsync(pedido);
+        PedidoDto dto = updated.ToDto();
 
 
         await mediator.Publish(new EstadoPedidoActualizadoNotification(dto, request.NuevoEstado), cancellationToken);

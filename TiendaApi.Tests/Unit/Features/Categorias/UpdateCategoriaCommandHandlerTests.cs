@@ -1,3 +1,4 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -6,7 +7,6 @@ using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
@@ -27,9 +27,11 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
+            mediator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -47,9 +49,11 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Categoria>())).ReturnsAsync((Categoria c) => c);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
+            mediator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         categoria.Nombre.Should().Be("Electrónica");
@@ -66,9 +70,11 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
+            mediator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateCategoriaCommand(999, dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new UpdateCategoriaCommand(999, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -84,9 +90,11 @@ public class UpdateCategoriaCommandHandlerTests {
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre, 1)).ReturnsAsync(true);
         var mediator = new Mock<IMediator>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object, mediator.Object, outputCacheStore.Object);
+        var handler = new UpdateCategoriaCommandHandler(repository.Object, validator.Object, cacheService.Object,
+            mediator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new UpdateCategoriaCommand(1, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using MediatR;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
@@ -15,7 +14,8 @@ public class EstadoPedidoActualizadoNotificationHandlerTests {
         var emailService = new Mock<IEmailService>();
 
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
-        var destinatario = new DestinatarioDto { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
+        var destinatario = new DestinatarioDto
+            { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
         var items = new List<PedidoItemDto> { new(1, "Producto", 1, 100m, 100m) };
         var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 100m, "Pendiente", null, DateTime.UtcNow);
 
@@ -48,7 +48,8 @@ public class EstadoPedidoActualizadoNotificationHandlerTests {
     [Test]
     public void EstadoPedidoActualizadoNotification_ContieneDatosCorrectos() {
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
-        var destinatario = new DestinatarioDto { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
+        var destinatario = new DestinatarioDto
+            { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
         var items = new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) };
         var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 10m, "Pendiente", null, DateTime.UtcNow);
 

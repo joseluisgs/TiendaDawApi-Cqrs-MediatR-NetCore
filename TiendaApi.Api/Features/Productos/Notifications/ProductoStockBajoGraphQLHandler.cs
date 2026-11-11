@@ -6,12 +6,12 @@ using TiendaApi.Api.GraphQL.Publishers;
 namespace TiendaApi.Api.Features.Productos.Notifications;
 
 /// <summary>
-/// Handler que publica evento de GraphQL Subscription cuando el stock está bajo.
+///     Handler que publica evento de GraphQL Subscription cuando el stock está bajo.
 /// </summary>
 public class ProductoStockBajoGraphQLHandler(IEventPublisher eventPublisher)
     : INotificationHandler<ProductoStockBajoNotification> {
     /// <summary>
-    /// Procesa el evento ProductoStockBajo y publica la suscripción GraphQL onStockBajo.
+    ///     Procesa el evento ProductoStockBajo y publica la suscripción GraphQL onStockBajo.
     /// </summary>
     public async Task Handle(ProductoStockBajoNotification notification, CancellationToken cancellationToken) {
         await eventPublisher.PublishAsync("onStockBajo", new ProductoStockBajoEvent {

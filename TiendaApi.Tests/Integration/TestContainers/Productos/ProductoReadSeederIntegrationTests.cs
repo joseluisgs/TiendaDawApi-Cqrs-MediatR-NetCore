@@ -1,11 +1,9 @@
 using FluentAssertions;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using NUnit.Framework;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Data.Seed.Mongo;
 using TiendaApi.Api.Models;
@@ -17,26 +15,16 @@ using TiendaApi.Api.Services.Cache;
 namespace TiendaApi.Tests.Integration.TestContainers.Productos;
 
 /// <summary>
-/// Tests de integración de la semilla del read model: PostgreSQL → MongoDB en el arranque.
-///
-/// Es el tramo que las escrituras no cubren: los commands publican notificaciones y
-/// sincronizan el documento, pero la semilla de arranque lee las entidades de EF Core
-/// y proyecta el documento a mano. Si la navegación de proveedor no llega cargada aquí,
-/// los productos sembrados salen sin proveedor aunque la fila tenga la clave foránea.
+///     Tests de integración de la semilla del read model: PostgreSQL → MongoDB en el arranque.
+///     Es el tramo que las escrituras no cubren: los commands publican notificaciones y
+///     sincronizan el documento, pero la semilla de arranque lee las entidades de EF Core
+///     y proyecta el documento a mano. Si la navegación de proveedor no llega cargada aquí,
+///     los productos sembrados salen sin proveedor aunque la fila tenga la clave foránea.
 /// </summary>
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
 public class ProductoReadSeederIntegrationTests {
-    private const string DatabaseName = "it_producto_read_seed";
-
-    private string _connectionString = string.Empty;
-    private string _mongoConnectionString = string.Empty;
-    private ServiceProvider? _provider;
-    private TiendaDbContext? _dbContext;
-    private ProductoReadSeeder? _seeder;
-    private IMongoDatabase? _mongo;
-
     [OneTimeSetUp]
     public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
@@ -51,10 +39,10 @@ public class ProductoReadSeederIntegrationTests {
 
     [SetUp]
     public async Task Setup() {
-        var connectionString = _connectionString;
-        var mongoConnectionString = _mongoConnectionString;
+        string connectionString = _connectionString;
+        string mongoConnectionString = _mongoConnectionString;
 
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", connectionString },
                 { "MongoDbSettings:ConnectionString", mongoConnectionString },
@@ -96,6 +84,15 @@ public class ProductoReadSeederIntegrationTests {
         _provider?.Dispose();
     }
 
+    private const string DatabaseName = "it_producto_read_seed";
+
+    private string _connectionString = string.Empty;
+    private string _mongoConnectionString = string.Empty;
+    private ServiceProvider? _provider;
+    private TiendaDbContext? _dbContext;
+    private ProductoReadSeeder? _seeder;
+    private IMongoDatabase? _mongo;
+
     [Test]
     public async Task SeedAsync_ElProductoSembradoConservaCategoriaYProveedor() {
         // Arrange: categoría + proveedor + producto con las dos claves foráneas.
@@ -130,11 +127,11 @@ public class ProductoReadSeederIntegrationTests {
         await _dbContext.SaveChangesAsync();
 
         // Act: el mismo camino que usa la API al arrancar en desarrollo.
-        await _seeder!.SeedAsync(isDevelopment: true);
+        await _seeder!.SeedAsync(true);
 
         // Assert: el documento desnormalizado conserva ambas relaciones.
-        var coleccion = _mongo!.GetCollection<ProductoRead>("productos_read");
-        var leido = await coleccion.Find(p => p.Id == producto.Id).FirstOrDefaultAsync();
+        IMongoCollection<ProductoRead> coleccion = _mongo!.GetCollection<ProductoRead>("productos_read");
+        ProductoRead leido = await coleccion.Find(p => p.Id == producto.Id).FirstOrDefaultAsync();
 
         leido.Should().NotBeNull("la semilla debe crear el documento del producto");
         leido!.Categoria.Id.Should().Be(categoria.Id);
@@ -145,10 +142,10 @@ public class ProductoReadSeederIntegrationTests {
     }
 
     /// <summary>
-    /// La réplica auto-reparable arranca en cuanto sube la API y vuelve a proyectar
-    /// los productos modificados. Si su consulta no trae el proveedor, el upsert
-    /// sobrescribe el documento con el sub-documento vacío y el producto pierde el
-    /// proveedor (aunque en PostgreSQL la clave foránea siga ahí).
+    ///     La réplica auto-reparable arranca en cuanto sube la API y vuelve a proyectar
+    ///     los productos modificados. Si su consulta no trae el proveedor, el upsert
+    ///     sobrescribe el documento con el sub-documento vacío y el producto pierde el
+    ///     proveedor (aunque en PostgreSQL la clave foránea siga ahí).
     /// </summary>
     [Test]
     public async Task JobReparador_LaReplicaConservaElProveedorDelProducto() {
@@ -192,9 +189,9 @@ public class ProductoReadSeederIntegrationTests {
 
         // La primera pasada es inmediata, pero depende de contenedores y BD:
         // se sondea en vez de esperar un tiempo fijo.
-        var coleccion = _mongo!.GetCollection<ProductoRead>("productos_read");
+        IMongoCollection<ProductoRead> coleccion = _mongo!.GetCollection<ProductoRead>("productos_read");
         ProductoRead? leido = null;
-        for (var i = 0; i < 30 && leido is null; i++) {
+        for (int i = 0; i < 30 && leido is null; i++) {
             await Task.Delay(500);
             leido = await coleccion.Find(p => p.Id == producto.Id).FirstOrDefaultAsync();
         }

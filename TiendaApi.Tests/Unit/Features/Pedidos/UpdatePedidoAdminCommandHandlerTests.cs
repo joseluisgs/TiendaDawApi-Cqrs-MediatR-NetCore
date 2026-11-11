@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.OutputCaching;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using MongoDB.Bson;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
@@ -27,9 +26,11 @@ public class UpdatePedidoAdminCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { Estado = "Enviado", DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdatePedidoAdminCommand("PED-2024-0001", dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdatePedidoAdminCommand("PED-2024-0001", dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -43,9 +44,11 @@ public class UpdatePedidoAdminCommandHandlerTests {
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
 
         var dto = new UpdatePedidoDto { Estado = "Enviado" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdatePedidoAdminCommand("PED-9999-9999", dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdatePedidoAdminCommand("PED-9999-9999", dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -63,7 +66,8 @@ public class UpdatePedidoAdminCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { Estado = "Enviado" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
         await handler.Handle(new UpdatePedidoAdminCommand("PED-2024-0001", dto), CancellationToken.None);
 
@@ -88,7 +92,8 @@ public class UpdatePedidoAdminCommandHandlerTests {
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Calle Nueva 1" };
-        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdatePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
         await handler.Handle(new UpdatePedidoAdminCommand("PED-2024-0001", dto), CancellationToken.None);
 

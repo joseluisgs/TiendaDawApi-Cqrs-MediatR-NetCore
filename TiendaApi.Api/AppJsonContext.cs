@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
+using TiendaApi.Api.Dtos.Backup;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Dtos.Estadisticas;
 using TiendaApi.Api.Dtos.Historial;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Dtos.Productos;
-using TiendaApi.Api.Dtos.Backup;
-using TiendaApi.Api.Dtos.Estadisticas;
 using TiendaApi.Api.Dtos.Proveedores;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Models;
@@ -13,7 +13,7 @@ using TiendaApi.Api.Models;
 namespace TiendaApi.Api;
 
 /// <summary>
-/// Contexto de serialización JSON con source-gen para AOT/trimming.
+///     Contexto de serialización JSON con source-gen para AOT/trimming.
 /// </summary>
 [JsonSerializable(typeof(CategoriaDto))]
 [JsonSerializable(typeof(ProveedorDto))]

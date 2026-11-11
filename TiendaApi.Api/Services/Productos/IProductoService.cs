@@ -5,15 +5,13 @@ using TiendaApi.Api.Models.Read;
 namespace TiendaApi.Api.Services.Productos;
 
 /// <summary>
-/// Fachada única de lectura de productos (CQRS).
-///
-/// Todo lo que lee productos — REST, GraphQL y el reporte background — pasa por
-/// aquí: servicio → (caché) → MongoDB (<c>productos_read</c>). PostgreSQL solo
-/// interviene en las escrituras (commands) y en la validación de existencia de
-/// categorías, que sigue en el handler.
-///
-/// Las claves y TTL de caché son idénticas a las del repositorio de PostgreSQL:
-/// el cliente no puede distinguir de dónde viene la respuesta.
+///     Fachada única de lectura de productos (CQRS).
+///     Todo lo que lee productos — REST, GraphQL y el reporte background — pasa por
+///     aquí: servicio → (caché) → MongoDB (<c>productos_read</c>). PostgreSQL solo
+///     interviene en las escrituras (commands) y en la validación de existencia de
+///     categorías, que sigue en el handler.
+///     Las claves y TTL de caché son idénticas a las del repositorio de PostgreSQL:
+///     el cliente no puede distinguir de dónde viene la respuesta.
 /// </summary>
 public interface IProductoService {
     /// <summary>Productos paginados con filtros (REST <c>GET /productos</c> y GraphQL <c>productosPaged</c>) — con caché.</summary>
@@ -41,8 +39,8 @@ public interface IProductoService {
     Task<ProductoRead?> GetReadByIdAsync(long id);
 
     /// <summary>
-    /// Productos creados en los últimos N días (reporte background) — sin caché a propósito:
-    /// el reporte debe ver los productos recién creados, y cachearlos los ocultaría.
+    ///     Productos creados en los últimos N días (reporte background) — sin caché a propósito:
+    ///     el reporte debe ver los productos recién creados, y cachearlos los ocultaría.
     /// </summary>
     /// <param name="days">Días hacia atrás.</param>
     /// <returns>Modelos de lectura.</returns>

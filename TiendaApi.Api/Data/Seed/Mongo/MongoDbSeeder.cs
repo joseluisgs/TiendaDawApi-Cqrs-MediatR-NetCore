@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using TiendaApi.Api.Models;
@@ -6,14 +5,14 @@ using TiendaApi.Api.Models;
 namespace TiendaApi.Api.Data.Seed.Mongo;
 
 /// <summary>
-/// Seeder que inserta pedidos de ejemplo directamente en MongoDB.
+///     Seeder que inserta pedidos de ejemplo directamente en MongoDB.
 /// </summary>
 public class MongoDbSeeder {
-    private readonly IMongoCollection<Pedido> _pedidosCollection;
     private readonly ILogger<MongoDbSeeder> _logger;
+    private readonly IMongoCollection<Pedido> _pedidosCollection;
 
     /// <summary>
-    /// Crea una instancia del seeder de pedidos de MongoDB.
+    ///     Crea una instancia del seeder de pedidos de MongoDB.
     /// </summary>
     /// <param name="pedidosCollection">Colección de pedidos de MongoDB.</param>
     /// <param name="logger">Logger de la aplicación.</param>
@@ -23,11 +22,11 @@ public class MongoDbSeeder {
     }
 
     /// <summary>
-    /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
+    ///     Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
     /// </summary>
     public async Task SeedAsync() {
         try {
-            var count = await _pedidosCollection.CountDocumentsAsync(_ => true);
+            long count = await _pedidosCollection.CountDocumentsAsync(_ => true);
 
             if (count == 0) {
                 _logger.LogInformation("Sembrando datos iniciales de pedidos en MongoDB...");
@@ -117,14 +116,14 @@ public class MongoDbSeeder {
 }
 
 /// <summary>
-/// Seeder que inserta pedidos de ejemplo en MongoDB usando EF Core.
+///     Seeder que inserta pedidos de ejemplo en MongoDB usando EF Core.
 /// </summary>
 public class MongoDbEfCoreSeeder {
     private readonly TiendaMongoContext _context;
     private readonly ILogger<MongoDbEfCoreSeeder> _logger;
 
     /// <summary>
-    /// Crea una instancia del seeder de pedidos con EF Core sobre MongoDB.
+    ///     Crea una instancia del seeder de pedidos con EF Core sobre MongoDB.
     /// </summary>
     /// <param name="context">Contexto de MongoDB.</param>
     /// <param name="logger">Logger de la aplicación.</param>
@@ -134,11 +133,11 @@ public class MongoDbEfCoreSeeder {
     }
 
     /// <summary>
-    /// Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
+    ///     Siembra pedidos de ejemplo en MongoDB cuando la colección está vacía.
     /// </summary>
     public async Task SeedAsync() {
         try {
-            var count = _context.Pedidos.Count();
+            int count = _context.Pedidos.Count();
 
             if (count == 0) {
                 _logger.LogInformation("Sembrando datos iniciales de pedidos en MongoDB (EfCore)...");
@@ -148,8 +147,14 @@ public class MongoDbEfCoreSeeder {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
                         Items = new List<PedidoItem> {
-                            new() { ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m, Subtotal = 1299.99m },
-                            new() { ProductoId = 3, NombreProducto = "Clean Code", Cantidad = 2, Precio = 42.99m, Subtotal = 85.98m }
+                            new() {
+                                ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m,
+                                Subtotal = 1299.99m
+                            },
+                            new() {
+                                ProductoId = 3, NombreProducto = "Clean Code", Cantidad = 2, Precio = 42.99m,
+                                Subtotal = 85.98m
+                            }
                         },
                         Total = 1385.97m,
                         Estado = PedidoEstado.ENTREGADO,
@@ -162,7 +167,10 @@ public class MongoDbEfCoreSeeder {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
                         Items = new List<PedidoItem> {
-                            new() { ProductoId = 2, NombreProducto = "Camiseta Nike", Cantidad = 3, Precio = 29.99m, Subtotal = 89.97m }
+                            new() {
+                                ProductoId = 2, NombreProducto = "Camiseta Nike", Cantidad = 3, Precio = 29.99m,
+                                Subtotal = 89.97m
+                            }
                         },
                         Total = 89.97m,
                         Estado = PedidoEstado.PROCESANDO,
@@ -175,7 +183,10 @@ public class MongoDbEfCoreSeeder {
                         Id = ObjectId.GenerateNewId(),
                         UserId = 2,
                         Items = new List<PedidoItem> {
-                            new() { ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m, Subtotal = 1299.99m }
+                            new() {
+                                ProductoId = 1, NombreProducto = "Laptop Dell XPS 15", Cantidad = 1, Precio = 1299.99m,
+                                Subtotal = 1299.99m
+                            }
                         },
                         Total = 1299.99m,
                         Estado = PedidoEstado.PENDIENTE,

@@ -4,7 +4,6 @@ using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Models;
@@ -26,12 +25,14 @@ public class DeleteProductoCommandHandlerTests {
         repository.Setup(r => r.DeleteAsync(1)).Returns(Task.CompletedTask);
 
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new DeleteProductoCommand(1), CancellationToken.None);
+        UnitResult<DomainError> result = await handler.Handle(new DeleteProductoCommand(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        mediator.Verify(m => m.Publish(It.IsAny<ProductoEliminadoNotification>(), It.IsAny<CancellationToken>()), Times.Once);
+        mediator.Verify(m => m.Publish(It.IsAny<ProductoEliminadoNotification>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
@@ -44,9 +45,10 @@ public class DeleteProductoCommandHandlerTests {
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Producto?)null);
 
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new DeleteProductoCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new DeleteProductoCommand(999), CancellationToken.None);
+        UnitResult<DomainError> result = await handler.Handle(new DeleteProductoCommand(999), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

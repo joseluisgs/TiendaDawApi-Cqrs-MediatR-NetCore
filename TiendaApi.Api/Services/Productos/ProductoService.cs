@@ -9,53 +9,43 @@ using TiendaApi.Api.Services.Cache;
 namespace TiendaApi.Api.Services.Productos;
 
 /// <summary>
-/// Implementación de la fachada de lectura de productos.
-///
-/// Camino de lectura: caché (claves/TTL idénticas a las de siempre) →
-/// <see cref="IProductoReadRepository"/> (MongoDB). Las escrituras siguen en
-/// PostgreSQL vía commands + MediatR.
+///     Implementación de la fachada de lectura de productos.
+///     Camino de lectura: caché (claves/TTL idénticas a las de siempre) →
+///     <see cref="IProductoReadRepository" /> (MongoDB). Las escrituras siguen en
+///     PostgreSQL vía commands + MediatR.
 /// </summary>
 public class ProductoService(
     IProductoReadRepository readRepository,
     ICacheService cacheService,
     IConfiguration configuration)
     : IProductoService {
-    private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
-        int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
-
     /// <summary>
-    /// 🎓 Contador de versión para invalidar la caché de paginación.
-    ///
-    /// Al escribir (Create/Update/Delete), los commands incrementan este contador.
-    /// La clave de paginación incluye la versión: "productos:paged:v{n}:{filter}".
-    /// Al incrementar n, todas las claves viejas quedan huérfanas y mueren por TTL.
-    ///
-    /// Ventaja: no necesitamos RemoveByPrefix (que MemoryCache no soporta).
-    /// Memoria: las claves huérfanas se liberan por TTL (10 min) y por
-    /// eviction LRU si MemoryCache alcanza SizeLimit.
-    ///
-    /// En multi-instancia (varios servidores), usar Redis INCR en vez de
-    /// un contador estático en memoria.
+    ///     🎓 Contador de versión para invalidar la caché de paginación.
+    ///     Al escribir (Create/Update/Delete), los commands incrementan este contador.
+    ///     La clave de paginación incluye la versión: "productos:paged:v{n}:{filter}".
+    ///     Al incrementar n, todas las claves viejas quedan huérfanas y mueren por TTL.
+    ///     Ventaja: no necesitamos RemoveByPrefix (que MemoryCache no soporta).
+    ///     Memoria: las claves huérfanas se liberan por TTL (10 min) y por
+    ///     eviction LRU si MemoryCache alcanza SizeLimit.
+    ///     En multi-instancia (varios servidores), usar Redis INCR en vez de
+    ///     un contador estático en memoria.
     /// </summary>
     private static long _pagedCacheVersion;
 
-    /// <summary>
-    /// Incrementa la versión del caché de paginación.
-    /// Llamado por los commands tras cada escritura.
-    /// </summary>
-    public static void InvalidatePagedCache() =>
-        Interlocked.Increment(ref _pagedCacheVersion);
+    private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
+        int.Parse(configuration["Cache:ProductoCacheTTLMinutes"] ?? "10"));
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<PagedResult<ProductoDto>> GetPagedAsync(ProductoFilterDto filter) {
         // 🎓 Clave versionada: al incrementar _pagedCacheVersion, todas las claves
         // viejas quedan huérfanas y mueren por TTL. No necesitamos RemoveByPrefix.
-        var cacheKey = $"productos:paged:v{Volatile.Read(ref _pagedCacheVersion)}:{filter}";
-        var cached = await cacheService.GetAsync<PagedResult<ProductoDto>>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"productos:paged:v{Volatile.Read(ref _pagedCacheVersion)}:{filter}";
+        PagedResult<ProductoDto>? cached = await cacheService.GetAsync<PagedResult<ProductoDto>>(cacheKey);
+        if (cached is not null) {
             return cached;
+        }
 
-        var (productos, totalCount) = await readRepository.FindAllPagedAsync(filter);
+        (IEnumerable<ProductoRead> productos, int totalCount) = await readRepository.FindAllPagedAsync(filter);
         var pagedResult = new PagedResult<ProductoDto> {
             Items = productos.ToDtoList(),
             TotalCount = totalCount,
@@ -72,18 +62,20 @@ public class ProductoService(
         return pagedResult;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<ProductoDto?> GetByIdAsync(long id) {
-        var cacheKey = $"productos:{id}";
-        var cached = await cacheService.GetAsync<ProductoDto>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"productos:{id}";
+        ProductoDto? cached = await cacheService.GetAsync<ProductoDto>(cacheKey);
+        if (cached is not null) {
             return cached;
+        }
 
-        var producto = await readRepository.FindByIdAsync(id);
-        if (producto is null)
+        ProductoRead? producto = await readRepository.FindByIdAsync(id);
+        if (producto is null) {
             return null;
+        }
 
-        var dto = producto.ToDto();
+        ProductoDto dto = producto.ToDto();
 
         _ = Task.Run(async () => {
             try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
@@ -94,14 +86,15 @@ public class ProductoService(
         return dto;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<ProductoDto>> GetByCategoriaIdAsync(long categoriaId) {
-        var cacheKey = $"productos:categoria:{categoriaId}";
-        var cached = await cacheService.GetAsync<IEnumerable<ProductoDto>>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"productos:categoria:{categoriaId}";
+        IEnumerable<ProductoDto>? cached = await cacheService.GetAsync<IEnumerable<ProductoDto>>(cacheKey);
+        if (cached is not null) {
             return cached;
+        }
 
-        var productos = await readRepository.FindByCategoriaIdAsync(categoriaId);
+        IEnumerable<ProductoRead> productos = await readRepository.FindByCategoriaIdAsync(categoriaId);
         var dtos = productos.ToDtoList().ToList();
 
         _ = Task.Run(async () => {
@@ -113,15 +106,26 @@ public class ProductoService(
         return dtos;
     }
 
-    /// <inheritdoc/>
-    public async Task<IReadOnlyList<ProductoRead>> GetAllAsync() =>
-        (await readRepository.FindAllAsync()).ToList();
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ProductoRead>> GetAllAsync() {
+        return (await readRepository.FindAllAsync()).ToList();
+    }
 
-    /// <inheritdoc/>
-    public Task<ProductoRead?> GetReadByIdAsync(long id) =>
-        readRepository.FindByIdAsync(id);
+    /// <inheritdoc />
+    public Task<ProductoRead?> GetReadByIdAsync(long id) {
+        return readRepository.FindByIdAsync(id);
+    }
 
-    /// <inheritdoc/>
-    public async Task<IReadOnlyList<ProductoRead>> GetRecentlyCreatedAsync(int days) =>
-        (await readRepository.GetRecentlyCreatedAsync(days)).ToList();
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ProductoRead>> GetRecentlyCreatedAsync(int days) {
+        return (await readRepository.GetRecentlyCreatedAsync(days)).ToList();
+    }
+
+    /// <summary>
+    ///     Incrementa la versión del caché de paginación.
+    ///     Llamado por los commands tras cada escritura.
+    /// </summary>
+    public static void InvalidatePagedCache() {
+        Interlocked.Increment(ref _pagedCacheVersion);
+    }
 }

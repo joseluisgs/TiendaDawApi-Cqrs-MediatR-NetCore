@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
+using FluentAssertions.Specialized;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TiendaApi.Api.Errors;
@@ -13,13 +14,13 @@ using TiendaApi.Api.Services.Historial;
 namespace TiendaApi.Tests.Unit.Features.Historial;
 
 /// <summary>
-/// Tests de RegistrarVistaCommandHandler. El 404 lo decide PostgreSQL (fuente
-/// de verdad) y la escritura en serie no cambia el resultado del command: su
-/// contrato es success siempre que el producto exista (el POST /vista, 204).
+///     Tests de RegistrarVistaCommandHandler. El 404 lo decide PostgreSQL (fuente
+///     de verdad) y la escritura en serie no cambia el resultado del command: su
+///     contrato es success siempre que el producto exista (el POST /vista, 204).
 /// </summary>
 public class RegistrarVistaCommandHandlerTests {
-    private readonly Mock<IHistorialService> _service = new();
     private readonly RegistrarVistaCommandHandler _handler;
+    private readonly Mock<IHistorialService> _service = new();
 
     public RegistrarVistaCommandHandlerTests() {
         _handler = new RegistrarVistaCommandHandler(_service.Object);
@@ -29,7 +30,7 @@ public class RegistrarVistaCommandHandlerTests {
     public async Task Handle_RegistroOk_DevuelveSuccess() {
         _service.Setup(s => s.RegistrarVistaAsync(2, 1)).ReturnsAsync(UnitResult.Success<DomainError>());
 
-        var result = await _handler.Handle(new RegistrarVistaCommand(2, 1), CancellationToken.None);
+        UnitResult<DomainError> result = await _handler.Handle(new RegistrarVistaCommand(2, 1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -39,7 +40,8 @@ public class RegistrarVistaCommandHandlerTests {
         _service.Setup(s => s.RegistrarVistaAsync(2, 999))
             .ReturnsAsync(UnitResult.Failure<DomainError>(ProductoError.NotFound(999)));
 
-        var result = await _handler.Handle(new RegistrarVistaCommand(2, 999), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await _handler.Handle(new RegistrarVistaCommand(2, 999), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().BeOfType<NotFoundError>();
@@ -59,8 +61,10 @@ public class RegistrarVistaCommandHandlerTests {
             historialRepository.Object,
             Mock.Of<ILogger<HistorialService>>()));
 
-        var act = async () => await handler.Handle(new RegistrarVistaCommand(2, 1), CancellationToken.None);
-        var result = await act.Should().NotThrowAsync();
+        Func<Task<UnitResult<DomainError>>> act = async () =>
+            await handler.Handle(new RegistrarVistaCommand(2, 1), CancellationToken.None);
+        AndWhichConstraint<GenericAsyncFunctionAssertions<UnitResult<DomainError>>, UnitResult<DomainError>> result =
+            await act.Should().NotThrowAsync();
 
         result.Which.IsSuccess.Should().BeTrue();
     }

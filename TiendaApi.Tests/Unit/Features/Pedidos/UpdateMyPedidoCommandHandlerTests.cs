@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.OutputCaching;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using MongoDB.Bson;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
@@ -37,14 +36,16 @@ public class UpdateMyPedidoCommandHandlerTests {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
+        Pedido pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -54,13 +55,15 @@ public class UpdateMyPedidoCommandHandlerTests {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
+        Pedido pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -70,13 +73,15 @@ public class UpdateMyPedidoCommandHandlerTests {
         var repository = new Mock<IPedidosRepository>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
+        Pedido pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, Mock.Of<IMediator>(), cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -90,14 +95,16 @@ public class UpdateMyPedidoCommandHandlerTests {
         var cacheService = new Mock<ICacheService>();
         var mediator = new Mock<IMediator>();
 
-        var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
+        Pedido pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
         var dto = new UpdatePedidoDto { DireccionEnvio = "Nueva direccion" };
-        var handler = new UpdateMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new UpdateMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new UpdateMyPedidoCommand("PED-2024-0001", 1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         mediator.Verify(m => m.Publish(

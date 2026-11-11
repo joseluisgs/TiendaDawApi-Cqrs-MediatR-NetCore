@@ -6,16 +6,16 @@ using TiendaApi.Api.Realtime.Productos;
 namespace TiendaApi.Api.Features.Productos.Notifications;
 
 /// <summary>
-/// Handler que escucha ProductoCreadoNotification y difunde el evento por SignalR.
-/// 
-/// 🎓 OPEN/CLOSED: el comando de crear producto no necesita conocer SignalR.
-/// Este comportamiento se añade ampliando el sistema con un nuevo handler.
+///     Handler que escucha ProductoCreadoNotification y difunde el evento por SignalR.
+///     🎓 OPEN/CLOSED: el comando de crear producto no necesita conocer SignalR.
+///     Este comportamiento se añade ampliando el sistema con un nuevo handler.
 /// </summary>
 public class ProductoCreadoSignalRHandler(IHubContext<ProductosHub> hubContext)
     : INotificationHandler<ProductoCreadoNotification> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
-        Log.Information("📡 SignalR: Recibida notificación ProductoCreado para ID: {ProductoId}", notification.Producto.Id);
+        Log.Information("📡 SignalR: Recibida notificación ProductoCreado para ID: {ProductoId}",
+            notification.Producto.Id);
 
         await hubContext.Clients.All.SendAsync("ProductoCreado", new {
             productoId = notification.Producto.Id,

@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.OutputCaching;
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using MongoDB.Bson;
 using Moq;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
-using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Services.Cache;
@@ -36,13 +35,15 @@ public class DeleteMyPedidoCommandHandlerTests {
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
+        Pedido pedido = CreateTestPedido(1, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -53,12 +54,14 @@ public class DeleteMyPedidoCommandHandlerTests {
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
+        Pedido pedido = CreateTestPedido(2, PedidoEstado.PENDIENTE);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
@@ -69,12 +72,14 @@ public class DeleteMyPedidoCommandHandlerTests {
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
 
-        var pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
+        Pedido pedido = CreateTestPedido(1, PedidoEstado.ENVIADO);
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido!);
 
-        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new DeleteMyPedidoCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await handler.Handle(new DeleteMyPedidoCommand("PED-2024-0001", 1), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

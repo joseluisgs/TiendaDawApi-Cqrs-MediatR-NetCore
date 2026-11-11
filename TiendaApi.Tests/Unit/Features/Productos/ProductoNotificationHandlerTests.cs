@@ -1,5 +1,4 @@
 using FluentAssertions;
-using MediatR;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 
@@ -8,7 +7,8 @@ namespace TiendaApi.Tests.Unit.Features.Productos;
 public class ProductoNotificationHandlerTests {
     [Test]
     public void ProductoCreadoNotification_ContieneDatosCorrectos() {
-        var producto = new ProductoDto(1, "Laptop", "Laptop pro", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "Laptop pro", 1000m, 10, null,
+            new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
 
         var notification = new ProductoCreadoNotification(producto);
 

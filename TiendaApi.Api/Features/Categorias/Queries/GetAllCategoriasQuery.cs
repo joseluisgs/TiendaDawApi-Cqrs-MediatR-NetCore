@@ -1,24 +1,24 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Categorias.Queries;
 
 /// <summary>
-/// Query para obtener todas las categorías paginadas con filtros.
+///     Query para obtener todas las categorías paginadas con filtros.
 /// </summary>
 public record GetAllCategoriasQuery(CategoriaFilterDto Filter)
     : IRequest<Result<PagedResult<CategoriaDto>, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetAllCategoriasQuery.
+///     Handler de la query GetAllCategoriasQuery.
 /// </summary>
 public class GetAllCategoriasQueryHandler(
     ICategoriaRepository repository,
@@ -28,16 +28,17 @@ public class GetAllCategoriasQueryHandler(
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:CategoriaCacheTTLMinutes"] ?? "10"));
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<PagedResult<CategoriaDto>, DomainError>> Handle(
         GetAllCategoriasQuery request, CancellationToken cancellationToken) {
         // La key incluye todos los filtros del record (ToString automático de C#)
-        var cacheKey = $"categorias:paged:{request.Filter}";
-        var cached = await cacheService.GetAsync<PagedResult<CategoriaDto>>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"categorias:paged:{request.Filter}";
+        PagedResult<CategoriaDto>? cached = await cacheService.GetAsync<PagedResult<CategoriaDto>>(cacheKey);
+        if (cached is not null) {
             return Result.Success<PagedResult<CategoriaDto>, DomainError>(cached);
+        }
 
-        var (categorias, totalCount) = await repository.FindAllPagedAsync(request.Filter);
+        (IEnumerable<Categoria> categorias, int totalCount) = await repository.FindAllPagedAsync(request.Filter);
         var pagedResult = new PagedResult<CategoriaDto> {
             Items = categorias.ToDtoList(),
             TotalCount = totalCount,

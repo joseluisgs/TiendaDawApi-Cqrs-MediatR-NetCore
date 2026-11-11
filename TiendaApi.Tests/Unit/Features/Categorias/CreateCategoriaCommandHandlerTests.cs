@@ -1,17 +1,14 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
-using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Features.Categorias.Commands;
-using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
-using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Tests.Unit.Features.Categorias;
 
@@ -23,11 +20,13 @@ public class CreateCategoriaCommandHandlerTests {
         var dto = new CategoriaRequestDto { Nombre = "Electrónica", Descripcion = "Dispositivos electrónicos" };
         validator.Setup(v => v.ValidateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(new ValidationResult());
         repository.Setup(r => r.ExistsByNombreAsync(dto.Nombre)).ReturnsAsync(false);
-        repository.Setup(r => r.SaveAsync(It.IsAny<Categoria>())).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
+        repository.Setup(r => r.SaveAsync(It.IsAny<Categoria>()))
+            .ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
         var outputCacheStore = new Mock<IOutputCacheStore>();
         var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -42,7 +41,8 @@ public class CreateCategoriaCommandHandlerTests {
         var outputCacheStore = new Mock<IOutputCacheStore>();
         var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         repository.Verify(r => r.SaveAsync(It.IsAny<Categoria>()), Times.Never);
@@ -58,7 +58,8 @@ public class CreateCategoriaCommandHandlerTests {
         var outputCacheStore = new Mock<IOutputCacheStore>();
         var handler = new CreateCategoriaCommandHandler(repository.Object, validator.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new CreateCategoriaCommand(dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

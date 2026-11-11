@@ -1,8 +1,7 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Moq;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Usuarios;
 using TiendaApi.Api.Features.Users.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Usuarios;
@@ -19,7 +18,7 @@ public class DeleteUserCommandHandlerTests {
         var cacheService = new Mock<ICacheService>();
         var handler = new DeleteUserCommandHandler(repository.Object, cacheService.Object);
 
-        var result = await handler.Handle(new DeleteUserCommand(1), CancellationToken.None);
+        UnitResult<DomainError> result = await handler.Handle(new DeleteUserCommand(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -31,7 +30,7 @@ public class DeleteUserCommandHandlerTests {
         var cacheService = new Mock<ICacheService>();
         var handler = new DeleteUserCommandHandler(repository.Object, cacheService.Object);
 
-        var result = await handler.Handle(new DeleteUserCommand(999), CancellationToken.None);
+        UnitResult<DomainError> result = await handler.Handle(new DeleteUserCommand(999), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

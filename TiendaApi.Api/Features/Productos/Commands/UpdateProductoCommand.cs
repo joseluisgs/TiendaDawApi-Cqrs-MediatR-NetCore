@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
@@ -8,6 +9,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
@@ -16,13 +18,13 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Api.Features.Productos.Commands;
 
 /// <summary>
-/// Comando para actualizar un producto completo.
+///     Comando para actualizar un producto completo.
 /// </summary>
 public record UpdateProductoCommand(long Id, ProductoRequestDto Dto)
     : IRequest<Result<ProductoDto, DomainError>>;
 
 /// <summary>
-/// Handler del comando UpdateProductoCommand.
+///     Handler del comando UpdateProductoCommand.
 /// </summary>
 public class UpdateProductoCommandHandler(
     IProductoRepository productoRepository,
@@ -34,14 +36,15 @@ public class UpdateProductoCommandHandler(
     : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>> {
     private const int StockBajoUmbral = 10;
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<ProductoDto, DomainError>> Handle(
         UpdateProductoCommand request, CancellationToken cancellationToken) {
-        var producto = await productoRepository.FindByIdAsync(request.Id);
-        if (producto is null)
+        Producto? producto = await productoRepository.FindByIdAsync(request.Id);
+        if (producto is null) {
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
+        }
 
-        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        ValidationResult validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
         if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
@@ -49,7 +52,7 @@ public class UpdateProductoCommandHandler(
             return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
         }
 
-        var categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
+        Categoria? categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
         if (categoriaExists is null) {
             return Result.Failure<ProductoDto, DomainError>(
                 ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
@@ -58,8 +61,8 @@ public class UpdateProductoCommandHandler(
             );
         }
 
-        var oldCategoriaId = producto.CategoriaId;
-        var precioAnterior = producto.Precio;   // ANTES de tocar el producto
+        long oldCategoriaId = producto.CategoriaId;
+        decimal precioAnterior = producto.Precio; // ANTES de tocar el producto
         producto.Nombre = request.Dto.Nombre;
         producto.Descripcion = request.Dto.Descripcion;
         producto.Precio = request.Dto.Precio;
@@ -67,8 +70,8 @@ public class UpdateProductoCommandHandler(
         producto.Imagen = request.Dto.Imagen;
         producto.CategoriaId = request.Dto.CategoriaId;
 
-        var updated = await productoRepository.UpdateAsync(producto);
-        var dto = updated.ToDto();
+        Producto updated = await productoRepository.UpdateAsync(producto);
+        ProductoDto dto = updated.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
@@ -79,8 +82,10 @@ public class UpdateProductoCommandHandler(
 
         await cacheService.RemoveAsync($"productos:{request.Id}");
         await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
-        if (oldCategoriaId != request.Dto.CategoriaId)
+        if (oldCategoriaId != request.Dto.CategoriaId) {
             await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        }
+
         await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
         ProductoService.InvalidatePagedCache();
 

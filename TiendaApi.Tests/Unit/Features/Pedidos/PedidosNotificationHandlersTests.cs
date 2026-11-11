@@ -12,19 +12,19 @@ using TiendaApi.Api.Services.Cache;
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
 /// <summary>
-/// 🎓 Tests de paridad de canales de los handlers de pedidos (CQRS).
-/// Cada evento de tiempo real debe salir por SignalR a los grupos del dueño
-/// (user-{id}) y de administradores — nunca a Clients.All — y por WebSocket a
-/// dueño + admins. Regresión del bug de broadcast (cualquier usuario autenticado
-/// veía todos los pedidos) y de los eventos que solo tenían un canal.
+///     🎓 Tests de paridad de canales de los handlers de pedidos (CQRS).
+///     Cada evento de tiempo real debe salir por SignalR a los grupos del dueño
+///     (user-{id}) y de administradores — nunca a Clients.All — y por WebSocket a
+///     dueño + admins. Regresión del bug de broadcast (cualquier usuario autenticado
+///     veía todos los pedidos) y de los eventos que solo tenían un canal.
 /// </summary>
 public class PedidosNotificationHandlersTests {
     private const long UserId = 1;
+    private Mock<IClientProxy> _adminsProxy = null!;
+    private Mock<IHubClients> _clients = null!;
 
     private Mock<IHubContext<PedidosHub>> _hubContext = null!;
-    private Mock<IHubClients> _clients = null!;
     private Mock<IClientProxy> _userProxy = null!;
-    private Mock<IClientProxy> _adminsProxy = null!;
     private Mock<PedidosWebSocketHandler> _webSocket = null!;
 
     [SetUp]
@@ -49,20 +49,24 @@ public class PedidosNotificationHandlersTests {
             configuration.Object);
     }
 
-    private static PedidoDto UnPedido(string estado = "Pendiente") => new(
-        Id: "PED-2024-0001",
-        UserId: UserId,
-        Destinatario: null!,
-        Items: new List<PedidoItemDto>(),
-        Total: 99.5m,
-        Estado: estado,
-        DireccionEnvio: null,
-        CreatedAt: DateTime.UtcNow);
+    private static PedidoDto UnPedido(string estado = "Pendiente") {
+        return new PedidoDto(
+            "PED-2024-0001",
+            UserId,
+            null!,
+            new List<PedidoItemDto>(),
+            99.5m,
+            estado,
+            null,
+            DateTime.UtcNow);
+    }
 
     /// <summary>Auxiliar: verifica que el envío fue a los dos grupos y jamás a Clients.All.</summary>
     private void VerificarGruposSelectivos(string metodo) {
-        _userProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
-        _adminsProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        _userProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _adminsProxy.Verify(p => p.SendCoreAsync(metodo, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()),
+            Times.Once);
         _clients.Verify(c => c.All, Times.Never);
     }
 
@@ -99,7 +103,8 @@ public class PedidosNotificationHandlersTests {
     public async Task PedidoEliminadoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoEliminadoSignalRHandler(_hubContext.Object);
 
-        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
+        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null),
+            CancellationToken.None);
 
         VerificarGruposSelectivos("PedidoEliminado");
     }
@@ -108,7 +113,8 @@ public class PedidosNotificationHandlersTests {
     public async Task PedidoCanceladoSignalRHandler_EnvíaAlDueñoYAdmins_NoABroadcast() {
         var handler = new PedidoCanceladoSignalRHandler(_hubContext.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null),
+            CancellationToken.None);
 
         VerificarGruposSelectivos("PedidoEliminado");
     }
@@ -166,7 +172,8 @@ public class PedidosNotificationHandlersTests {
     public async Task PedidoEliminadoWebSocketHandler_NotificaAlDueñoYAdmins() {
         var handler = new PedidoEliminadoWebSocketHandler(_webSocket.Object);
 
-        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null), CancellationToken.None);
+        await handler.Handle(new PedidoEliminadoNotification("PED-2024-0001", UserId, "Pendiente", 99.5m, null),
+            CancellationToken.None);
 
         _webSocket.Verify(h => h.NotifyUserAndAdminsAsync(UserId,
             It.Is<PedidoNotificacion>(n =>
@@ -178,7 +185,8 @@ public class PedidosNotificationHandlersTests {
         // Antes no existía: los clientes WebSocket no recibían cancelaciones.
         var handler = new PedidoCanceladoWebSocketHandler(_webSocket.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", UserId, 99.5m, null),
+            CancellationToken.None);
 
         _webSocket.Verify(h => h.NotifyUserAndAdminsAsync(UserId,
             It.Is<PedidoNotificacion>(n =>

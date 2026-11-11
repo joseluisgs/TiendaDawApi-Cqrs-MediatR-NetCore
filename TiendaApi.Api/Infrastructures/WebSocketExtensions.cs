@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+using System.Net.WebSockets;
 using Serilog;
 using TiendaApi.Api.Realtime.Pedidos;
 using TiendaApi.Api.Realtime.Productos;
@@ -6,11 +6,11 @@ using TiendaApi.Api.Realtime.Productos;
 namespace TiendaApi.Api.Infrastructures;
 
 /// <summary>
-/// Extensiones de WebSockets.
+///     Extensiones de WebSockets.
 /// </summary>
 public static class WebSocketExtensions {
     /// <summary>
-    /// Mapea endpoints WebSocket (/ws/productos, /ws/pedidos?token=JWT).
+    ///     Mapea endpoints WebSocket (/ws/productos, /ws/pedidos?token=JWT).
     /// </summary>
     /// <param name="app">Application builder.</param>
     /// <returns>Application builder.</returns>
@@ -22,20 +22,25 @@ public static class WebSocketExtensions {
             if (context.WebSockets.IsWebSocketRequest) {
                 // using: si el handler lanza (cliente caido, error de red), el
                 // WebSocket se libera igualmente - el catch del handler solo loguea.
-                using var ws = await context.WebSockets.AcceptWebSocketAsync();
-                var handler = context.RequestServices.GetRequiredService<ProductosWebSocketHandler>();
+                using WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
+                ProductosWebSocketHandler handler =
+                    context.RequestServices.GetRequiredService<ProductosWebSocketHandler>();
                 await handler.HandleConnectionAsync(context, ws);
-            } else context.Response.StatusCode = 400;
+            } else {
+                context.Response.StatusCode = 400;
+            }
         });
 
         webApp.Map("/ws/pedidos", async context => {
             if (context.WebSockets.IsWebSocketRequest) {
                 // using: mismo motivo que el endpoint de productos (liberar ante
                 // cualquier salida, incluida la excepcion del handler).
-                using var ws = await context.WebSockets.AcceptWebSocketAsync();
-                var handler = context.RequestServices.GetRequiredService<PedidosWebSocketHandler>();
+                using WebSocket ws = await context.WebSockets.AcceptWebSocketAsync();
+                PedidosWebSocketHandler handler = context.RequestServices.GetRequiredService<PedidosWebSocketHandler>();
                 await handler.HandleConnectionAsync(context, ws);
-            } else context.Response.StatusCode = 400;
+            } else {
+                context.Response.StatusCode = 400;
+            }
         });
 
         return app;

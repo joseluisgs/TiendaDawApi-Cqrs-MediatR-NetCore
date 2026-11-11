@@ -3,7 +3,6 @@ using FluentAssertions;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
@@ -20,12 +19,14 @@ public class GetProductosByCategoriaQueryHandlerTests {
         categoriaRepo.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1 });
 
         service.Setup(s => s.GetByCategoriaIdAsync(1)).ReturnsAsync(new List<ProductoDto> {
-            new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow)
+            new(1, "Laptop", "", 1000m, 10, null, new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow,
+                DateTime.UtcNow)
         });
 
         var handler = new GetProductosByCategoriaQueryHandler(service.Object, categoriaRepo.Object);
 
-        var result = await handler.Handle(new GetProductosByCategoriaQuery(1), CancellationToken.None);
+        Result<IEnumerable<ProductoDto>, DomainError> result =
+            await handler.Handle(new GetProductosByCategoriaQuery(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
@@ -42,7 +43,8 @@ public class GetProductosByCategoriaQueryHandlerTests {
 
         var handler = new GetProductosByCategoriaQueryHandler(service.Object, categoriaRepo.Object);
 
-        var result = await handler.Handle(new GetProductosByCategoriaQuery(999), CancellationToken.None);
+        Result<IEnumerable<ProductoDto>, DomainError> result =
+            await handler.Handle(new GetProductosByCategoriaQuery(999), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         service.Verify(s => s.GetByCategoriaIdAsync(It.IsAny<long>()), Times.Never);

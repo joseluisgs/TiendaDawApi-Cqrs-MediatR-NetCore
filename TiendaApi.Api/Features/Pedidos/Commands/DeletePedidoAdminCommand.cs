@@ -1,24 +1,25 @@
 using CSharpFunctionalExtensions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
-using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
 /// <summary>
-/// Comando para eliminar un pedido (admin).
+///     Comando para eliminar un pedido (admin).
 /// </summary>
 public record DeletePedidoAdminCommand(string Id)
     : IRequest<UnitResult<DomainError>>;
 
 /// <summary>
-/// Handler del comando DeletePedidoAdminCommand.
+///     Handler del comando DeletePedidoAdminCommand.
 /// </summary>
 public class DeletePedidoAdminCommandHandler(
     IPedidosRepository repository,
@@ -26,14 +27,15 @@ public class DeletePedidoAdminCommandHandler(
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<DeletePedidoAdminCommand, UnitResult<DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<UnitResult<DomainError>> Handle(
         DeletePedidoAdminCommand request, CancellationToken cancellationToken) {
-        var pedido = await repository.FindByIdAsync(request.Id);
-        if (pedido is null)
+        Pedido? pedido = await repository.FindByIdAsync(request.Id);
+        if (pedido is null) {
             return UnitResult.Failure<DomainError>(PedidoError.NotFound(request.Id));
+        }
 
-        var userId = pedido.UserId;
+        long userId = pedido.UserId;
         pedido.IsDeleted = true;
         await repository.UpdateAsync(pedido);
 

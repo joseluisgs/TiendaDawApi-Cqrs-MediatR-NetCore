@@ -1,36 +1,27 @@
-using CSharpFunctionalExtensions;
-using FluentAssertions;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Moq;
-using NUnit.Framework;
 using TiendaApi.Api.Dtos.Productos;
-using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Storage;
 
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
 /// <summary>
-/// Tests que verifican que los commands de producto invalidan caché después de la escritura.
-/// 🎓 Nota: el orden exacto Publish→Remove se verifica en el código fuente;
-/// aquí validamos que la invalidación se ejecuta (no se pierde).
+///     Tests que verifican que los commands de producto invalidan caché después de la escritura.
+///     🎓 Nota: el orden exacto Publish→Remove se verifica en el código fuente;
+///     aquí validamos que la invalidación se ejecuta (no se pierde).
 /// </summary>
 [TestFixture]
 [Category("Unit")]
 [Category("Orden")]
 public class ProductoCommandOrderTests {
-    private Mock<IProductoRepository> _productoRepoMock = null!;
-    private Mock<ICategoriaRepository> _categoriaRepoMock = null!;
-    private Mock<IMediator> _mediatorMock = null!;
-    private Mock<ICacheService> _cacheServiceMock = null!;
-    private Mock<IOutputCacheStore> _outputCacheMock = null!;
-    private Mock<IValidator<ProductoRequestDto>> _validatorMock = null!;
-
     [SetUp]
     public void Setup() {
         _productoRepoMock = new Mock<IProductoRepository>();
@@ -41,7 +32,7 @@ public class ProductoCommandOrderTests {
         _validatorMock = new Mock<IValidator<ProductoRequestDto>>();
 
         _validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ProductoRequestDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+            .ReturnsAsync(new ValidationResult());
 
         _categoriaRepoMock.Setup(r => r.FindByIdAsync(It.IsAny<long>()))
             .ReturnsAsync(new Categoria { Id = 1, Nombre = "Test" });
@@ -55,6 +46,13 @@ public class ProductoCommandOrderTests {
         _outputCacheMock.Setup(o => o.EvictByTagAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.CompletedTask);
     }
+
+    private Mock<IProductoRepository> _productoRepoMock = null!;
+    private Mock<ICategoriaRepository> _categoriaRepoMock = null!;
+    private Mock<IMediator> _mediatorMock = null!;
+    private Mock<ICacheService> _cacheServiceMock = null!;
+    private Mock<IOutputCacheStore> _outputCacheMock = null!;
+    private Mock<IValidator<ProductoRequestDto>> _validatorMock = null!;
 
     [Test]
     public async Task CreateProducto_InvalidaCache() {
@@ -97,7 +95,7 @@ public class ProductoCommandOrderTests {
         var producto = new Producto { Id = 1, Nombre = "Test", CategoriaId = 1 };
         _productoRepoMock.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(producto);
 
-        var storageMock = new Mock<TiendaApi.Api.Services.Storage.IStorageService>();
+        var storageMock = new Mock<IStorageService>();
         var handler = new DeleteProductoCommandHandler(
             _productoRepoMock.Object, storageMock.Object,
             _mediatorMock.Object, _cacheServiceMock.Object, _outputCacheMock.Object);

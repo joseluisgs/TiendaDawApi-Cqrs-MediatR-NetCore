@@ -8,17 +8,17 @@ using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Features.Categorias.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
 public class CategoriasControllerTests {
+    private CategoriasController _controller = null!;
+
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
-    private CategoriasController _controller = null!;
 
     [SetUp]
     public void SetUp() {
@@ -38,7 +38,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllCategoriasQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PagedResult<CategoriaDto>, DomainError>(response));
 
-        var result = await _controller.GetAll();
+        ActionResult<PagedResult<CategoriaDto>> result = await _controller.GetAll();
 
         // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
         result.Value.Should().NotBeNull();
@@ -50,7 +50,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no")));
 
-        var result = await _controller.Delete(1);
+        ActionResult result = await _controller.Delete(1);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -63,7 +63,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<CategoriaDto, DomainError>(categoria));
 
-        var result = await _controller.GetById(1);
+        ActionResult<CategoriaDto> result = await _controller.GetById(1);
 
         result.Value.Should().BeSameAs(categoria);
     }
@@ -73,7 +73,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetCategoriaByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.GetById(99);
+        ActionResult<CategoriaDto> result = await _controller.GetById(99);
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -84,9 +84,9 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<CreateCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<CategoriaDto, DomainError>(categoria));
 
-        var result = await _controller.Create(new CategoriaRequestDto { Nombre = "Nueva" });
+        ActionResult<CategoriaDto> result = await _controller.Create(new CategoriaRequestDto { Nombre = "Nueva" });
 
-        var created = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        CreatedAtActionResult created = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.ActionName.Should().Be(nameof(CategoriasController.GetById));
     }
 
@@ -96,7 +96,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<CreateCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CategoriaDto, DomainError>(ValidationError.Create("nombre duplicado")));
 
-        var result = await _controller.Create(new CategoriaRequestDto { Nombre = "Repetida" });
+        ActionResult<CategoriaDto> result = await _controller.Create(new CategoriaRequestDto { Nombre = "Repetida" });
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -106,7 +106,7 @@ public class CategoriasControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteCategoriaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
-        var result = await _controller.Delete(1);
+        ActionResult result = await _controller.Delete(1);
 
         result.Should().BeOfType<NoContentResult>();
     }

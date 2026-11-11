@@ -1,30 +1,30 @@
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Serilog;
+using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Services.Email;
 
 namespace TiendaApi.Api.Features.Productos.Notifications;
 
 /// <summary>
-/// Handler que envía un email al administrador cuando se crea un producto.
+///     Handler que envía un email al administrador cuando se crea un producto.
 /// </summary>
 public class ProductoCreadoEmailHandler(
     IEmailService emailService,
     IConfiguration configuration)
     : INotificationHandler<ProductoCreadoNotification> {
     /// <summary>
-    /// Procesa el evento ProductoCreado y envía el email de notificación al administrador.
+    ///     Procesa el evento ProductoCreado y envía el email de notificación al administrador.
     /// </summary>
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
-        var adminEmail = configuration["Smtp:AdminEmail"];
+        string? adminEmail = configuration["Smtp:AdminEmail"];
         if (string.IsNullOrEmpty(adminEmail)) {
             Log.Warning("Email de admin no configurado, saltando notificación");
             return;
         }
 
-        var producto = notification.Producto;
-        var content = EmailTemplates.ProductoCreado(producto.Nombre, producto.Precio, producto.Stock, producto.Id);
-        var body = EmailTemplates.CreateBase("Nuevo Producto Creado", content);
+        ProductoDto producto = notification.Producto;
+        string content = EmailTemplates.ProductoCreado(producto.Nombre, producto.Precio, producto.Stock, producto.Id);
+        string body = EmailTemplates.CreateBase("Nuevo Producto Creado", content);
 
         var emailMessage = new EmailMessage {
             To = adminEmail,

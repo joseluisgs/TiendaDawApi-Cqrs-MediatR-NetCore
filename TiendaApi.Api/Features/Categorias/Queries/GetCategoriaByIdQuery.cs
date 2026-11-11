@@ -1,24 +1,24 @@
 using CSharpFunctionalExtensions;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Categorias.Queries;
 
 /// <summary>
-/// Query para obtener una categoría por su ID.
+///     Query para obtener una categoría por su ID.
 /// </summary>
 public record GetCategoriaByIdQuery(long Id)
     : IRequest<Result<CategoriaDto, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetCategoriaByIdQuery.
+///     Handler de la query GetCategoriaByIdQuery.
 /// </summary>
 public class GetCategoriaByIdQueryHandler(
     ICategoriaRepository repository,
@@ -28,19 +28,21 @@ public class GetCategoriaByIdQueryHandler(
     private readonly TimeSpan _cacheTTL = TimeSpan.FromMinutes(
         int.Parse(configuration["Cache:CategoriaCacheTTLMinutes"] ?? "10"));
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<CategoriaDto, DomainError>> Handle(
         GetCategoriaByIdQuery request, CancellationToken cancellationToken) {
-        var cacheKey = $"categorias:{request.Id}";
-        var cached = await cacheService.GetAsync<CategoriaDto>(cacheKey);
-        if (cached is not null)
+        string cacheKey = $"categorias:{request.Id}";
+        CategoriaDto? cached = await cacheService.GetAsync<CategoriaDto>(cacheKey);
+        if (cached is not null) {
             return Result.Success<CategoriaDto, DomainError>(cached);
+        }
 
-        var categoria = await repository.FindByIdAsync(request.Id);
-        if (categoria is null)
+        Categoria? categoria = await repository.FindByIdAsync(request.Id);
+        if (categoria is null) {
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NotFound(request.Id));
+        }
 
-        var dto = categoria.ToDto();
+        CategoriaDto dto = categoria.ToDto();
         _ = Task.Run(async () => {
             try { await cacheService.SetAsync(cacheKey, dto, _cacheTTL); } catch (Exception ex) {
                 Log.Warning(ex, "Fallo en Task.Run (fire & forget) de cache");

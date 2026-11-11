@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentAssertions.Specialized;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TiendaApi.Api.Dtos.Historial;
@@ -10,12 +11,12 @@ using TiendaApi.Api.Services.Historial;
 namespace TiendaApi.Tests.Unit.Features.Historial;
 
 /// <summary>
-/// Tests de GetFeedVistasQueryHandler. Una particion vacia es una respuesta
-/// valida: lista vacia, nunca un error.
+///     Tests de GetFeedVistasQueryHandler. Una particion vacia es una respuesta
+///     valida: lista vacia, nunca un error.
 /// </summary>
 public class GetFeedVistasQueryHandlerTests {
-    private readonly Mock<IHistorialService> _service = new();
     private readonly GetFeedVistasQueryHandler _handler;
+    private readonly Mock<IHistorialService> _service = new();
 
     public GetFeedVistasQueryHandlerTests() {
         _handler = new GetFeedVistasQueryHandler(_service.Object);
@@ -26,7 +27,8 @@ public class GetFeedVistasQueryHandlerTests {
         var feed = new List<VistaFeedDto> { new(DateTime.UtcNow, 1, "Laptop Dell XPS 15") };
         _service.Setup(s => s.GetFeedVistasAsync(2, 20)).ReturnsAsync(feed);
 
-        var result = await _handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
+        IReadOnlyList<VistaFeedDto> result =
+            await _handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
 
         result.Should().BeEquivalentTo(feed);
     }
@@ -36,7 +38,8 @@ public class GetFeedVistasQueryHandlerTests {
         _service.Setup(s => s.GetFeedVistasAsync(2, 20))
             .ReturnsAsync(new List<VistaFeedDto>());
 
-        var result = await _handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
+        IReadOnlyList<VistaFeedDto> result =
+            await _handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
 
         result.Should().BeEmpty();
     }
@@ -52,8 +55,10 @@ public class GetFeedVistasQueryHandlerTests {
             historialRepository.Object,
             Mock.Of<ILogger<HistorialService>>()));
 
-        var act = async () => await handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
-        var result = await act.Should().NotThrowAsync();
+        Func<Task<IReadOnlyList<VistaFeedDto>>> act = async () =>
+            await handler.Handle(new GetFeedVistasQuery(2, 20), CancellationToken.None);
+        AndWhichConstraint<GenericAsyncFunctionAssertions<IReadOnlyList<VistaFeedDto>>, IReadOnlyList<VistaFeedDto>>
+            result = await act.Should().NotThrowAsync();
 
         result.Which.Should().BeEmpty();
     }

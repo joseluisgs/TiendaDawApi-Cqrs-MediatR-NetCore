@@ -1,10 +1,10 @@
+using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System.Security.Claims;
 using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Historial;
@@ -19,10 +19,11 @@ using TiendaApi.Api.Features.Productos.Queries;
 namespace TiendaApi.Tests.Unit.Controllers;
 
 public class ProductosControllerTests {
+    private ProductosController _controller = null!;
+
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
-    private ProductosController _controller = null!;
 
     [SetUp]
     public void SetUp() {
@@ -33,11 +34,12 @@ public class ProductosControllerTests {
 
     [Test]
     public async Task GetById_ConProductoExistente_RetornaOk() {
-        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null,
+            DateTime.UtcNow, DateTime.UtcNow);
         _mediator.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _controller.GetById(1);
+        ActionResult<ProductoDto> result = await _controller.GetById(1);
 
         // Cuando el handler devuelve T directamente, ActionResult<T>.Value contiene el dato
         result.Value.Should().NotBeNull();
@@ -49,7 +51,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(ValidationError.Create("error")));
 
-        var result = await _controller.Create(dto);
+        ActionResult<ProductoDto> result = await _controller.Create(dto);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -61,7 +63,10 @@ public class ProductosControllerTests {
         // Arrange: pagina 2 de 5 -> el controller anade los enlaces first/prev/
         // next/last al header Link (lo construye PaginationLinksHelper)
         var pagina = new PagedResult<ProductoDto> {
-            Items = new[] { new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow) },
+            Items = new[] {
+                new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow,
+                    DateTime.UtcNow)
+            },
             TotalCount = 50,
             Page = 2,
             PageSize = 10
@@ -70,7 +75,7 @@ public class ProductosControllerTests {
             .ReturnsAsync(Result.Success<PagedResult<ProductoDto>, DomainError>(pagina));
 
         // Act
-        var result = await _controller.GetAll();
+        ActionResult<PagedResult<ProductoDto>> result = await _controller.GetAll();
 
         // Assert
         result.Value.Should().BeSameAs(pagina);
@@ -82,11 +87,12 @@ public class ProductosControllerTests {
         // El listado no tiene errores de usuario tipados: cualquier failure del
         // handler se traduce en 500 con el mensaje (sin filtrar detalles)
         _mediator.Setup(m => m.Send(It.IsAny<GetAllProductosQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<PagedResult<ProductoDto>, DomainError>(ValidationError.Create("fallo interno")));
+            .ReturnsAsync(
+                Result.Failure<PagedResult<ProductoDto>, DomainError>(ValidationError.Create("fallo interno")));
 
-        var result = await _controller.GetAll();
+        ActionResult<PagedResult<ProductoDto>> result = await _controller.GetAll();
 
-        var objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        ObjectResult objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
         objeto.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 
@@ -95,7 +101,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetProductoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(99)));
 
-        var result = await _controller.GetById(99);
+        ActionResult<ProductoDto> result = await _controller.GetById(99);
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -108,23 +114,24 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetProductosByCategoriaQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IEnumerable<ProductoDto>, DomainError>(productos));
 
-        var result = await _controller.GetByCategoria(1);
+        ActionResult<IEnumerable<ProductoDto>> result = await _controller.GetByCategoria(1);
 
-        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        OkObjectResult ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeSameAs(productos);
     }
 
     [Test]
     public async Task Create_Exitoso_Retorna201ConLocation() {
-        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null,
+            DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoRequestDto { Nombre = "Laptop", Precio = 10m, Stock = 5, CategoriaId = 1 };
         _mediator.Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _controller.Create(dto);
+        ActionResult<ProductoDto> result = await _controller.Create(dto);
 
         // 201 con Location hacia GetById: contrato del REST de la casa
-        var created = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        CreatedAtActionResult created = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.ActionName.Should().Be(nameof(ProductosController.GetById));
         created.Value.Should().BeSameAs(producto);
     }
@@ -135,19 +142,20 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(7)));
 
-        var result = await _controller.Update(7, dto);
+        ActionResult<ProductoDto> result = await _controller.Update(7, dto);
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Test]
     public async Task Update_Exitoso_RetornaOkConProducto() {
-        var producto = new ProductoDto(1, "Laptop v2", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop v2", "", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null,
+            DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoRequestDto { Nombre = "Laptop v2", Precio = 10m, Stock = 5, CategoriaId = 1 };
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _controller.Update(1, dto);
+        ActionResult<ProductoDto> result = await _controller.Update(1, dto);
 
         result.Value.Should().BeSameAs(producto);
     }
@@ -157,7 +165,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
-        var result = await _controller.Delete(1);
+        ActionResult result = await _controller.Delete(1);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -167,7 +175,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(ProductoError.NotFound(99)));
 
-        var result = await _controller.Delete(99);
+        ActionResult result = await _controller.Delete(99);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -176,10 +184,11 @@ public class ProductosControllerTests {
     public async Task UpdateImage_SinArchivo_Retorna400_SinLlamarAlMediator() {
         // La validacion del archivo es del controller: rechaza ANTES de gastar
         // un command al handler
-        var result = await _controller.UpdateImage(1, null!);
+        ActionResult<ProductoDto> result = await _controller.UpdateImage(1, null!);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
-        _mediator.Verify(m => m.Send(It.IsAny<UpdateProductoImageCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mediator.Verify(m => m.Send(It.IsAny<UpdateProductoImageCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Test]
@@ -188,34 +197,37 @@ public class ProductosControllerTests {
         file.Setup(f => f.ContentType).Returns("application/pdf");
         file.Setup(f => f.Length).Returns(100);
 
-        var result = await _controller.UpdateImage(1, file.Object);
+        ActionResult<ProductoDto> result = await _controller.UpdateImage(1, file.Object);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
-        _mediator.Verify(m => m.Send(It.IsAny<UpdateProductoImageCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mediator.Verify(m => m.Send(It.IsAny<UpdateProductoImageCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Test]
     public async Task UpdateImage_Exitoso_RetornaOkConProducto() {
-        var producto = new ProductoDto(1, "Laptop", "nueva.png", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "nueva.png", 10m, 5, "", new CategoriaResumenDto(1, "Cat"), null,
+            DateTime.UtcNow, DateTime.UtcNow);
         var file = new Mock<IFormFile>();
         file.Setup(f => f.ContentType).Returns("image/png");
         file.Setup(f => f.Length).Returns(100);
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoImageCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _controller.UpdateImage(1, file.Object);
+        ActionResult<ProductoDto> result = await _controller.UpdateImage(1, file.Object);
 
         result.Value.Should().BeSameAs(producto);
     }
 
     [Test]
     public async Task UpdatePartial_Exitoso_RetornaOk() {
-        var producto = new ProductoDto(1, "Laptop", "", 79.99m, 5, "", new CategoriaResumenDto(1, "Cat"), null, DateTime.UtcNow, DateTime.UtcNow);
+        var producto = new ProductoDto(1, "Laptop", "", 79.99m, 5, "", new CategoriaResumenDto(1, "Cat"), null,
+            DateTime.UtcNow, DateTime.UtcNow);
         var dto = new ProductoPatchDto { Precio = 79.99m };
         _mediator.Setup(m => m.Send(It.IsAny<UpdateProductoPartialCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(producto));
 
-        var result = await _controller.UpdatePartial(1, dto);
+        ActionResult<ProductoDto> result = await _controller.UpdatePartial(1, dto);
 
         result.Value.Should().BeSameAs(producto);
     }
@@ -229,7 +241,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetHistorialPreciosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IReadOnlyList<HistorialPrecioDto>, DomainError>(serie));
 
-        var result = await _controller.GetHistorialPrecios(1);
+        ActionResult<IReadOnlyList<HistorialPrecioDto>> result = await _controller.GetHistorialPrecios(1);
 
         result.Value.Should().BeSameAs(serie);
     }
@@ -240,7 +252,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetHistorialPreciosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<IReadOnlyList<HistorialPrecioDto>, DomainError>(ProductoError.NotFound(99)));
 
-        var result = await _controller.GetHistorialPrecios(99);
+        ActionResult<IReadOnlyList<HistorialPrecioDto>> result = await _controller.GetHistorialPrecios(99);
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -249,7 +261,7 @@ public class ProductosControllerTests {
     public async Task RegistrarVista_SinClaimDeUsuario_Retorna401_SinLlamarAlMediator() {
         // Sin el claim NameIdentifier no hay usuario que registrar: el
         // controller lo resuelve el solo antes de enviar el command
-        var result = await _controller.RegistrarVista(1);
+        ActionResult<object> result = await _controller.RegistrarVista(1);
 
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
         _mediator.Verify(m => m.Send(It.IsAny<RegistrarVistaCommand>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -262,7 +274,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<RegistrarVistaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
-        var result = await _controller.RegistrarVista(1);
+        ActionResult<object> result = await _controller.RegistrarVista(1);
 
         result.Result.Should().BeOfType<NoContentResult>();
         // El command lleva el usuario del claim, no un valor del cliente
@@ -278,7 +290,7 @@ public class ProductosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<RegistrarVistaCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(ProductoError.NotFound(99)));
 
-        var result = await _controller.RegistrarVista(99);
+        ActionResult<object> result = await _controller.RegistrarVista(99);
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }

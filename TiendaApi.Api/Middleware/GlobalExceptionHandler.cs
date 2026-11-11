@@ -7,26 +7,26 @@ using TiendaApi.Api.Exceptions;
 namespace TiendaApi.Api.Middleware;
 
 /// <summary>
-/// Manejador global de excepciones.
-/// Maneja excepciones y errores del dominio (Result Pattern).
-/// Genera respuestas HTTP consistentes y trazables.
+///     Manejador global de excepciones.
+///     Maneja excepciones y errores del dominio (Result Pattern).
+///     Genera respuestas HTTP consistentes y trazables.
 /// </summary>
 public class GlobalExceptionHandler(
     RequestDelegate next,
     ILogger<GlobalExceptionHandler> logger
 ) {
-    private readonly RequestDelegate _next = next;
     private readonly ILogger<GlobalExceptionHandler> _logger = logger;
+    private readonly RequestDelegate _next = next;
 
     /// <summary>
-    /// Intercepta la petición y traduce cualquier excepción en una respuesta HTTP JSON.
+    ///     Intercepta la petición y traduce cualquier excepción en una respuesta HTTP JSON.
     /// </summary>
     /// <param name="context">Contexto HTTP de la petición en curso.</param>
     public async Task InvokeAsync(HttpContext context) {
         try {
             await _next(context);
         } catch (Exception ex) {
-            var errorId = Guid.NewGuid().ToString()[..8];
+            string errorId = Guid.NewGuid().ToString()[..8];
             _logger.LogError(ex, "Excepción no manejada. ErrorId: {ErrorId}, Message: {Message}",
                 errorId, ex.Message);
             await HandleExceptionAsync(context, ex, errorId);
@@ -40,15 +40,15 @@ public class GlobalExceptionHandler(
     private async Task HandleExceptionAsync(HttpContext context, Exception exception, string errorId) {
         context.Response.ContentType = "application/json";
 
-        var (statusCode, message, errors, errorType) = exception switch {
+        (int statusCode, string message, Dictionary<string, string[]>? errors, string errorType) = exception switch {
             NotFoundException notFound => (
                 404,
                 notFound.Message,
-                (Dictionary<string, string[]>?)null,
+                null,
                 "NotFoundError"
             ),
 
-            TiendaApi.Api.Exceptions.ValidationException validation => (
+            ValidationException validation => (
                 400,
                 validation.Message,
                 validation.Errors,
@@ -58,35 +58,35 @@ public class GlobalExceptionHandler(
             BusinessException business => (
                 400,
                 business.Message,
-                (Dictionary<string, string[]>?)null,
+                null,
                 "BusinessRuleError"
             ),
 
             UnauthorizedAccessException => (
                 401,
                 "No autorizado",
-                (Dictionary<string, string[]>?)null,
+                null,
                 "UnauthorizedError"
             ),
 
             ArgumentException argument => (
                 400,
                 argument.Message,
-                (Dictionary<string, string[]>?)null,
+                null,
                 "ValidationError"
             ),
 
             DbUpdateException => (
                 409,
                 "Error al actualizar la base de datos",
-                (Dictionary<string, string[]>?)null,
+                null,
                 "ConflictError"
             ),
 
             TimeoutException => (
                 408,
                 "Tiempo de espera agotado",
-                (Dictionary<string, string[]>?)null,
+                null,
                 "InternalError"
             ),
 
@@ -122,7 +122,7 @@ public class GlobalExceptionHandler(
 }
 
 /// <summary>
-/// Extensiones para registro del middleware.
+///     Extensiones para registro del middleware.
 /// </summary>
 public static class GlobalExceptionHandlerExtensions {
     /// <summary>Registra el middleware de excepciones.</summary>

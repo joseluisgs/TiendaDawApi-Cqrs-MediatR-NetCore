@@ -1,21 +1,24 @@
 using MediatR;
 using Serilog;
+using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Services.Email;
 
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que avisa al CLIENTE cuando un administrador modifica los datos
-/// de su pedido (sin cambio de estado).
+///     Handler que avisa al CLIENTE cuando un administrador modifica los datos
+///     de su pedido (sin cambio de estado).
 /// </summary>
 public class PedidoModificadoPorAdminEmailHandler(IEmailService emailService)
     : INotificationHandler<PedidoModificadoPorAdminNotification> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public Task Handle(PedidoModificadoPorAdminNotification notification, CancellationToken cancellationToken) {
-        var destinatario = notification.Pedido.Destinatario;
-        if (string.IsNullOrWhiteSpace(destinatario?.Email)) return Task.CompletedTask;
+        DestinatarioDto? destinatario = notification.Pedido.Destinatario;
+        if (string.IsNullOrWhiteSpace(destinatario?.Email)) {
+            return Task.CompletedTask;
+        }
 
-        var content = EmailTemplates.PedidoModificadoCliente(
+        string content = EmailTemplates.PedidoModificadoCliente(
             notification.Pedido.Id,
             destinatario.NombreCompleto);
 

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Productos;
@@ -30,9 +29,11 @@ public class UpdateProductoImageCommandHandlerTests {
 
         var mockFile = new Mock<IFormFile>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateProductoImageCommand(1, mockFile.Object), CancellationToken.None);
+        Result<ProductoDto, DomainError> result =
+            await handler.Handle(new UpdateProductoImageCommand(1, mockFile.Object), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -48,9 +49,11 @@ public class UpdateProductoImageCommandHandlerTests {
 
         var mockFile = new Mock<IFormFile>();
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new UpdateProductoImageCommandHandler(repository.Object, storageService.Object, mediator.Object,
+            cacheService.Object, outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateProductoImageCommand(999, mockFile.Object), CancellationToken.None);
+        Result<ProductoDto, DomainError> result =
+            await handler.Handle(new UpdateProductoImageCommand(999, mockFile.Object), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

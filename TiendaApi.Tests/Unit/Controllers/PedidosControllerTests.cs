@@ -16,10 +16,11 @@ using TiendaApi.Api.Features.Pedidos.Queries;
 namespace TiendaApi.Tests.Unit.Controllers;
 
 public class PedidosControllerTests {
+    private PedidosController _controller = null!;
+
     // Se recrean en [SetUp]: cada test parte de mediator y controller limpios,
     // sin arrastrar invocaciones ni claims de los tests anteriores.
     private Mock<IMediator> _mediator = null!;
-    private PedidosController _controller = null!;
 
     [SetUp]
     public void SetUp() {
@@ -33,7 +34,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IEnumerable<PedidoDto>, DomainError>([]));
 
-        var result = await _controller.GetAllPedidos();
+        ActionResult<IEnumerable<PedidoDto>> result = await _controller.GetAllPedidos();
 
         result.Result.Should().BeOfType<OkObjectResult>();
     }
@@ -42,7 +43,7 @@ public class PedidosControllerTests {
     public async Task GetMyPedidos_SinAutenticacion_RetornaUnauthorized() {
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
-        var result = await _controller.GetMyPedidos();
+        ActionResult<IEnumerable<PedidoDto>> result = await _controller.GetMyPedidos();
 
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -58,7 +59,9 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<CreatePedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.CreateMyPedido(new PedidoRequestDto { Destinatario = new DestinatarioDto(), Items = [new PedidoItemRequestDto { ProductoId = 1, Cantidad = 1 }] });
+        ActionResult<PedidoDto> result = await _controller.CreateMyPedido(new PedidoRequestDto {
+            Destinatario = new DestinatarioDto(), Items = [new PedidoItemRequestDto { ProductoId = 1, Cantidad = 1 }]
+        });
 
         result.Result.Should().BeOfType<CreatedAtActionResult>();
     }
@@ -71,7 +74,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.GetPedidoById("123");
+        ActionResult<PedidoDto> result = await _controller.GetPedidoById("123");
 
         result.Value.Should().BeSameAs(pedido);
     }
@@ -81,7 +84,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.GetPedidoById("999");
+        ActionResult<PedidoDto> result = await _controller.GetPedidoById("999");
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -93,9 +96,9 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosListQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<IEnumerable<PedidoDto>, DomainError>(new NotFoundError("fallo")));
 
-        var result = await _controller.GetAllPedidos();
+        ActionResult<IEnumerable<PedidoDto>> result = await _controller.GetAllPedidos();
 
-        var objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        ObjectResult objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
         objeto.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 
@@ -104,7 +107,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeletePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
-        var result = await _controller.DeletePedidoAdmin("123");
+        ActionResult result = await _controller.DeletePedidoAdmin("123");
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -114,7 +117,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeletePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.DeletePedidoAdmin("999");
+        ActionResult result = await _controller.DeletePedidoAdmin("999");
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -122,19 +125,21 @@ public class PedidosControllerTests {
     // ===== Matriz de resultados: cada accion cubre su par exito/error =====
 
     /// <summary>
-    /// Pone la sesion del usuario en el context del controller (mismo patron
-    /// que los tests inline de "me/": claim NameIdentifier numerico).
+    ///     Pone la sesion del usuario en el context del controller (mismo patron
+    ///     que los tests inline de "me/": claim NameIdentifier numerico).
     /// </summary>
     private void AutenticarComo(long userId) {
         _controller.ControllerContext = new ControllerContext {
             HttpContext = new DefaultHttpContext {
-                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())],
+                    "Test"))
             }
         };
     }
 
-    private static PedidoDto UnPedido(string id = "1") =>
-        new(id, 1, new DestinatarioDto(), [], 10m, "PENDIENTE", null, DateTime.UtcNow);
+    private static PedidoDto UnPedido(string id = "1") {
+        return new PedidoDto(id, 1, new DestinatarioDto(), [], 10m, "PENDIENTE", null, DateTime.UtcNow);
+    }
 
     [Test]
     public async Task GetAllPedidosPaged_Exitoso_RetornaPaginaConLinkHeader() {
@@ -148,7 +153,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PagedResult<PedidoDto>, DomainError>(pagina));
 
-        var result = await _controller.GetAllPedidosPaged(page: 2);
+        ActionResult<PagedResult<PedidoDto>> result = await _controller.GetAllPedidosPaged(2);
 
         result.Value.Should().BeSameAs(pagina);
         _controller.Response.Headers.Link.ToString().Should().Contain("rel=\"next\"");
@@ -159,19 +164,20 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetAllPedidosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PagedResult<PedidoDto>, DomainError>(new NotFoundError("fallo")));
 
-        var result = await _controller.GetAllPedidosPaged();
+        ActionResult<PagedResult<PedidoDto>> result = await _controller.GetAllPedidosPaged();
 
-        var objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        ObjectResult objeto = result.Result.Should().BeOfType<ObjectResult>().Subject;
         objeto.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 
     [Test]
     public async Task UpdatePedidoAdmin_Exitoso_RetornaOkConElPedido() {
-        var pedido = UnPedido();
+        PedidoDto pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.UpdatePedidoAdmin("1", new UpdatePedidoDto { Estado = "ENVIADO" });
+        ActionResult<PedidoDto> result =
+            await _controller.UpdatePedidoAdmin("1", new UpdatePedidoDto { Estado = "ENVIADO" });
 
         result.Value.Should().BeSameAs(pedido);
     }
@@ -181,21 +187,25 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoAdminCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.UpdatePedidoAdmin("999", new UpdatePedidoDto { Estado = "ENVIADO" });
+        ActionResult<PedidoDto> result =
+            await _controller.UpdatePedidoAdmin("999", new UpdatePedidoDto { Estado = "ENVIADO" });
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Test]
     public async Task UpdatePedidoEstado_Exitoso_RetornaOkConElPedido() {
-        var pedido = UnPedido();
+        PedidoDto pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoEstadoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.UpdatePedidoEstado("1", new UpdateEstadoDto { Estado = "ENVIADO" });
+        ActionResult<PedidoDto> result =
+            await _controller.UpdatePedidoEstado("1", new UpdateEstadoDto { Estado = "ENVIADO" });
 
         result.Value.Should().BeSameAs(pedido);
-        _mediator.Verify(m => m.Send(It.Is<UpdatePedidoEstadoCommand>(c => c.Id == "1" && c.NuevoEstado == "ENVIADO"), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(
+            m => m.Send(It.Is<UpdatePedidoEstadoCommand>(c => c.Id == "1" && c.NuevoEstado == "ENVIADO"),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -203,7 +213,8 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<UpdatePedidoEstadoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.UpdatePedidoEstado("999", new UpdateEstadoDto { Estado = "ENVIADO" });
+        ActionResult<PedidoDto> result =
+            await _controller.UpdatePedidoEstado("999", new UpdateEstadoDto { Estado = "ENVIADO" });
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -215,11 +226,12 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidosQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IEnumerable<PedidoDto>, DomainError>(pedidos));
 
-        var result = await _controller.GetMyPedidos();
+        ActionResult<IEnumerable<PedidoDto>> result = await _controller.GetMyPedidos();
 
-        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        OkObjectResult ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeSameAs(pedidos);
-        _mediator.Verify(m => m.Send(It.Is<GetMyPedidosQuery>(q => q.UserId == 1), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(m => m.Send(It.Is<GetMyPedidosQuery>(q => q.UserId == 1), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
@@ -234,7 +246,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidosPagedQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PagedResult<PedidoDto>, DomainError>(pagina));
 
-        var result = await _controller.GetMyPedidosPaged(page: 2);
+        ActionResult<PagedResult<PedidoDto>> result = await _controller.GetMyPedidosPaged(2);
 
         result.Value.Should().BeSameAs(pagina);
         _controller.Response.Headers.Link.ToString().Should().Contain("rel=\"next\"");
@@ -244,7 +256,7 @@ public class PedidosControllerTests {
     public async Task GetMyPedidosPaged_SinClaim_Retorna401_SinLlamarAlMediator() {
         _controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
-        var result = await _controller.GetMyPedidosPaged();
+        ActionResult<PagedResult<PedidoDto>> result = await _controller.GetMyPedidosPaged();
 
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
         _mediator.Verify(m => m.Send(It.IsAny<GetMyPedidosPagedQuery>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -253,14 +265,16 @@ public class PedidosControllerTests {
     [Test]
     public async Task GetMyPedidoById_ConClaim_RetornaOk() {
         AutenticarComo(1);
-        var pedido = UnPedido("77");
+        PedidoDto pedido = UnPedido("77");
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.GetMyPedidoById("77");
+        ActionResult<PedidoDto> result = await _controller.GetMyPedidoById("77");
 
         result.Value.Should().BeSameAs(pedido);
-        _mediator.Verify(m => m.Send(It.Is<GetMyPedidoByIdQuery>(q => q.PedidoId == "77" && q.UserId == 1), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(
+            m => m.Send(It.Is<GetMyPedidoByIdQuery>(q => q.PedidoId == "77" && q.UserId == 1),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -269,7 +283,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<GetMyPedidoByIdQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<PedidoDto, DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.GetMyPedidoById("999");
+        ActionResult<PedidoDto> result = await _controller.GetMyPedidoById("999");
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -277,14 +291,16 @@ public class PedidosControllerTests {
     [Test]
     public async Task UpdateMyPedido_ConClaim_RetornaOk() {
         AutenticarComo(1);
-        var pedido = UnPedido();
+        PedidoDto pedido = UnPedido();
         _mediator.Setup(m => m.Send(It.IsAny<UpdateMyPedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<PedidoDto, DomainError>(pedido));
 
-        var result = await _controller.UpdateMyPedido("1", new UpdatePedidoDto { DireccionEnvio = "Calle Nueva 1" });
+        ActionResult<PedidoDto> result =
+            await _controller.UpdateMyPedido("1", new UpdatePedidoDto { DireccionEnvio = "Calle Nueva 1" });
 
         result.Value.Should().BeSameAs(pedido);
-        _mediator.Verify(m => m.Send(It.Is<UpdateMyPedidoCommand>(c => c.UserId == 1), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(m => m.Send(It.Is<UpdateMyPedidoCommand>(c => c.UserId == 1), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
@@ -293,10 +309,11 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteMyPedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<DomainError>());
 
-        var result = await _controller.DeleteMyPedido("1");
+        ActionResult result = await _controller.DeleteMyPedido("1");
 
         result.Should().BeOfType<NoContentResult>();
-        _mediator.Verify(m => m.Send(It.Is<DeleteMyPedidoCommand>(c => c.UserId == 1), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(m => m.Send(It.Is<DeleteMyPedidoCommand>(c => c.UserId == 1), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
@@ -305,7 +322,7 @@ public class PedidosControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<DeleteMyPedidoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("no existe")));
 
-        var result = await _controller.DeleteMyPedido("999");
+        ActionResult result = await _controller.DeleteMyPedido("999");
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }

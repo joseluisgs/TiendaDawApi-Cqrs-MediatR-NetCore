@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
@@ -7,31 +8,33 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Security.Claims;
 using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Auth;
 using TiendaApi.Api.Dtos.Usuarios;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Auth.Commands;
+using TiendaApi.Api.Services.Auth;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 
 public class AuthControllerTests {
+    private Mock<IAuthService> _authService = null!;
+    private Mock<IAuthenticationService> _authenticationService = null!;
+
+    private AuthController _controller = null!;
+
     // Se recrean en [SetUp]: cada test parte de mocks limpios, sin arrastrar
     // invocaciones de los tests anteriores. _schemeProvider va en campo porque
     // ExternalLogin consulta sus esquemas.
     private Mock<IMediator> _mediator = null!;
     private Mock<IAuthenticationSchemeProvider> _schemeProvider = null!;
-    private Mock<IAuthenticationService> _authenticationService = null!;
-    private Mock<TiendaApi.Api.Services.Auth.IAuthService> _authService = null!;
-    private AuthController _controller = null!;
 
     [SetUp]
     public void SetUp() {
         _mediator = new Mock<IMediator>();
         _schemeProvider = new Mock<IAuthenticationSchemeProvider>();
         _authenticationService = new Mock<IAuthenticationService>();
-        _authService = new Mock<TiendaApi.Api.Services.Auth.IAuthService>();
+        _authService = new Mock<IAuthService>();
         _controller = new AuthController(
             _mediator.Object,
             _authService.Object,
@@ -44,11 +47,12 @@ public class AuthControllerTests {
     [Test]
     public async Task SignUp_ConRegistroValido_RetornaCreated() {
         var dto = new RegisterDto { Username = "nuevo", Email = "nuevo@test.com", Password = "Password123" };
-        var response = new AuthResponseDto("token", new UserDto(1, "nuevo", "nuevo@test.com", "", "USER", DateTime.UtcNow));
+        var response =
+            new AuthResponseDto("token", new UserDto(1, "nuevo", "nuevo@test.com", "", "USER", DateTime.UtcNow));
         _mediator.Setup(m => m.Send(It.IsAny<SignUpCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(response));
 
-        var result = await _controller.SignUp(dto);
+        ActionResult<AuthResponseDto> result = await _controller.SignUp(dto);
 
         result.Result.Should().BeOfType<CreatedAtActionResult>();
     }
@@ -59,7 +63,7 @@ public class AuthControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<SignInCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<AuthResponseDto, DomainError>(UnauthorizedError.InvalidCredentials()));
 
-        var result = await _controller.SignIn(dto);
+        ActionResult<AuthResponseDto> result = await _controller.SignIn(dto);
 
         // ActionResult<T> envuelve el resultado: accedemos al subyacente
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
@@ -69,11 +73,13 @@ public class AuthControllerTests {
 
     [Test]
     public async Task SignIn_ConCredencialesValidas_RetornaElToken() {
-        var response = new AuthResponseDto("jwt-token", new UserDto(1, "user", "user@test.com", "", "USER", DateTime.UtcNow));
+        var response = new AuthResponseDto("jwt-token",
+            new UserDto(1, "user", "user@test.com", "", "USER", DateTime.UtcNow));
         _mediator.Setup(m => m.Send(It.IsAny<SignInCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(response));
 
-        var result = await _controller.SignIn(new LoginDto { Username = "user", Password = "ok" });
+        ActionResult<AuthResponseDto> result =
+            await _controller.SignIn(new LoginDto { Username = "user", Password = "ok" });
 
         result.Value.Should().BeSameAs(response);
     }
@@ -84,7 +90,7 @@ public class AuthControllerTests {
         _mediator.Setup(m => m.Send(It.IsAny<SignUpCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<AuthResponseDto, DomainError>(ValidationError.Create("datos invalidos")));
 
-        var result = await _controller.SignUp(dto);
+        ActionResult<AuthResponseDto> result = await _controller.SignUp(dto);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -96,7 +102,7 @@ public class AuthControllerTests {
         _schemeProvider.Setup(s => s.GetSchemeAsync("Twitter"))
             .ReturnsAsync((AuthenticationScheme?)null);
 
-        var result = await _controller.ExternalLogin("Twitter");
+        IActionResult result = await _controller.ExternalLogin("Twitter");
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -114,9 +120,9 @@ public class AuthControllerTests {
             .Returns("/api/v1/auth/external-callback");
         _controller.Url = urlHelper.Object;
 
-        var result = await _controller.ExternalLogin("Google");
+        IActionResult result = await _controller.ExternalLogin("Google");
 
-        var challenge = result.Should().BeOfType<ChallengeResult>().Subject;
+        ChallengeResult challenge = result.Should().BeOfType<ChallengeResult>().Subject;
         challenge.AuthenticationSchemes.Should().Contain("Google");
         challenge.Properties!.RedirectUri.Should().Be("/api/v1/auth/external-callback");
     }
@@ -128,7 +134,7 @@ public class AuthControllerTests {
         _schemeProvider.Setup(s => s.GetAllSchemesAsync())
             .ReturnsAsync(Array.Empty<AuthenticationScheme>());
 
-        var result = await _controller.ExternalLoginCallback();
+        ActionResult<AuthResponseDto> result = await _controller.ExternalLoginCallback();
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _authService.Verify(a => a.LoginExternalAsync(It.IsAny<ExternalLoginDto>()), Times.Never);
@@ -148,11 +154,12 @@ public class AuthControllerTests {
         _authenticationService.Setup(a => a.AuthenticateAsync(It.IsAny<HttpContext>(), "Google"))
             .ReturnsAsync(AuthenticateResult.Success(new AuthenticationTicket(principal, props, "Google")));
 
-        var respuesta = new AuthResponseDto("jwt-externo", new UserDto(9, "ext", "ext@test.com", "", "USER", DateTime.UtcNow));
+        var respuesta = new AuthResponseDto("jwt-externo",
+            new UserDto(9, "ext", "ext@test.com", "", "USER", DateTime.UtcNow));
         _authService.Setup(a => a.LoginExternalAsync(It.IsAny<ExternalLoginDto>()))
             .ReturnsAsync(Result.Success<AuthResponseDto, DomainError>(respuesta));
 
-        var result = await _controller.ExternalLoginCallback();
+        ActionResult<AuthResponseDto> result = await _controller.ExternalLoginCallback();
 
         result.Value.Should().BeSameAs(respuesta);
         _authService.Verify(a => a.LoginExternalAsync(It.Is<ExternalLoginDto>(d =>

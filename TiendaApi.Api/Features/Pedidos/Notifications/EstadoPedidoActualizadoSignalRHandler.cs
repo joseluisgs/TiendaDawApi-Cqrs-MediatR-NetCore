@@ -6,13 +6,14 @@ using TiendaApi.Api.Realtime.Pedidos;
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que difunde por SignalR el cambio de estado de un pedido.
+///     Handler que difunde por SignalR el cambio de estado de un pedido.
 /// </summary>
 public class EstadoPedidoActualizadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<EstadoPedidoActualizadoNotification> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) {
-        Log.Information("📟 [SIGNALR] Recibida notificación EstadoPedidoActualizado para ID: {PedidoId}, NuevoEstado: {Estado}",
+        Log.Information(
+            "📟 [SIGNALR] Recibida notificación EstadoPedidoActualizado para ID: {PedidoId}, NuevoEstado: {Estado}",
             notification.Pedido.Id, notification.NuevoEstado);
 
         await hubContext.SendPedidoToUserAndAdminsAsync(notification.Pedido.UserId, "PedidoActualizado", new {
@@ -24,7 +25,8 @@ public class EstadoPedidoActualizadoSignalRHandler(IHubContext<PedidosHub> hubCo
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 
-        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido actualizado ID={PedidoId}, Estado={Estado}",
+        Log.Information(
+            "📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido actualizado ID={PedidoId}, Estado={Estado}",
             notification.Pedido.Id, notification.NuevoEstado);
     }
 }

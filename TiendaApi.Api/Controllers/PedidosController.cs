@@ -1,10 +1,10 @@
-using Asp.Versioning;
 using System.Security.Claims;
+using Asp.Versioning;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
@@ -17,8 +17,8 @@ using TiendaApi.Api.Models;
 namespace TiendaApi.Api.Controllers;
 
 /// <summary>
-/// Controlador REST para la gestión de pedidos.
-/// Separa endpoints para administradores (todos los pedidos) y usuarios (sus pedidos).
+///     Controlador REST para la gestión de pedidos.
+///     Separa endpoints para administradores (todos los pedidos) y usuarios (sus pedidos).
 /// </summary>
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
@@ -26,7 +26,7 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class PedidosController(IMediator mediator, ILogger<PedidosController> logger) : ControllerBase {
     /// <summary>
-    /// Obtiene el listado completo de todos los pedidos (solo administradores).
+    ///     Obtiene el listado completo de todos los pedidos (solo administradores).
     /// </summary>
     [HttpGet]
     [OutputCache(Duration = 60, Tags = new[] { "pedidos" })]
@@ -35,14 +35,15 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<PedidoDto>>> GetAllPedidos() {
-        var resultado = await mediator.Send(new GetAllPedidosListQuery());
+        Result<IEnumerable<PedidoDto>, DomainError> resultado = await mediator.Send(new GetAllPedidosListQuery());
         return resultado.Match(
-            onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
+            pedidos => Ok(pedidos),
+            error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message })
+                { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
-    /// Obtiene los pedidos paginados (solo administradores).
+    ///     Obtiene los pedidos paginados (solo administradores).
     /// </summary>
     /// <param name="page">Número de página (base 1).</param>
     /// <param name="size">Tamaño de página.</param>
@@ -59,18 +60,23 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         [FromQuery] int size = 10,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? direction = null) {
-        var resultado = await mediator.Send(new GetAllPedidosQuery(page - 1, size));
+        Result<PagedResult<PedidoDto>, DomainError> resultado =
+            await mediator.Send(new GetAllPedidosQuery(page - 1, size));
         return resultado.Match(
-            onSuccess: pedidos => {
-                var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
+            pedidos => {
+                string linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader)) {
+                    Response.Headers.Append("Link", linkHeader);
+                }
+
                 return (ActionResult<PagedResult<PedidoDto>>)pedidos;
             },
-            onFailure: error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
+            error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message })
+                { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
-    /// Obtiene un pedido por su identificador (solo administradores).
+    ///     Obtiene un pedido por su identificador (solo administradores).
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     [HttpGet("{id}")]
@@ -80,14 +86,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> GetPedidoById(string id) {
-        var resultado = await mediator.Send(new GetPedidoByIdQuery(id));
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new GetPedidoByIdQuery(id));
         return resultado.Match(
-            onSuccess: pedido => pedido,
-            onFailure: error => error.ToHttpResult<PedidoDto>());
+            pedido => pedido,
+            error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
-    /// Actualiza un pedido existente (solo administradores).
+    ///     Actualiza un pedido existente (solo administradores).
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     /// <param name="dto">Datos actualizados del pedido.</param>
@@ -99,14 +105,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> UpdatePedidoAdmin(string id, [FromBody] UpdatePedidoDto dto) {
-        var resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new UpdatePedidoAdminCommand(id, dto));
         return resultado.Match(
-            onSuccess: pedido => pedido,
-            onFailure: error => error.ToHttpResult<PedidoDto>());
+            pedido => pedido,
+            error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
-    /// Elimina un pedido (solo administradores).
+    ///     Elimina un pedido (solo administradores).
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     [HttpDelete("{id}")]
@@ -116,9 +122,12 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeletePedidoAdmin(string id) {
-        var resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
-        if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
+        UnitResult<DomainError> resultado = await mediator.Send(new DeletePedidoAdminCommand(id));
+        if (resultado.IsSuccess) {
+            return NoContent();
+        }
+
+        DomainError error = resultado.Error;
         return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
@@ -127,7 +136,7 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     }
 
     /// <summary>
-    /// Cambia el estado de un pedido (solo administradores).
+    ///     Cambia el estado de un pedido (solo administradores).
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     /// <param name="dto">Nuevo estado del pedido.</param>
@@ -139,14 +148,14 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> UpdatePedidoEstado(string id, [FromBody] UpdateEstadoDto dto) {
-        var resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new UpdatePedidoEstadoCommand(id, dto.Estado));
         return resultado.Match(
-            onSuccess: pedido => pedido,
-            onFailure: error => error.ToHttpResult<PedidoDto>());
+            pedido => pedido,
+            error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
-    /// Obtiene todos los pedidos del usuario autenticado.
+    ///     Obtiene todos los pedidos del usuario autenticado.
     /// </summary>
     [HttpGet("me")]
     [Authorize]
@@ -155,21 +164,25 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     public async Task<ActionResult<IEnumerable<PedidoDto>>> GetMyPedidos() {
         logger.LogInformation("GetMyPedidos - User: {User}", User?.Identity?.Name);
         logger.LogInformation("GetMyPedidos - IsAuthenticated: {IsAuth}", User?.Identity?.IsAuthenticated);
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        logger.LogInformation("GetMyPedidos - NameIdentifier claim: {Claim}", userIdClaim);
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new GetMyPedidosQuery(userId));
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        logger.LogInformation("GetMyPedidos - NameIdentifier claim: {Claim}", userIdClaim);
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        Result<IEnumerable<PedidoDto>, DomainError> resultado = await mediator.Send(new GetMyPedidosQuery(userId));
         return resultado.Match(
-            onSuccess: pedidos => Ok(pedidos),
-            onFailure: error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
+            pedidos => Ok(pedidos),
+            error => (ActionResult<IEnumerable<PedidoDto>>)new ObjectResult(new { message = error.Message })
+                { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
-    /// Obtiene los pedidos del usuario autenticado de forma paginada.
+    ///     Obtiene los pedidos del usuario autenticado de forma paginada.
     /// </summary>
     /// <param name="page">Número de página (base 1).</param>
     /// <param name="size">Tamaño de página.</param>
@@ -184,24 +197,32 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
         [FromQuery] int size = 10,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? direction = null) {
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new GetMyPedidosPagedQuery(userId, page - 1, size));
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        Result<PagedResult<PedidoDto>, DomainError> resultado =
+            await mediator.Send(new GetMyPedidosPagedQuery(userId, page - 1, size));
         return resultado.Match(
-            onSuccess: pedidos => {
-                var linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
+            pedidos => {
+                string linkHeader = PaginationLinksHelper.CreateLinkHeader(pedidos, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader)) {
+                    Response.Headers.Append("Link", linkHeader);
+                }
+
                 return (ActionResult<PagedResult<PedidoDto>>)pedidos;
             },
-            onFailure: error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError });
+            error => (ActionResult<PagedResult<PedidoDto>>)new ObjectResult(new { message = error.Message })
+                { StatusCode = StatusCodes.Status500InternalServerError });
     }
 
     /// <summary>
-    /// Crea un nuevo pedido para el usuario autenticado.
+    ///     Crea un nuevo pedido para el usuario autenticado.
     /// </summary>
     /// <param name="dto">Datos del pedido a crear.</param>
     [HttpPost("me")]
@@ -211,24 +232,27 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> CreateMyPedido([FromBody] PedidoRequestDto dto) {
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new CreatePedidoCommand(userId, dto));
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new CreatePedidoCommand(userId, dto));
         if (resultado.IsSuccess) {
-            var pedido = resultado.Value;
+            PedidoDto pedido = resultado.Value;
             return CreatedAtAction(nameof(GetMyPedidoById), new { id = pedido.Id }, pedido);
         }
 
-        var error = resultado.Error;
+        DomainError error = resultado.Error;
         return error.ToHttpResult<PedidoDto>();
     }
 
     /// <summary>
-    /// Obtiene uno de los pedidos del usuario autenticado por su identificador.
+    ///     Obtiene uno de los pedidos del usuario autenticado por su identificador.
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     [HttpGet("me/{id}")]
@@ -238,20 +262,23 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> GetMyPedidoById(string id) {
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new GetMyPedidoByIdQuery(id, userId));
         return resultado.Match(
-            onSuccess: pedido => pedido,
-            onFailure: error => error.ToHttpResult<PedidoDto>());
+            pedido => pedido,
+            error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
-    /// Actualiza uno de los pedidos del usuario autenticado.
+    ///     Actualiza uno de los pedidos del usuario autenticado.
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     /// <param name="dto">Datos actualizados del pedido.</param>
@@ -263,20 +290,23 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PedidoDto>> UpdateMyPedido(string id, [FromBody] UpdatePedidoDto dto) {
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        Result<PedidoDto, DomainError> resultado = await mediator.Send(new UpdateMyPedidoCommand(id, userId, dto));
         return resultado.Match(
-            onSuccess: pedido => pedido,
-            onFailure: error => error.ToHttpResult<PedidoDto>());
+            pedido => pedido,
+            error => error.ToHttpResult<PedidoDto>());
     }
 
     /// <summary>
-    /// Elimina uno de los pedidos del usuario autenticado.
+    ///     Elimina uno de los pedidos del usuario autenticado.
     /// </summary>
     /// <param name="id">Identificador del pedido.</param>
     [HttpDelete("me/{id}")]
@@ -287,15 +317,21 @@ public class PedidosController(IMediator mediator, ILogger<PedidosController> lo
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteMyPedido(string id) {
-        if (User?.Identity == null || !User.Identity.IsAuthenticated)
+        if (User?.Identity == null || !User.Identity.IsAuthenticated) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
-            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
-        if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
+            return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
+
+        UnitResult<DomainError> resultado = await mediator.Send(new DeleteMyPedidoCommand(id, userId));
+        if (resultado.IsSuccess) {
+            return NoContent();
+        }
+
+        DomainError error = resultado.Error;
         return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),

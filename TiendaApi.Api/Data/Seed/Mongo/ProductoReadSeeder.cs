@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using TiendaApi.Api.Mappers;
 using TiendaApi.Api.Models.Read;
@@ -7,18 +6,20 @@ using TiendaApi.Api.Repositories.Productos;
 namespace TiendaApi.Api.Data.Seed.Mongo;
 
 /// <summary>
-/// Seeder del read model de productos (CQRS).
-///
-/// Sincroniza PostgreSQL (fuente de verdad) → MongoDB <c>productos_read</c>:
-/// <list type="bullet">
-/// <item><b>Desarrollo</b>: la BD se recrea en cada arranque, así que se hace drop + bulk insert
-/// (tras <c>SqlSeeder</c>, cuando ya existen los productos semilla).</item>
-/// <item><b>Producción</b>: upsert de los productos existentes + poda de documentos huérfanos
-/// (los que ya no están en PostgreSQL).</item>
-/// </list>
-///
-/// Sin esta semilla, la primera lectura de productos desde MongoDB no encontraría nada:
-/// las escrituras de las migraciones/seeds no disparan los Domain Events de sincronización.
+///     Seeder del read model de productos (CQRS).
+///     Sincroniza PostgreSQL (fuente de verdad) → MongoDB <c>productos_read</c>:
+///     <list type="bullet">
+///         <item>
+///             <b>Desarrollo</b>: la BD se recrea en cada arranque, así que se hace drop + bulk insert
+///             (tras <c>SqlSeeder</c>, cuando ya existen los productos semilla).
+///         </item>
+///         <item>
+///             <b>Producción</b>: upsert de los productos existentes + poda de documentos huérfanos
+///             (los que ya no están en PostgreSQL).
+///         </item>
+///     </list>
+///     Sin esta semilla, la primera lectura de productos desde MongoDB no encontraría nada:
+///     las escrituras de las migraciones/seeds no disparan los Domain Events de sincronización.
 /// </summary>
 public class ProductoReadSeeder(
     IProductoRepository productoRepository,
@@ -30,7 +31,7 @@ public class ProductoReadSeeder(
         configuration["MongoDbSettings:ProductosCollection"] ?? "productos_read";
 
     /// <summary>
-    /// Sincroniza PostgreSQL → MongoDB.
+    ///     Sincroniza PostgreSQL → MongoDB.
     /// </summary>
     /// <param name="isDevelopment">true = drop + bulk insert; false = upsert + poda.</param>
     public async Task SeedAsync(bool isDevelopment) {
@@ -38,7 +39,7 @@ public class ProductoReadSeeder(
             .Select(p => p.ToRead())
             .ToList();
 
-        var collection = database.GetCollection<ProductoRead>(_collectionName);
+        IMongoCollection<ProductoRead> collection = database.GetCollection<ProductoRead>(_collectionName);
 
         if (isDevelopment) {
             logger.LogInformation(
@@ -47,8 +48,9 @@ public class ProductoReadSeeder(
 
             await database.DropCollectionAsync(_collectionName);
 
-            if (productos.Count > 0)
+            if (productos.Count > 0) {
                 await collection.InsertManyAsync(productos);
+            }
 
             logger.LogInformation("Read model productos_read sembrado con {Count} documentos", productos.Count);
             return;
@@ -58,7 +60,7 @@ public class ProductoReadSeeder(
             "[PRODUCCIÓN] Sincronizando read model de productos: upsert + poda ({Count})...",
             productos.Count);
 
-        foreach (var producto in productos) {
+        foreach (ProductoRead producto in productos) {
             await collection.ReplaceOneAsync(
                 p => p.Id == producto.Id,
                 producto,
@@ -67,12 +69,12 @@ public class ProductoReadSeeder(
 
         // Poda de huérfanos: todo lo que esté en Mongo y no en PostgreSQL se elimina
         // (o todo, si PostgreSQL no tiene productos).
-        var ids = productos.Select(p => p.Id).ToArray();
-        var pruneFilter = ids.Length > 0
+        long[] ids = productos.Select(p => p.Id).ToArray();
+        FilterDefinition<ProductoRead> pruneFilter = ids.Length > 0
             ? Builders<ProductoRead>.Filter.Nin(p => p.Id, ids)
             : Builders<ProductoRead>.Filter.Empty;
 
-        var pruned = await collection.DeleteManyAsync(pruneFilter);
+        DeleteResult pruned = await collection.DeleteManyAsync(pruneFilter);
 
         logger.LogInformation(
             "Read model productos_read sincronizado: {Count} upserts, {Pruned} huérfanos podados",

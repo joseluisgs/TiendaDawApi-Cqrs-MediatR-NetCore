@@ -6,11 +6,11 @@ using TiendaApi.Api.Realtime.Pedidos;
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que emite por SignalR el alta de un pedido.
+///     Handler que emite por SignalR el alta de un pedido.
 /// </summary>
 public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<PedidoCreadoNotification> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task Handle(PedidoCreadoNotification notification, CancellationToken cancellationToken) {
         Log.Information("📟 [SIGNALR] Recibida notificación PedidoCreado para ID: {PedidoId}", notification.Pedido.Id);
 
@@ -24,6 +24,7 @@ public class PedidoCreadoSignalRHandler(IHubContext<PedidosHub> hubContext)
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 
-        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido creado ID={PedidoId}", notification.Pedido.Id);
+        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido creado ID={PedidoId}",
+            notification.Pedido.Id);
     }
 }

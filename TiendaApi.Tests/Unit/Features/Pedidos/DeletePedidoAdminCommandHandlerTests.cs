@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.OutputCaching;
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using MongoDB.Bson;
 using Moq;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
@@ -23,9 +23,11 @@ public class DeletePedidoAdminCommandHandlerTests {
         repository.Setup(r => r.FindByIdAsync("PED-2024-0001")).ReturnsAsync(pedido);
         repository.Setup(r => r.UpdateAsync(It.IsAny<Pedido>())).ReturnsAsync((Pedido p) => p);
 
-        var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new DeletePedidoAdminCommand("PED-2024-0001"), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await handler.Handle(new DeletePedidoAdminCommand("PED-2024-0001"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -38,9 +40,11 @@ public class DeletePedidoAdminCommandHandlerTests {
 
         repository.Setup(r => r.FindByIdAsync("PED-9999-9999")).ReturnsAsync((Pedido?)null);
 
-        var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object, Mock.Of<IOutputCacheStore>());
+        var handler = new DeletePedidoAdminCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            Mock.Of<IOutputCacheStore>());
 
-        var result = await handler.Handle(new DeletePedidoAdminCommand("PED-9999-9999"), CancellationToken.None);
+        UnitResult<DomainError> result =
+            await handler.Handle(new DeletePedidoAdminCommand("PED-9999-9999"), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }
