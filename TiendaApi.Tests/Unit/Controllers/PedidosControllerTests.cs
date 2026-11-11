@@ -10,8 +10,8 @@ using TiendaApi.Api.Controllers;
 using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Features.Pedidos.Commands;
-using TiendaApi.Api.Features.Pedidos.Queries;
+using TiendaApi.Api.MediatR.Pedidos.Commands;
+using TiendaApi.Api.MediatR.Pedidos.Queries;
 
 namespace TiendaApi.Tests.Unit.Controllers;
 

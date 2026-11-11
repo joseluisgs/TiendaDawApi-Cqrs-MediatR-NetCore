@@ -260,8 +260,8 @@ Veamos una implementación completa de nuestro proyecto.
 ### La Notification
 
 ```csharp
-// Features/Users/Notifications/UsuarioRegistradoNotification.cs
-namespace TiendaApi.Api.Features.Users.Notifications;
+// MediatR/Users/Notifications/UsuarioRegistradoNotification.cs
+namespace TiendaApi.Api.MediatR.Users.Notifications;
 
 public record UsuarioRegistradoNotification(UserDto Usuario)
     : INotification;
@@ -271,8 +271,8 @@ public record UsuarioRegistradoNotification(UserDto Usuario)
 
 ```csharp
 // Handler 1: Email de bienvenida
-// Features/Users/Notifications/UsuarioRegistradoBienvenidaEmailHandler.cs
-namespace TiendaApi.Api.Features.Users.Notifications;
+// MediatR/Users/Notifications/UsuarioRegistradoBienvenidaEmailHandler.cs
+namespace TiendaApi.Api.MediatR.Users.Notifications;
 
 public class UsuarioRegistradoBienvenidaEmailHandler
     : INotificationHandler<UsuarioRegistradoNotification>
@@ -311,8 +311,8 @@ public class UsuarioRegistradoBienvenidaEmailHandler
 
 ```csharp
 // Handler 2: Notificación a administradores
-// Features/Users/Notifications/UsuarioRegistradoAdminNotificationHandler.cs
-namespace TiendaApi.Api.Features.Users.Notifications;
+// MediatR/Users/Notifications/UsuarioRegistradoAdminNotificationHandler.cs
+namespace TiendaApi.Api.MediatR.Users.Notifications;
 
 public class UsuarioRegistradoAdminNotificationHandler
     : INotificationHandler<UsuarioRegistradoNotification>
@@ -336,7 +336,7 @@ public class UsuarioRegistradoAdminNotificationHandler
 ### El Command que publica
 
 ```csharp
-// Features/Users/Commands/CreateUserCommand.cs
+// MediatR/Users/Commands/CreateUserCommand.cs
 public class CreateUserCommandHandler(
     IUserRepository repository,
     IValidator<RegisterDto> validator,

@@ -1,0 +1,96 @@
+using CSharpFunctionalExtensions;
+using FluentValidation;
+using FluentValidation.Results;
+using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
+using Serilog;
+using TiendaApi.Api.Dtos.Productos;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Errors.Productos;
+using TiendaApi.Api.MediatR.Productos.Notifications;
+using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Repositories.Productos;
+using TiendaApi.Api.Services.Cache;
+using TiendaApi.Api.Services.Productos;
+
+namespace TiendaApi.Api.MediatR.Productos.Commands;
+
+/// <summary>
+///     Comando para actualizar un producto completo.
+/// </summary>
+public record UpdateProductoCommand(long Id, ProductoRequestDto Dto)
+    : IRequest<Result<ProductoDto, DomainError>>;
+
+/// <summary>
+///     Handler del comando UpdateProductoCommand.
+/// </summary>
+public class UpdateProductoCommandHandler(
+    IProductoRepository productoRepository,
+    ICategoriaRepository categoriaRepository,
+    IValidator<ProductoRequestDto> validator,
+    IMediator mediator,
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
+    : IRequestHandler<UpdateProductoCommand, Result<ProductoDto, DomainError>> {
+    private const int StockBajoUmbral = 10;
+
+    /// <inheritdoc />
+    public async Task<Result<ProductoDto, DomainError>> Handle(
+        UpdateProductoCommand request, CancellationToken cancellationToken) {
+        Producto? producto = await productoRepository.FindByIdAsync(request.Id);
+        if (producto is null) {
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
+        }
+
+        ValidationResult validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        if (!validationResult.IsValid) {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
+        }
+
+        Categoria? categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
+        if (categoriaExists is null) {
+            return Result.Failure<ProductoDto, DomainError>(
+                ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
+                    { "CategoriaId", new[] { $"La categoría con ID {request.Dto.CategoriaId} no fue encontrada" } }
+                })
+            );
+        }
+
+        long oldCategoriaId = producto.CategoriaId;
+        decimal precioAnterior = producto.Precio; // ANTES de tocar el producto
+        producto.Nombre = request.Dto.Nombre;
+        producto.Descripcion = request.Dto.Descripcion;
+        producto.Precio = request.Dto.Precio;
+        producto.Stock = request.Dto.Stock;
+        producto.Imagen = request.Dto.Imagen;
+        producto.CategoriaId = request.Dto.CategoriaId;
+
+        Producto updated = await productoRepository.UpdateAsync(producto);
+        ProductoDto dto = updated.ToDto();
+
+        // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
+        await mediator.Publish(new ProductoActualizadoNotification(dto, precioAnterior), cancellationToken);
+
+        if (dto.Stock <= StockBajoUmbral) {
+            await mediator.Publish(new ProductoStockBajoNotification(dto, StockBajoUmbral), cancellationToken);
+        }
+
+        await cacheService.RemoveAsync($"productos:{request.Id}");
+        await cacheService.RemoveAsync($"productos:categoria:{oldCategoriaId}");
+        if (oldCategoriaId != request.Dto.CategoriaId) {
+            await cacheService.RemoveAsync($"productos:categoria:{request.Dto.CategoriaId}");
+        }
+
+        await outputCacheStore.EvictByTagAsync("productos", cancellationToken);
+        ProductoService.InvalidatePagedCache();
+
+        Log.Information("Notificación publicada y caché invalidada para producto actualizado ID: {ProductoId}", dto.Id);
+
+        return Result.Success<ProductoDto, DomainError>(dto);
+    }
+}

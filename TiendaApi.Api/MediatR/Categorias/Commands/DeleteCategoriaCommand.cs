@@ -1,0 +1,47 @@
+using CSharpFunctionalExtensions;
+using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
+using TiendaApi.Api.Errors;
+using TiendaApi.Api.Errors.Categorias;
+using TiendaApi.Api.Models;
+using TiendaApi.Api.Repositories.Categorias;
+using TiendaApi.Api.Services.Cache;
+
+namespace TiendaApi.Api.MediatR.Categorias.Commands;
+
+/// <summary>
+///     Comando para eliminar una categoría.
+/// </summary>
+public record DeleteCategoriaCommand(long Id)
+    : IRequest<UnitResult<DomainError>>;
+
+/// <summary>
+///     Handler del comando DeleteCategoriaCommand.
+/// </summary>
+public class DeleteCategoriaCommandHandler(
+    ICategoriaRepository repository,
+    ICacheService cacheService,
+    IOutputCacheStore outputCacheStore)
+    : IRequestHandler<DeleteCategoriaCommand, UnitResult<DomainError>> {
+    /// <inheritdoc />
+    public async Task<UnitResult<DomainError>> Handle(
+        DeleteCategoriaCommand request, CancellationToken cancellationToken) {
+        Categoria? categoria = await repository.FindByIdAsync(request.Id);
+        if (categoria is null) {
+            return UnitResult.Failure<DomainError>(CategoriaError.NotFound(request.Id));
+        }
+
+        int productosCount = await repository.CountProductosAsync(request.Id);
+        if (productosCount > 0) {
+            return UnitResult.Failure<DomainError>(CategoriaError.TieneProductos(request.Id, productosCount));
+        }
+
+        await repository.DeleteAsync(request.Id);
+
+        await cacheService.RemoveAsync($"categorias:{request.Id}");
+        await outputCacheStore.EvictByTagAsync("categorias", cancellationToken);
+
+
+        return UnitResult.Success<DomainError>();
+    }
+}
