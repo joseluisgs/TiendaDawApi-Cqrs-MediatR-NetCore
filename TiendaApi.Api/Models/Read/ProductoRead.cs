@@ -4,15 +4,13 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace TiendaApi.Api.Models.Read;
 
 /// <summary>
-/// Modelo de lectura (read model) de producto para MongoDB — colección <c>productos_read</c>.
-///
-/// Documento desnormalizado según CQRS: la escritura ocurre en PostgreSQL y aquí
-/// solo se replica lo necesario para responder queries (REST, GraphQL y reportes).
-/// La categoría se embebe como sub-documento (id + nombre) para responder
-/// <c>categoria { nombre }</c> sin join — contrato GraphQL [065].
-///
-/// PostgreSQL sigue siendo la fuente de verdad: la sincronización se realiza con
-/// Domain Events (MediatR) y el seeder de arranque.
+///     Modelo de lectura (read model) de producto para MongoDB — colección <c>productos_read</c>.
+///     Documento desnormalizado según CQRS: la escritura ocurre en PostgreSQL y aquí
+///     solo se replica lo necesario para responder queries (REST, GraphQL y reportes).
+///     La categoría se embebe como sub-documento (id + nombre) para responder
+///     <c>categoria { nombre }</c> sin join — contrato GraphQL [065].
+///     PostgreSQL sigue siendo la fuente de verdad: la sincronización se realiza con
+///     Domain Events (MediatR) y el seeder de arranque.
 /// </summary>
 public class ProductoRead {
     /// <summary>Identificador del producto (mismo Id que en PostgreSQL, no autoincremental aquí).</summary>
@@ -61,8 +59,8 @@ public class ProductoRead {
 }
 
 /// <summary>
-/// Sub-documento de categoría embebido en <see cref="ProductoRead"/>.
-/// Conserva lo mínimo que sirve REST/GraphQL: id, nombre y descripción.
+///     Sub-documento de categoría embebido en <see cref="ProductoRead" />.
+///     Conserva lo mínimo que sirve REST/GraphQL: id, nombre y descripción.
 /// </summary>
 public class CategoriaRead {
     /// <summary>Id de la categoría (FK a PostgreSQL).</summary>
@@ -72,16 +70,16 @@ public class CategoriaRead {
     public string Nombre { get; set; } = string.Empty;
 
     /// <summary>
-    /// Descripción de la categoría (null en documentos antiguos: campo
-    /// aditivo, se rellena en cada sincronización con PostgreSQL).
+    ///     Descripción de la categoría (null en documentos antiguos: campo
+    ///     aditivo, se rellena en cada sincronización con PostgreSQL).
     /// </summary>
     public string? Descripcion { get; set; }
 }
 
 /// <summary>
-/// Sub-documento de proveedor embebido en <see cref="ProductoRead"/>.
-/// Conserva lo mínimo que sirve REST/GraphQL: código, nombre y descripción.
-/// Codigo vacío cuando el producto no tiene proveedor.
+///     Sub-documento de proveedor embebido en <see cref="ProductoRead" />.
+///     Conserva lo mínimo que sirve REST/GraphQL: código, nombre y descripción.
+///     Codigo vacío cuando el producto no tiene proveedor.
 /// </summary>
 public class ProveedorRead {
     /// <summary>Código de 11 caracteres del proveedor (FK a PostgreSQL).</summary>
@@ -91,8 +89,8 @@ public class ProveedorRead {
     public string Nombre { get; set; } = string.Empty;
 
     /// <summary>
-    /// Descripción del proveedor (null en documentos antiguos: campo
-    /// aditivo, se rellena en cada sincronización con PostgreSQL).
+    ///     Descripción del proveedor (null en documentos antiguos: campo
+    ///     aditivo, se rellena en cada sincronización con PostgreSQL).
     /// </summary>
     public string? Descripcion { get; set; }
 }

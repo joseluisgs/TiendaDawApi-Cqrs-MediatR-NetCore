@@ -6,15 +6,16 @@ using TiendaApi.Api.Realtime.Productos;
 namespace TiendaApi.Api.Features.Productos.Notifications;
 
 /// <summary>
-/// Handler que escucha ProductoActualizadoNotification y difunde el evento por SignalR.
+///     Handler que escucha ProductoActualizadoNotification y difunde el evento por SignalR.
 /// </summary>
 public class ProductoActualizadoSignalRHandler(IHubContext<ProductosHub> hubContext)
     : INotificationHandler<ProductoActualizadoNotification> {
     /// <summary>
-    /// Procesa el evento ProductoActualizado y difunde el producto actualizado por SignalR.
+    ///     Procesa el evento ProductoActualizado y difunde el producto actualizado por SignalR.
     /// </summary>
     public async Task Handle(ProductoActualizadoNotification notification, CancellationToken cancellationToken) {
-        Log.Information("📡 SignalR: Recibida notificación ProductoActualizado para ID: {ProductoId}", notification.Producto.Id);
+        Log.Information("📡 SignalR: Recibida notificación ProductoActualizado para ID: {ProductoId}",
+            notification.Producto.Id);
 
         await hubContext.Clients.All.SendAsync("ProductoActualizado", new {
             productoId = notification.Producto.Id,

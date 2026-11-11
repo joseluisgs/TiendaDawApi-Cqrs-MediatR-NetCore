@@ -1,6 +1,8 @@
-using System.Linq;
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using Moq;
+using TiendaApi.Api.Dtos.Pedidos;
+using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
@@ -11,10 +13,12 @@ public class GetMyPedidosQueryHandlerTests {
     [Test]
     public async Task Handle_UsuarioConPedidos_DevuelveListaCorrecta() {
         var repository = new Mock<IPedidosRepository>();
-        repository.Setup(r => r.FindByUserIdAsync(1)).ReturnsAsync([new Pedido { UserId = 1, Estado = PedidoEstado.PENDIENTE, Total = 5m }]);
+        repository.Setup(r => r.FindByUserIdAsync(1))
+            .ReturnsAsync([new Pedido { UserId = 1, Estado = PedidoEstado.PENDIENTE, Total = 5m }]);
         var handler = new GetMyPedidosQueryHandler(repository.Object);
 
-        var result = await handler.Handle(new GetMyPedidosQuery(1), CancellationToken.None);
+        Result<IEnumerable<PedidoDto>, DomainError> result =
+            await handler.Handle(new GetMyPedidosQuery(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
@@ -26,7 +30,8 @@ public class GetMyPedidosQueryHandlerTests {
         repository.Setup(r => r.FindByUserIdAsync(1)).ReturnsAsync(Enumerable.Empty<Pedido>());
         var handler = new GetMyPedidosQueryHandler(repository.Object);
 
-        var result = await handler.Handle(new GetMyPedidosQuery(1), CancellationToken.None);
+        Result<IEnumerable<PedidoDto>, DomainError> result =
+            await handler.Handle(new GetMyPedidosQuery(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();

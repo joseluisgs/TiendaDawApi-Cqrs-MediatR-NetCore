@@ -8,25 +8,25 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Api.Features.Productos.Queries;
 
 /// <summary>
-/// Query para obtener un producto por su ID.
+///     Query para obtener un producto por su ID.
 /// </summary>
 public record GetProductoByIdQuery(long Id)
     : IRequest<Result<ProductoDto, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetProductoByIdQuery.
-///
-/// La lectura delega en la fachada IProductoService
-/// (caché + MongoDB). El handler conserva el mapeo de errores.
+///     Handler de la query GetProductoByIdQuery.
+///     La lectura delega en la fachada IProductoService
+///     (caché + MongoDB). El handler conserva el mapeo de errores.
 /// </summary>
 public class GetProductoByIdQueryHandler(IProductoService service)
     : IRequestHandler<GetProductoByIdQuery, Result<ProductoDto, DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<ProductoDto, DomainError>> Handle(
         GetProductoByIdQuery request, CancellationToken cancellationToken) {
-        var dto = await service.GetByIdAsync(request.Id);
-        if (dto is null)
+        ProductoDto? dto = await service.GetByIdAsync(request.Id);
+        if (dto is null) {
             return Result.Failure<ProductoDto, DomainError>(ProductoError.NotFound(request.Id));
+        }
 
         return Result.Success<ProductoDto, DomainError>(dto);
     }

@@ -1,26 +1,27 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
-using Serilog;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Categorias.Commands;
 
 /// <summary>
-/// Comando para actualizar una categoría existente.
+///     Comando para actualizar una categoría existente.
 /// </summary>
 public record UpdateCategoriaCommand(long Id, CategoriaRequestDto Dto)
     : IRequest<Result<CategoriaDto, DomainError>>;
 
 /// <summary>
-/// Handler del comando UpdateCategoriaCommand.
+///     Handler del comando UpdateCategoriaCommand.
 /// </summary>
 public class UpdateCategoriaCommandHandler(
     ICategoriaRepository repository,
@@ -29,10 +30,10 @@ public class UpdateCategoriaCommandHandler(
     IMediator mediator,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<UpdateCategoriaCommand, Result<CategoriaDto, DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<CategoriaDto, DomainError>> Handle(
         UpdateCategoriaCommand request, CancellationToken cancellationToken) {
-        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        ValidationResult validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
         if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
@@ -40,17 +41,19 @@ public class UpdateCategoriaCommandHandler(
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.ValidacionConCampos(errors));
         }
 
-        var categoria = await repository.FindByIdAsync(request.Id);
-        if (categoria is null)
+        Categoria? categoria = await repository.FindByIdAsync(request.Id);
+        if (categoria is null) {
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NotFound(request.Id));
+        }
 
-        if (await repository.ExistsByNombreAsync(request.Dto.Nombre, request.Id))
+        if (await repository.ExistsByNombreAsync(request.Dto.Nombre, request.Id)) {
             return Result.Failure<CategoriaDto, DomainError>(CategoriaError.NombreDuplicado(request.Dto.Nombre));
+        }
 
         categoria.Nombre = request.Dto.Nombre;
         categoria.Descripcion = request.Dto.Descripcion;
-        var updated = await repository.UpdateAsync(categoria);
-        var dto = updated.ToDto();
+        Categoria updated = await repository.UpdateAsync(categoria);
+        CategoriaDto dto = updated.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a Mongo), DESPUÉS invalidar.
         // El Publish renombra categoriaNombre embebido en productos_read.

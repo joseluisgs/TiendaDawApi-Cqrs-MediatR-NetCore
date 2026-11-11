@@ -1,10 +1,9 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Categorias;
 using TiendaApi.Api.Features.Categorias.Queries;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
@@ -23,12 +22,13 @@ public class GetCategoriaByIdQueryHandlerTests {
     public async Task Handle_CategoriaExistente_DevuelveCategoria() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
         repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Categoria { Id = 1, Nombre = "Electrónica" });
         cacheService.Setup(c => c.GetAsync<CategoriaDto>(It.IsAny<string>())).ReturnsAsync((CategoriaDto?)null);
         var handler = new GetCategoriaByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetCategoriaByIdQuery(1), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new GetCategoriaByIdQuery(1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Nombre.Should().Be("Electrónica");
@@ -38,12 +38,13 @@ public class GetCategoriaByIdQueryHandlerTests {
     public async Task Handle_CategoriaNoExiste_DevuelveNotFound() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
         repository.Setup(r => r.FindByIdAsync(999)).ReturnsAsync((Categoria?)null);
         cacheService.Setup(c => c.GetAsync<CategoriaDto>(It.IsAny<string>())).ReturnsAsync((CategoriaDto?)null);
         var handler = new GetCategoriaByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetCategoriaByIdQuery(999), CancellationToken.None);
+        Result<CategoriaDto, DomainError> result =
+            await handler.Handle(new GetCategoriaByIdQuery(999), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

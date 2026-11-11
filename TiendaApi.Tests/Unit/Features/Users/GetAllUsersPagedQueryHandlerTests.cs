@@ -1,5 +1,5 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Common;
@@ -23,17 +23,19 @@ public class GetAllUsersPagedQueryHandlerTests {
     public async Task Handle_UsuariosExisten_DevuelvePagedResult() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
-        var filter = new UserFilterDto(null, null, null, 0, 10, "id", "asc");
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
+        var filter = new UserFilterDto(null, null, null);
         var users = new List<User> {
             new() { Id = 1, UserName = "juan" },
             new() { Id = 2, UserName = "maria" }
         };
         repository.Setup(r => r.FindAllPagedAsync(filter)).ReturnsAsync((users, 2));
-        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<UserDto>?)null);
+        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<UserDto>?)null);
         var handler = new GetAllUsersPagedQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetAllUsersPagedQuery(filter), CancellationToken.None);
+        Result<PagedResult<UserDto>, DomainError> result =
+            await handler.Handle(new GetAllUsersPagedQuery(filter), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(2);
@@ -43,13 +45,15 @@ public class GetAllUsersPagedQueryHandlerTests {
     public async Task Handle_SinUsuarios_DevuelveListaVacia() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
-        var filter = new UserFilterDto(null, null, null, 0, 10, "id", "asc");
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
+        var filter = new UserFilterDto(null, null, null);
         repository.Setup(r => r.FindAllPagedAsync(filter)).ReturnsAsync((new List<User>(), 0));
-        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<UserDto>?)null);
+        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<UserDto>?)null);
         var handler = new GetAllUsersPagedQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetAllUsersPagedQuery(filter), CancellationToken.None);
+        Result<PagedResult<UserDto>, DomainError> result =
+            await handler.Handle(new GetAllUsersPagedQuery(filter), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
@@ -59,11 +63,12 @@ public class GetAllUsersPagedQueryHandlerTests {
     public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes() {
         var repository = new Mock<IUserRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
-        var filter1 = new UserFilterDto("juan", null, null, 0, 10, "id", "asc");
-        var filter2 = new UserFilterDto("maria", null, null, 0, 10, "id", "asc");
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
+        var filter1 = new UserFilterDto("juan", null, null);
+        var filter2 = new UserFilterDto("maria", null, null);
         repository.Setup(r => r.FindAllPagedAsync(It.IsAny<UserFilterDto>())).ReturnsAsync((new List<User>(), 0));
-        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<UserDto>?)null);
+        cacheService.Setup(c => c.GetAsync<PagedResult<UserDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<UserDto>?)null);
         var handler = new GetAllUsersPagedQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
         await handler.Handle(new GetAllUsersPagedQuery(filter1), CancellationToken.None);

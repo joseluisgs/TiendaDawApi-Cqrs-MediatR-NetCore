@@ -5,11 +5,10 @@ using Microsoft.Extensions.Caching.Distributed;
 namespace TiendaApi.Api.Services.Cache;
 
 /// <summary>
-/// Implementación de caché usando Redis.
-/// Implementa el patrón cache-aside.
-///
-/// 🎓 Observabilidad: registra métricas de errores en CacheMetrics (tasa,
-/// último error y mensaje) para ver el estado de la caché sin rastrear logs.
+///     Implementación de caché usando Redis.
+///     Implementa el patrón cache-aside.
+///     🎓 Observabilidad: registra métricas de errores en CacheMetrics (tasa,
+///     último error y mensaje) para ver el estado de la caché sin rastrear logs.
 /// </summary>
 public class RedisCacheService(
     IDistributedCache cache,
@@ -17,20 +16,22 @@ public class RedisCacheService(
     CacheMetrics metrics
 ) : ICacheService {
     private readonly IDistributedCache _cache = cache;
-    private readonly ILogger<RedisCacheService> _logger = logger;
-    private readonly CacheMetrics _metrics = metrics;
+
     private readonly JsonSerializerOptions _jsonOptions = new() {
         PropertyNameCaseInsensitive = true,
         // Source-gen (AppJsonContext) + fallback a reflexión
         TypeInfoResolver = JsonTypeInfoResolver.Combine(AppJsonContext.Default, new DefaultJsonTypeInfoResolver())
     };
 
+    private readonly ILogger<RedisCacheService> _logger = logger;
+    private readonly CacheMetrics _metrics = metrics;
+
     /// <summary>
-    /// Obtiene un valor de la caché, deserializando desde JSON.
+    ///     Obtiene un valor de la caché, deserializando desde JSON.
     /// </summary>
     public async Task<T?> GetAsync<T>(string key) {
         try {
-            var cachedValue = await _cache.GetStringAsync(key);
+            string? cachedValue = await _cache.GetStringAsync(key);
 
             if (string.IsNullOrEmpty(cachedValue)) {
                 _logger.LogDebug("Cache miss para clave: {Key}", key);
@@ -49,12 +50,12 @@ public class RedisCacheService(
     }
 
     /// <summary>
-    /// Guarda un valor en la caché, serializando a JSON.
-    /// Expiración por defecto: 5 minutos.
+    ///     Guarda un valor en la caché, serializando a JSON.
+    ///     Expiración por defecto: 5 minutos.
     /// </summary>
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null) {
         try {
-            var jsonValue = JsonSerializer.Serialize(value, _jsonOptions);
+            string jsonValue = JsonSerializer.Serialize(value, _jsonOptions);
 
             var options = new DistributedCacheEntryOptions {
                 AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(5)
@@ -72,7 +73,7 @@ public class RedisCacheService(
     }
 
     /// <summary>
-    /// Elimina un valor de la caché por clave.
+    ///     Elimina un valor de la caché por clave.
     /// </summary>
     public async Task RemoveAsync(string key) {
         try {

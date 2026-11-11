@@ -7,6 +7,7 @@ using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Features.Categorias.Notifications;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Features.Productos.Sync;
+using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
 using TiendaApi.Api.Services.Productos;
@@ -14,34 +15,22 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Tests.Integration.TestContainers.Productos;
 
 /// <summary>
-/// Tests de integración del read model CQRS: las notificaciones que publican
-/// los commands de Productos deben materializar el documento desnormalizado en
-/// MongoDB y quedar visibles para las queries (repositorio + fachada con caché).
-///
-/// 🎓 Flujo real: command (PG) → notificación MediatR → ProductoReadSyncHandler
-/// → colección productos_read → IProductoService (caché + Mongo).
-/// Aquí se sustituye el command por la notificación directa para aislar la
-/// frontera PostgreSQL/MongoDB (los commands ya están cubiertos por sus tests).
+///     Tests de integración del read model CQRS: las notificaciones que publican
+///     los commands de Productos deben materializar el documento desnormalizado en
+///     MongoDB y quedar visibles para las queries (repositorio + fachada con caché).
+///     🎓 Flujo real: command (PG) → notificación MediatR → ProductoReadSyncHandler
+///     → colección productos_read → IProductoService (caché + Mongo).
+///     Aquí se sustituye el command por la notificación directa para aislar la
+///     frontera PostgreSQL/MongoDB (los commands ya están cubiertos por sus tests).
 /// </summary>
 [TestFixture]
 [Category("Integration")]
 public class ProductoReadSyncIntegrationTests {
-    private static long _nextId = 50_000_000;
-    private static long NewId() => Interlocked.Increment(ref _nextId);
-
-    private const string DatabaseName = "it_producto_read_sync";
-
-    private string _mongoConnectionString = string.Empty;
-    private ServiceProvider? _provider;
-    private ProductoReadSyncHandler? _handler;
-    private IProductoReadRepository? _readRepository;
-    private IProductoService? _productoService;
-
     [OneTimeSetUp]
     public async Task OneTimeSetup() {
         _mongoConnectionString = AssemblyContainerFixture.MongoConnectionString;
 
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
                 { "MongoDbSettings:DatabaseName", DatabaseName },
@@ -58,7 +47,7 @@ public class ProductoReadSyncIntegrationTests {
 
         var client = new MongoClient(configuration["MongoDbSettings:ConnectionString"]);
         services.AddSingleton<IMongoClient>(client);
-        services.AddSingleton<IMongoDatabase>(
+        services.AddSingleton(
             client.GetDatabase(configuration["MongoDbSettings:DatabaseName"]));
 
         services.AddSingleton<IProductoReadRepository, ProductoReadRepository>();
@@ -79,18 +68,33 @@ public class ProductoReadSyncIntegrationTests {
         AssemblyContainerFixture.DropMongoDatabase(DatabaseName);
     }
 
-    private static ProductoDto NuevoProducto(long id, string categoriaNombre = "Electrónica") =>
-        new(id, $"Producto Sync {id}", "Descripción de prueba", 199.99m, 7,
+    private static long _nextId = 50_000_000;
+
+    private static long NewId() {
+        return Interlocked.Increment(ref _nextId);
+    }
+
+    private const string DatabaseName = "it_producto_read_sync";
+
+    private string _mongoConnectionString = string.Empty;
+    private ServiceProvider? _provider;
+    private ProductoReadSyncHandler? _handler;
+    private IProductoReadRepository? _readRepository;
+    private IProductoService? _productoService;
+
+    private static ProductoDto NuevoProducto(long id, string categoriaNombre = "Electrónica") {
+        return new ProductoDto(id, $"Producto Sync {id}", "Descripción de prueba", 199.99m, 7,
             $"/storage/uploads/productos/sync-{id}.jpg",
             new CategoriaResumenDto(9, categoriaNombre), null, DateTime.UtcNow, DateTime.UtcNow);
+    }
 
     [Test]
     public async Task NotificacionCreado_CreaDocumentoDesnormalizado_LegiblePorQueries() {
-        var id = NewId();
+        long id = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
-        var leido = await _readRepository!.FindByIdAsync(id);
+        ProductoRead? leido = await _readRepository!.FindByIdAsync(id);
 
         leido.Should().NotBeNull();
         leido!.Id.Should().Be(id);
@@ -104,11 +108,11 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task NotificacionCreado_ElServicioDeLecturaLoDevuelveConMapeo() {
-        var id = NewId();
+        long id = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
-        var dto = await _productoService!.GetByIdAsync(id);
+        ProductoDto? dto = await _productoService!.GetByIdAsync(id);
 
         dto.Should().NotBeNull();
         dto!.Id.Should().Be(id);
@@ -117,13 +121,14 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task NotificacionActualizado_ReflectionaElNuevoPrecio() {
-        var id = NewId();
+        long id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
-        var actualizado = NuevoProducto(id) with { Precio = 499.99m, Stock = 3 };
-        await _handler.Handle(new ProductoActualizadoNotification(actualizado, actualizado.Precio), CancellationToken.None);
+        ProductoDto actualizado = NuevoProducto(id) with { Precio = 499.99m, Stock = 3 };
+        await _handler.Handle(new ProductoActualizadoNotification(actualizado, actualizado.Precio),
+            CancellationToken.None);
 
-        var leido = await _readRepository!.FindByIdAsync(id);
+        ProductoRead? leido = await _readRepository!.FindByIdAsync(id);
         leido.Should().NotBeNull();
         leido!.Precio.Should().Be(499.99m);
         leido.Stock.Should().Be(3);
@@ -131,28 +136,28 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task NotificacionEliminado_HaceQueDejeDeAparecerEnConsultas() {
-        var id = NewId();
+        long id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
         await _handler.Handle(new ProductoEliminadoNotification(id), CancellationToken.None);
 
         (await _readRepository!.FindByIdAsync(id)).Should().BeNull();
 
-        var todos = await _readRepository.FindAllAsync();
+        IEnumerable<ProductoRead> todos = await _readRepository.FindAllAsync();
         todos.Should().NotContain(p => p.Id == id);
     }
 
     [Test]
     public async Task NotificacionCategoriaActualizada_PropagaElNombreATodosLosProductos() {
-        var categoriaId = NewId();
-        var idA = NewId();
-        var idB = NewId();
+        long categoriaId = NewId();
+        long idA = NewId();
+        long idB = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idA) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
+                NuevoProducto(idA) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
             CancellationToken.None);
         await _handler.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idB) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
+                NuevoProducto(idB) with { Categoria = new CategoriaResumenDto(categoriaId, "Antigua") }),
             CancellationToken.None);
 
         await _handler.Handle(
@@ -165,11 +170,11 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task Paged_FiltroPorNombre_EsSensibleAMayusculasComoPostgres() {
-        var id = NewId();
+        long id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(
             NuevoProducto(id) with { Nombre = $"Zurito{id}" }), CancellationToken.None);
 
-        var (items, total) = await _readRepository!.FindAllPagedAsync(
+        (IEnumerable<ProductoRead> items, int total) = await _readRepository!.FindAllPagedAsync(
             new ProductoFilterDto($"zurito{id}", null, null, null, null, 0, 50));
 
         total.Should().Be(0, "LIKE de PostgreSQL es case-sensitive");
@@ -183,18 +188,22 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task Paged_FiltroPorCategoria_Embebida_YOrdenPorPrecio() {
-        var categoriaId = NewId();
-        var idBarato = NewId();
-        var idCaro = NewId();
+        long categoriaId = NewId();
+        long idBarato = NewId();
+        long idCaro = NewId();
 
         await _handler!.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idBarato, "Cocina") with { Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 10m }),
+                NuevoProducto(idBarato, "Cocina") with {
+                    Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 10m
+                }),
             CancellationToken.None);
         await _handler.Handle(new ProductoCreadoNotification(
-            NuevoProducto(idCaro, "Cocina") with { Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 500m }),
+                NuevoProducto(idCaro, "Cocina") with {
+                    Categoria = new CategoriaResumenDto(categoriaId, "Cocina"), Precio = 500m
+                }),
             CancellationToken.None);
 
-        var (items, total) = await _readRepository!.FindAllPagedAsync(
+        (IEnumerable<ProductoRead> items, int total) = await _readRepository!.FindAllPagedAsync(
             new ProductoFilterDto(null, "Cocina", null, null, null, 0, 100, "precio"));
 
         total.Should().BeGreaterThanOrEqualTo(2);
@@ -205,10 +214,10 @@ public class ProductoReadSyncIntegrationTests {
 
     [Test]
     public async Task Servicio_GetAllAsync_DevuelveLosProductosCreados() {
-        var id = NewId();
+        long id = NewId();
         await _handler!.Handle(new ProductoCreadoNotification(NuevoProducto(id)), CancellationToken.None);
 
-        var todos = await _productoService!.GetAllAsync();
+        IReadOnlyList<ProductoRead> todos = await _productoService!.GetAllAsync();
 
         todos.Should().Contain(p => p.Id == id);
     }

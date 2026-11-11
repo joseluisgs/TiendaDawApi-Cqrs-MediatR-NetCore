@@ -24,7 +24,8 @@ public class AuthCommandHandlerTests {
 
         var handler = new SignUpCommandHandler(authService.Object);
 
-        var result = await handler.Handle(new SignUpCommand(dto), CancellationToken.None);
+        Result<AuthResponseDto, DomainError> result =
+            await handler.Handle(new SignUpCommand(dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         authService.Verify(s => s.SignUpAsync(dto), Times.Once);
@@ -43,7 +44,8 @@ public class AuthCommandHandlerTests {
 
         var handler = new SignInCommandHandler(authService.Object);
 
-        var result = await handler.Handle(new SignInCommand(dto), CancellationToken.None);
+        Result<AuthResponseDto, DomainError> result =
+            await handler.Handle(new SignInCommand(dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         authService.Verify(s => s.SignInAsync(dto), Times.Once);

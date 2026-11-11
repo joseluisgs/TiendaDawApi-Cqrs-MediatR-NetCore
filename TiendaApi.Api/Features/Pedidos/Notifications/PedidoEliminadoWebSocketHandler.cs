@@ -6,12 +6,12 @@ using TiendaApi.Api.Realtime.Pedidos;
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que notifica por WebSocket cuando se elimina un pedido.
+///     Handler que notifica por WebSocket cuando se elimina un pedido.
 /// </summary>
 public class PedidoEliminadoWebSocketHandler(PedidosWebSocketHandler webSocketHandler)
     : INotificationHandler<PedidoEliminadoNotification> {
     /// <summary>
-    /// Procesa el evento PedidoEliminado y notifica por WebSocket al usuario y a los administradores.
+    ///     Procesa el evento PedidoEliminado y notifica por WebSocket al usuario y a los administradores.
     /// </summary>
     public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken) {
         await webSocketHandler.NotifyUserAndAdminsAsync(notification.UserId, new PedidoNotificacion(

@@ -1,13 +1,16 @@
-using Microsoft.AspNetCore.Hosting;
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TiendaApi.Api.Data;
+using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Productos;
+using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Features.Productos.Queries;
 using TiendaApi.Api.GraphQL.Publishers;
@@ -24,21 +27,14 @@ using TiendaApi.Api.Services.Storage;
 namespace TiendaApi.Tests.Integration.TestContainers.Productos.Services;
 
 /// <summary>
-/// Tests de integración de los handlers MediatR de Productos con DI completo,
-/// equivalentes a los <c>ProductoServiceIntegrationTests</c> del proyecto sin CQRS.
-/// 🎓 Flujo real: command → PostgreSQL → notificación → read model MongoDB → query.
+///     Tests de integración de los handlers MediatR de Productos con DI completo,
+///     equivalentes a los <c>ProductoServiceIntegrationTests</c> del proyecto sin CQRS.
+///     🎓 Flujo real: command → PostgreSQL → notificación → read model MongoDB → query.
 /// </summary>
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
 public class ProductoHandlerIntegrationTests {
-    private const string DatabaseName = "it_producto_handler";
-    private string _connectionString = string.Empty;
-    private string _mongoConnectionString = string.Empty;
-    private ServiceProvider? _provider;
-    private IMediator? _mediator;
-    private long _categoriaId;
-
     [OneTimeSetUp]
     public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
@@ -53,7 +49,7 @@ public class ProductoHandlerIntegrationTests {
 
     [SetUp]
     public async Task Setup() {
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", _connectionString },
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
@@ -90,7 +86,7 @@ public class ProductoHandlerIntegrationTests {
         services.AddScoped<ICacheService, MemoryCacheService>();
         services.AddScoped<IEmailService, MemoryEmailService>();
         services.AddScoped<IProductoService, ProductoService>();
-        services.AddSingleton<IStorageService>(Mock.Of<IStorageService>());
+        services.AddSingleton(Mock.Of<IStorageService>());
 
         // Notificaciones de Productos: SignalR (mock), GraphQL (mock) y WebSocket (real).
         var mockClients = new Mock<IHubClients>();
@@ -103,10 +99,10 @@ public class ProductoHandlerIntegrationTests {
 
         _provider = services.BuildServiceProvider();
 
-        var dbContext = _provider.GetRequiredService<TiendaDbContext>();
+        TiendaDbContext dbContext = _provider.GetRequiredService<TiendaDbContext>();
         await dbContext.Database.EnsureCreatedAsync();
 
-        var categoriaRepo = _provider.GetRequiredService<ICategoriaRepository>();
+        ICategoriaRepository categoriaRepo = _provider.GetRequiredService<ICategoriaRepository>();
         var categoria = new Categoria { Nombre = $"Test Cat {Guid.NewGuid():N}".Substring(0, 20) };
         await categoriaRepo.SaveAsync(categoria);
         _categoriaId = categoria.Id;
@@ -119,19 +115,28 @@ public class ProductoHandlerIntegrationTests {
         _provider?.Dispose();
     }
 
-    private static ProductoRequestDto NuevoProductoDto(string nombre) => new() {
-        Nombre = nombre,
-        Descripcion = "Producto de prueba",
-        Precio = 99.99m,
-        Stock = 5,
-        CategoriaId = 0 // se rellena en cada test con _categoriaId
-    };
+    private const string DatabaseName = "it_producto_handler";
+    private string _connectionString = string.Empty;
+    private string _mongoConnectionString = string.Empty;
+    private ServiceProvider? _provider;
+    private IMediator? _mediator;
+    private long _categoriaId;
+
+    private static ProductoRequestDto NuevoProductoDto(string nombre) {
+        return new ProductoRequestDto {
+            Nombre = nombre,
+            Descripcion = "Producto de prueba",
+            Precio = 99.99m,
+            Stock = 5,
+            CategoriaId = 0 // se rellena en cada test con _categoriaId
+        };
+    }
 
     [Test]
     public async Task GetAll_SinProductos_RetornaResultadoPaginado() {
-        var filter = new ProductoFilterDto(null, null, null, null, null, 0, 10, "id", "asc");
+        var filter = new ProductoFilterDto(null, null, null, null, null);
 
-        var result = await _mediator!.Send(new GetAllProductosQuery(filter));
+        Result<PagedResult<ProductoDto>, DomainError> result = await _mediator!.Send(new GetAllProductosQuery(filter));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -140,10 +145,10 @@ public class ProductoHandlerIntegrationTests {
 
     [Test]
     public async Task Create_ConDatosValidos_RetornaProductoCreado() {
-        var dto = NuevoProductoDto("Laptop Test");
+        ProductoRequestDto dto = NuevoProductoDto("Laptop Test");
         dto = dto with { CategoriaId = _categoriaId };
 
-        var result = await _mediator!.Send(new CreateProductoCommand(dto));
+        Result<ProductoDto, DomainError> result = await _mediator!.Send(new CreateProductoCommand(dto));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -153,11 +158,12 @@ public class ProductoHandlerIntegrationTests {
 
     [Test]
     public async Task GetById_ConProductoExistente_RetornaProducto() {
-        var createResult = await _mediator!.Send(new CreateProductoCommand(
+        Result<ProductoDto, DomainError> createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Buscar Test") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var findResult = await _mediator.Send(new GetProductoByIdQuery(createResult.Value.Id));
+        Result<ProductoDto, DomainError> findResult =
+            await _mediator.Send(new GetProductoByIdQuery(createResult.Value.Id));
 
         findResult.IsSuccess.Should().BeTrue();
         findResult.Value.Nombre.Should().Be("Buscar Test");
@@ -165,14 +171,14 @@ public class ProductoHandlerIntegrationTests {
 
     [Test]
     public async Task GetById_ConProductoNoExistente_RetornaNotFound() {
-        var result = await _mediator!.Send(new GetProductoByIdQuery(999999));
+        Result<ProductoDto, DomainError> result = await _mediator!.Send(new GetProductoByIdQuery(999999));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
     public async Task Update_ConDatosValidos_RetornaProductoActualizado() {
-        var createResult = await _mediator!.Send(new CreateProductoCommand(
+        Result<ProductoDto, DomainError> createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Original") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
 
@@ -183,7 +189,8 @@ public class ProductoHandlerIntegrationTests {
             Stock = 10,
             CategoriaId = _categoriaId
         };
-        var updateResult = await _mediator.Send(new UpdateProductoCommand(createResult.Value.Id, updateDto));
+        Result<ProductoDto, DomainError> updateResult =
+            await _mediator.Send(new UpdateProductoCommand(createResult.Value.Id, updateDto));
 
         updateResult.IsSuccess.Should().BeTrue();
         updateResult.Value.Nombre.Should().Be("Actualizado");
@@ -191,15 +198,16 @@ public class ProductoHandlerIntegrationTests {
 
     [Test]
     public async Task Delete_ConProductoExistente_RetornaExito() {
-        var createResult = await _mediator!.Send(new CreateProductoCommand(
+        Result<ProductoDto, DomainError> createResult = await _mediator!.Send(new CreateProductoCommand(
             NuevoProductoDto("Eliminar Test") with { CategoriaId = _categoriaId }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var deleteResult = await _mediator.Send(new DeleteProductoCommand(createResult.Value.Id));
+        UnitResult<DomainError> deleteResult = await _mediator.Send(new DeleteProductoCommand(createResult.Value.Id));
 
         deleteResult.IsSuccess.Should().BeTrue();
 
-        var findResult = await _mediator.Send(new GetProductoByIdQuery(createResult.Value.Id));
+        Result<ProductoDto, DomainError> findResult =
+            await _mediator.Send(new GetProductoByIdQuery(createResult.Value.Id));
         findResult.IsFailure.Should().BeTrue();
     }
 
@@ -213,7 +221,7 @@ public class ProductoHandlerIntegrationTests {
             CategoriaId = _categoriaId
         };
 
-        var result = await _mediator!.Send(new CreateProductoCommand(dto));
+        Result<ProductoDto, DomainError> result = await _mediator!.Send(new CreateProductoCommand(dto));
 
         result.IsFailure.Should().BeTrue();
     }
@@ -228,7 +236,7 @@ public class ProductoHandlerIntegrationTests {
             CategoriaId = _categoriaId
         };
 
-        var result = await _mediator!.Send(new CreateProductoCommand(dto));
+        Result<ProductoDto, DomainError> result = await _mediator!.Send(new CreateProductoCommand(dto));
 
         result.IsFailure.Should().BeTrue();
     }

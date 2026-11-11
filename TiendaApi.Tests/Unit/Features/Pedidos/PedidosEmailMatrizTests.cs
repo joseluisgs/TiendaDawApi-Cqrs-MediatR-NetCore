@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Notifications;
@@ -7,34 +7,39 @@ using TiendaApi.Api.Services.Email;
 namespace TiendaApi.Tests.Unit.Features.Pedidos;
 
 /// <summary>
-/// 📧 Tests de la matriz de destinatarios de emails de pedidos
-/// (doc/15-pedidos-transacciones.md):
-/// el USUARIO recibe todo lo que pasa a su pedido y el ADMIN solo lo que
-/// debe gestionar y no proviene de él (creación y cancelación por usuario).
+///     📧 Tests de la matriz de destinatarios de emails de pedidos
+///     (doc/15-pedidos-transacciones.md):
+///     el USUARIO recibe todo lo que pasa a su pedido y el ADMIN solo lo que
+///     debe gestionar y no proviene de él (creación y cancelación por usuario).
 /// </summary>
 public class PedidosEmailMatrizTests {
-    private static DestinatarioDto UnDestinatario(string email = "cliente@test.com") => new() {
-        NombreCompleto = "María García",
-        Email = email,
-        Direccion = new DireccionDto { Calle = "Gran Vía", Ciudad = "Madrid", Pais = "España" }
-    };
+    private static DestinatarioDto UnDestinatario(string email = "cliente@test.com") {
+        return new DestinatarioDto {
+            NombreCompleto = "María García",
+            Email = email,
+            Direccion = new DireccionDto { Calle = "Gran Vía", Ciudad = "Madrid", Pais = "España" }
+        };
+    }
 
-    private static PedidoDto UnPedido(DestinatarioDto? destinatario = null) => new(
-        Id: "PED-2024-0001",
-        UserId: 1,
-        Destinatario: destinatario ?? UnDestinatario(),
-        Items: new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) },
-        Total: 10m,
-        Estado: "Pendiente",
-        DireccionEnvio: null,
-        CreatedAt: DateTime.UtcNow);
+    private static PedidoDto UnPedido(DestinatarioDto? destinatario = null) {
+        return new PedidoDto(
+            "PED-2024-0001",
+            1,
+            destinatario ?? UnDestinatario(),
+            new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) },
+            10m,
+            "Pendiente",
+            null,
+            DateTime.UtcNow);
+    }
 
     [Test]
     public async Task CancelacionPorUsuario_AvisoAlCliente() {
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoCanceladoClienteEmailHandler(emailService.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", 1, 10m, UnDestinatario()), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", 1, 10m, UnDestinatario()),
+            CancellationToken.None);
 
         emailService.Verify(e => e.EnqueueEmailAsync(It.Is<EmailMessage>(m =>
             m.To == "cliente@test.com" &&
@@ -45,11 +50,12 @@ public class PedidosEmailMatrizTests {
     [Test]
     public async Task CancelacionPorUsuario_AvisoDeGestionAlAdmin() {
         var emailService = new Mock<IEmailService>();
-        var configuration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+        var configuration = new Mock<IConfiguration>();
         configuration.Setup(c => c["Smtp:AdminEmail"]).Returns("admin@tienda.com");
         var handler = new PedidoCanceladoEmailHandler(emailService.Object, configuration.Object);
 
-        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", 1, 10m, UnDestinatario()), CancellationToken.None);
+        await handler.Handle(new PedidoCanceladoNotification("PED-2024-0001", 1, 10m, UnDestinatario()),
+            CancellationToken.None);
 
         emailService.Verify(e => e.EnqueueEmailAsync(It.Is<EmailMessage>(m =>
             m.To == "admin@tienda.com" &&
@@ -88,7 +94,8 @@ public class PedidosEmailMatrizTests {
         var emailService = new Mock<IEmailService>();
         var handler = new PedidoModificadoPorAdminEmailHandler(emailService.Object);
 
-        await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido(UnDestinatario(""))), CancellationToken.None);
+        await handler.Handle(new PedidoModificadoPorAdminNotification(UnPedido(UnDestinatario(""))),
+            CancellationToken.None);
 
         emailService.Verify(e => e.EnqueueEmailAsync(It.IsAny<EmailMessage>()), Times.Never);
     }

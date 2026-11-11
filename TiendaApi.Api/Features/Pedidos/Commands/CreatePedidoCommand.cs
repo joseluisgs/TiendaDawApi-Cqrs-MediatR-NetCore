@@ -1,9 +1,12 @@
+using System.Data;
 using CSharpFunctionalExtensions;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
-using Serilog;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Pedidos;
@@ -14,19 +17,18 @@ using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Repositories.Usuarios;
-using Microsoft.AspNetCore.OutputCaching;
 using TiendaApi.Api.Services.Cache;
 
 namespace TiendaApi.Api.Features.Pedidos.Commands;
 
 /// <summary>
-/// Comando para crear un nuevo pedido.
+///     Comando para crear un nuevo pedido.
 /// </summary>
 public record CreatePedidoCommand(long UserId, PedidoRequestDto Dto)
     : IRequest<Result<PedidoDto, DomainError>>;
 
 /// <summary>
-/// Handler del comando CreatePedidoCommand.
+///     Handler del comando CreatePedidoCommand.
 /// </summary>
 public class CreatePedidoCommandHandler(
     IPedidosRepository pedidosRepository,
@@ -44,14 +46,15 @@ public class CreatePedidoCommandHandler(
     /// <summary>Código de PostgreSQL para fallos de serialización en transacciones serializables.</summary>
     private const string PostgresSerializationErrorCode = "40001";
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<PedidoDto, DomainError>> Handle(
         CreatePedidoCommand request, CancellationToken cancellationToken) {
-        var user = await userRepository.FindByIdAsync(request.UserId);
-        if (user is null || user.IsDeleted)
+        User? user = await userRepository.FindByIdAsync(request.UserId);
+        if (user is null || user.IsDeleted) {
             return Result.Failure<PedidoDto, DomainError>(NotFoundError.FromId(request.UserId, "Usuario"));
+        }
 
-        var validationResult = await pedidoValidator.ValidateAsync(request.Dto, cancellationToken);
+        ValidationResult validationResult = await pedidoValidator.ValidateAsync(request.Dto, cancellationToken);
         if (!validationResult.IsValid) {
             var errors = validationResult.Errors.GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -63,14 +66,14 @@ public class CreatePedidoCommandHandler(
     }
 
     /// <summary>
-    /// Ejecuta la operación con los reintentos de la transacción Serializable:
-    /// los conflictos de serialización (40001) son esperables con este nivel de
-    /// aislamiento, así que se reintentan con backoff creciente hasta MaxRetries.
-    /// Extraído de Handle para que ese método se quede con validar y delegar.
+    ///     Ejecuta la operación con los reintentos de la transacción Serializable:
+    ///     los conflictos de serialización (40001) son esperables con este nivel de
+    ///     aislamiento, así que se reintentan con backoff creciente hasta MaxRetries.
+    ///     Extraído de Handle para que ese método se quede con validar y delegar.
     /// </summary>
     private async Task<Result<PedidoDto, DomainError>> ConReintentosDeSerializacionAsync(
         Func<Task<Result<PedidoDto, DomainError>>> operacion, CancellationToken cancellationToken) {
-        for (var attempt = 1; attempt <= MaxRetries; attempt++) {
+        for (int attempt = 1; attempt <= MaxRetries; attempt++) {
             try {
                 return await operacion();
             } catch (SerializationFailureException) when (attempt < MaxRetries) {
@@ -88,7 +91,8 @@ public class CreatePedidoCommandHandler(
     private async Task<Result<PedidoDto, DomainError>> CreateWithSerializableTransactionAsync(
         CreatePedidoCommand request,
         CancellationToken cancellationToken) {
-        await using var transaction = await productoRepository.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        await using IDbContextTransaction transaction =
+            await productoRepository.BeginTransactionAsync(IsolationLevel.Serializable);
         try {
             var pedidoItems = new List<PedidoItem>();
             decimal total = 0;
@@ -99,11 +103,11 @@ public class CreatePedidoCommandHandler(
             // recargarla item a item, y el tracking es el que hace valido el
             // decremento de stock que viene despues.
             var productosPorId = (await productoRepository
-                .FindByIdsAsync(request.Dto.Items.Select(i => i.ProductoId)))
+                    .FindByIdsAsync(request.Dto.Items.Select(i => i.ProductoId)))
                 .ToDictionary(p => p.Id);
 
-            foreach (var itemDto in request.Dto.Items) {
-                var itemValidation = await pedidoItemValidator.ValidateAsync(itemDto, cancellationToken);
+            foreach (PedidoItemRequestDto itemDto in request.Dto.Items) {
+                ValidationResult itemValidation = await pedidoItemValidator.ValidateAsync(itemDto, cancellationToken);
                 if (!itemValidation.IsValid) {
                     var itemErrors = itemValidation.Errors.GroupBy(e => e.PropertyName)
                         .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -111,14 +115,15 @@ public class CreatePedidoCommandHandler(
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ValidacionConCampos(itemErrors));
                 }
 
-                if (!productosPorId.TryGetValue(itemDto.ProductoId, out var producto)) {
+                if (!productosPorId.TryGetValue(itemDto.ProductoId, out Producto? producto)) {
                     await transaction.RollbackAsync(cancellationToken);
                     return Result.Failure<PedidoDto, DomainError>(PedidoError.ProductoNoEncontrado(itemDto.ProductoId));
                 }
 
                 if (producto.Stock < itemDto.Cantidad) {
                     await transaction.RollbackAsync(cancellationToken);
-                    return Result.Failure<PedidoDto, DomainError>(PedidoError.StockInsuficiente(producto.Nombre, producto.Stock, itemDto.Cantidad));
+                    return Result.Failure<PedidoDto, DomainError>(
+                        PedidoError.StockInsuficiente(producto.Nombre, producto.Stock, itemDto.Cantidad));
                 }
 
                 producto.Stock -= itemDto.Cantidad;
@@ -145,12 +150,11 @@ public class CreatePedidoCommandHandler(
                 UpdatedAt = DateTime.UtcNow
             };
 
-            var pedidoGuardado = await pedidosRepository.SaveAsync(pedido);
+            Pedido pedidoGuardado = await pedidosRepository.SaveAsync(pedido);
             await transaction.CommitAsync(cancellationToken);
 
 
-
-            var dto = pedidoGuardado.ToDto();
+            PedidoDto dto = pedidoGuardado.ToDto();
             await mediator.Publish(new PedidoCreadoNotification(dto), cancellationToken);
 
             await cacheService.RemoveAsync($"pedidos:{pedidoGuardado.Id}");
@@ -163,9 +167,13 @@ public class CreatePedidoCommandHandler(
         }
     }
 
-    private static bool IsSerializationFailure(DbUpdateException ex) =>
-        ex.InnerException is NpgsqlException npgsqlEx && IsSerializationFailureMessage(npgsqlEx.Message);
+    private static bool IsSerializationFailure(DbUpdateException ex) {
+        return ex.InnerException is NpgsqlException npgsqlEx && IsSerializationFailureMessage(npgsqlEx.Message);
+    }
 
-    private static bool IsSerializationFailureMessage(string message) =>
-        message.Contains(PostgresSerializationErrorCode) || message.Contains("serialization", StringComparison.OrdinalIgnoreCase) || message.Contains("serializacion", StringComparison.OrdinalIgnoreCase);
+    private static bool IsSerializationFailureMessage(string message) {
+        return message.Contains(PostgresSerializationErrorCode) ||
+               message.Contains("serialization", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("serializacion", StringComparison.OrdinalIgnoreCase);
+    }
 }

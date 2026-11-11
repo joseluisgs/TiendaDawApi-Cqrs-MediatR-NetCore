@@ -16,15 +16,15 @@ using TiendaApi.Api.Models;
 namespace TiendaApi.Api.Controllers;
 
 /// <summary>
-/// Controlador de API para gestión de categorías de productos.
-/// Endpoints: CRUD paginado de categorías.
+///     Controlador de API para gestión de categorías de productos.
+///     Endpoints: CRUD paginado de categorías.
 /// </summary>
 /// <remarks>
-/// 🎓 ANTES vs AHORA:
-/// ANTES:  CategoriasController(ICategoriaService service, ILogger logger)
-/// AHORA:  CategoriasController(IMediator mediator)
-/// El Controller ya no conoce ningún detalle de implementación.
-/// Solo sabe que puede "enviar" peticiones al Mediator.
+///     🎓 ANTES vs AHORA:
+///     ANTES:  CategoriasController(ICategoriaService service, ILogger logger)
+///     AHORA:  CategoriasController(IMediator mediator)
+///     El Controller ya no conoce ningún detalle de implementación.
+///     Solo sabe que puede "enviar" peticiones al Mediator.
 /// </remarks>
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
@@ -32,7 +32,7 @@ namespace TiendaApi.Api.Controllers;
 [Produces("application/json")]
 public class CategoriasController(IMediator mediator) : ControllerBase {
     /// <summary>
-    /// Obtiene el listado paginado de categorías con filtros y ordenación.
+    ///     Obtiene el listado paginado de categorías con filtros y ordenación.
     /// </summary>
     /// <param name="nombre">Filtro por nombre (búsqueda parcial).</param>
     /// <param name="isDeleted">Filtra por estado de eliminación lógica.</param>
@@ -60,19 +60,23 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
             Direction = direction
         };
 
-        var resultado = await mediator.Send(new GetAllCategoriasQuery(filter));
+        Result<PagedResult<CategoriaDto>, DomainError> resultado =
+            await mediator.Send(new GetAllCategoriasQuery(filter));
         return resultado.Match(
-            onSuccess: categorias => {
+            categorias => {
                 // ETag lo gestiona OutputCache ([OutputCache] attribute)
-                var linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader)) Response.Headers.Append("Link", linkHeader);
+                string linkHeader = PaginationLinksHelper.CreateLinkHeader(categorias, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader)) {
+                    Response.Headers.Append("Link", linkHeader);
+                }
+
                 return categorias;
             },
-            onFailure: error => error.ToHttpResult<PagedResult<CategoriaDto>>());
+            error => error.ToHttpResult<PagedResult<CategoriaDto>>());
     }
 
     /// <summary>
-    /// Obtiene una categoría por su identificador.
+    ///     Obtiene una categoría por su identificador.
     /// </summary>
     /// <param name="id">Identificador de la categoría.</param>
     [HttpGet("{id}")]
@@ -81,14 +85,14 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     public async Task<ActionResult<CategoriaDto>> GetById(long id) {
-        var resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
+        Result<CategoriaDto, DomainError> resultado = await mediator.Send(new GetCategoriaByIdQuery(id));
         return resultado.Match(
-            onSuccess: categoria => (ActionResult<CategoriaDto>)categoria,
-            onFailure: error => error.ToHttpResult<CategoriaDto>());
+            categoria => categoria,
+            error => error.ToHttpResult<CategoriaDto>());
     }
 
     /// <summary>
-    /// Crea una nueva categoría (solo administradores).
+    ///     Crea una nueva categoría (solo administradores).
     /// </summary>
     /// <param name="dto">Datos de la categoría a crear.</param>
     [HttpPost]
@@ -99,14 +103,14 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CategoriaDto>> Create([FromBody] CategoriaRequestDto dto) {
-        var resultado = await mediator.Send(new CreateCategoriaCommand(dto));
+        Result<CategoriaDto, DomainError> resultado = await mediator.Send(new CreateCategoriaCommand(dto));
         return resultado.Match(
-            onSuccess: categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
-            onFailure: error => error.ToHttpResult<CategoriaDto>());
+            categoria => CreatedAtAction(nameof(GetById), new { id = categoria.Id }, categoria),
+            error => error.ToHttpResult<CategoriaDto>());
     }
 
     /// <summary>
-    /// Actualiza una categoría existente (solo administradores).
+    ///     Actualiza una categoría existente (solo administradores).
     /// </summary>
     /// <param name="id">Identificador de la categoría.</param>
     /// <param name="dto">Datos actualizados de la categoría.</param>
@@ -119,14 +123,14 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CategoriaDto>> Update(long id, [FromBody] CategoriaRequestDto dto) {
-        var resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
+        Result<CategoriaDto, DomainError> resultado = await mediator.Send(new UpdateCategoriaCommand(id, dto));
         return resultado.Match(
-            onSuccess: categoria => categoria,
-            onFailure: error => error.ToHttpResult<CategoriaDto>());
+            categoria => categoria,
+            error => error.ToHttpResult<CategoriaDto>());
     }
 
     /// <summary>
-    /// Elimina una categoría por su identificador (solo administradores).
+    ///     Elimina una categoría por su identificador (solo administradores).
     /// </summary>
     /// <param name="id">Identificador de la categoría.</param>
     [HttpDelete("{id}")]
@@ -136,9 +140,12 @@ public class CategoriasController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(long id) {
-        var resultado = await mediator.Send(new DeleteCategoriaCommand(id));
-        if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
+        UnitResult<DomainError> resultado = await mediator.Send(new DeleteCategoriaCommand(id));
+        if (resultado.IsSuccess) {
+            return NoContent();
+        }
+
+        DomainError error = resultado.Error;
         return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
@@ -48,7 +47,8 @@ public class PedidoCreadoNotificationHandlerTests {
         configuration.Setup(c => c["Smtp:AdminEmail"]).Returns((string?)null);
 
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
-        var destinatario = new DestinatarioDto { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
+        var destinatario = new DestinatarioDto
+            { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
         var items = new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) };
         var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 10m, "Pendiente", null, DateTime.UtcNow);
 
@@ -63,7 +63,8 @@ public class PedidoCreadoNotificationHandlerTests {
     [Test]
     public void PedidoCreadoNotification_ContieneDatosCorrectos() {
         var direccion = new DireccionDto { Calle = "Calle 1", Ciudad = "Madrid", Pais = "España" };
-        var destinatario = new DestinatarioDto { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
+        var destinatario = new DestinatarioDto
+            { NombreCompleto = "Juan", Email = "juan@test.com", Direccion = direccion };
         var items = new List<PedidoItemDto> { new(1, "Producto", 1, 10m, 10m) };
         var pedido = new PedidoDto("PED-2024-0001", 1, destinatario, items, 10m, "Pendiente", null, DateTime.UtcNow);
 

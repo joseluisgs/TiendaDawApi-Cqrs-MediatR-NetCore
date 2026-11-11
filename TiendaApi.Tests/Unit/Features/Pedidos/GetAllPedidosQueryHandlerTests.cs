@@ -1,8 +1,8 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using MongoDB.Bson;
 using Moq;
+using TiendaApi.Api.Dtos.Common;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Pedidos.Queries;
@@ -25,7 +25,8 @@ public class GetAllPedidosQueryHandlerTests {
 
         var handler = new GetAllPedidosQueryHandler(repository.Object);
 
-        var result = await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
+        Result<PagedResult<PedidoDto>, DomainError> result =
+            await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(2);
@@ -38,7 +39,8 @@ public class GetAllPedidosQueryHandlerTests {
 
         var handler = new GetAllPedidosQueryHandler(repository.Object);
 
-        var result = await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
+        Result<PagedResult<PedidoDto>, DomainError> result =
+            await handler.Handle(new GetAllPedidosQuery(0, 10), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();

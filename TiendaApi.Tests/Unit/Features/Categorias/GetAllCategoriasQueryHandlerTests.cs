@@ -1,5 +1,5 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using TiendaApi.Api.Dtos.Categorias;
@@ -23,17 +23,19 @@ public class GetAllCategoriasQueryHandlerTests {
     public async Task Handle_CategoriasExisten_DevuelvePagedResult() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
         var filter = new CategoriaFilterDto { Page = 0, Size = 10 };
         var categorias = new List<Categoria> {
             new() { Id = 1, Nombre = "Electrónica" },
             new() { Id = 2, Nombre = "Ropa" }
         };
         repository.Setup(r => r.FindAllPagedAsync(filter)).ReturnsAsync((categorias, 2));
-        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<CategoriaDto>?)null);
+        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<CategoriaDto>?)null);
         var handler = new GetAllCategoriasQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetAllCategoriasQuery(filter), CancellationToken.None);
+        Result<PagedResult<CategoriaDto>, DomainError> result =
+            await handler.Handle(new GetAllCategoriasQuery(filter), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(2);
@@ -44,13 +46,15 @@ public class GetAllCategoriasQueryHandlerTests {
     public async Task Handle_SinCategorias_DevuelveListaVacia() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
         var filter = new CategoriaFilterDto { Page = 0, Size = 10 };
         repository.Setup(r => r.FindAllPagedAsync(filter)).ReturnsAsync((new List<Categoria>(), 0));
-        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<CategoriaDto>?)null);
+        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<CategoriaDto>?)null);
         var handler = new GetAllCategoriasQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetAllCategoriasQuery(filter), CancellationToken.None);
+        Result<PagedResult<CategoriaDto>, DomainError> result =
+            await handler.Handle(new GetAllCategoriasQuery(filter), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
@@ -60,18 +64,22 @@ public class GetAllCategoriasQueryHandlerTests {
     public async Task Handle_FiltrosDiferentes_GeneranCacheKeysDiferentes() {
         var repository = new Mock<ICategoriaRepository>();
         var cacheService = new Mock<ICacheService>();
-        var configuration = CreateMockConfiguration();
+        Mock<IConfiguration> configuration = CreateMockConfiguration();
         var filter1 = new CategoriaFilterDto { Nombre = "Electrónica", Page = 0, Size = 10 };
         var filter2 = new CategoriaFilterDto { Nombre = "Ropa", Page = 0, Size = 10 };
-        repository.Setup(r => r.FindAllPagedAsync(It.IsAny<CategoriaFilterDto>())).ReturnsAsync((new List<Categoria>(), 0));
-        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>())).ReturnsAsync((PagedResult<CategoriaDto>?)null);
+        repository.Setup(r => r.FindAllPagedAsync(It.IsAny<CategoriaFilterDto>()))
+            .ReturnsAsync((new List<Categoria>(), 0));
+        cacheService.Setup(c => c.GetAsync<PagedResult<CategoriaDto>>(It.IsAny<string>()))
+            .ReturnsAsync((PagedResult<CategoriaDto>?)null);
         var handler = new GetAllCategoriasQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
         await handler.Handle(new GetAllCategoriasQuery(filter1), CancellationToken.None);
         await handler.Handle(new GetAllCategoriasQuery(filter2), CancellationToken.None);
 
         // Verificar que se llamó GetAsync con keys diferentes para filtros diferentes
-        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Electrónica"))), Times.Once);
-        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Ropa"))), Times.Once);
+        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Electrónica"))),
+            Times.Once);
+        cacheService.Verify(c => c.GetAsync<PagedResult<CategoriaDto>>(It.Is<string>(k => k.Contains("Ropa"))),
+            Times.Once);
     }
 }

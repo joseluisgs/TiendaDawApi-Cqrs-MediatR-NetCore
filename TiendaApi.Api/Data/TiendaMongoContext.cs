@@ -6,21 +6,20 @@ using TiendaApi.Api.Models;
 namespace TiendaApi.Api.Data;
 
 /// <summary>
-/// DbContext específico para MongoDB.
-/// Gestiona únicamente la colección de Pedidos.
+///     DbContext específico para MongoDB.
+///     Gestiona únicamente la colección de Pedidos.
 /// </summary>
 public class TiendaMongoContext : DbContext {
     /// <summary>
-    /// Constructor con opciones de configuración.
+    ///     Constructor con opciones de configuración.
     /// </summary>
-    public TiendaMongoContext(DbContextOptions<TiendaMongoContext> options) : base(options) {
-    }
+    public TiendaMongoContext(DbContextOptions<TiendaMongoContext> options) : base(options) { }
 
     /// <summary>DbSet de Pedidos.</summary>
     public DbSet<Pedido> Pedidos { get; set; } = null!;
 
     /// <summary>
-    /// Define el modelo de la colección de pedidos de MongoDB.
+    ///     Define el modelo de la colección de pedidos de MongoDB.
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);

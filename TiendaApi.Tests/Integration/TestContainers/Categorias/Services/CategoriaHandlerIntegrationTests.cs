@@ -1,12 +1,15 @@
-using Moq;
-using Microsoft.AspNetCore.Hosting;
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
 using TiendaApi.Api.Data;
 using TiendaApi.Api.Dtos.Categorias;
+using TiendaApi.Api.Dtos.Common;
+using TiendaApi.Api.Errors;
 using TiendaApi.Api.Features.Categorias.Commands;
 using TiendaApi.Api.Features.Categorias.Queries;
 using TiendaApi.Api.Infrastructures;
@@ -16,21 +19,15 @@ using TiendaApi.Api.Services.Email;
 namespace TiendaApi.Tests.Integration.TestContainers.Categorias.Services;
 
 /// <summary>
-/// Tests de integración de los handlers MediatR de Categorías con DI completo,
-/// equivalentes a los <c>CategoriaServiceIntegrationTests</c> del proyecto sin CQRS.
-/// Verifica los handlers con PostgreSQL + MongoDB reales usando Testcontainers.
-/// 🎓 El Controller envía al Mediator; aquí se envía igual que en producción.
+///     Tests de integración de los handlers MediatR de Categorías con DI completo,
+///     equivalentes a los <c>CategoriaServiceIntegrationTests</c> del proyecto sin CQRS.
+///     Verifica los handlers con PostgreSQL + MongoDB reales usando Testcontainers.
+///     🎓 El Controller envía al Mediator; aquí se envía igual que en producción.
 /// </summary>
 [TestFixture]
 [Category("Integration")]
 [NonParallelizable]
 public class CategoriaHandlerIntegrationTests {
-    private const string DatabaseName = "it_categoria_handler";
-    private string _connectionString = string.Empty;
-    private string _mongoConnectionString = string.Empty;
-    private ServiceProvider? _provider;
-    private IMediator? _mediator;
-
     [OneTimeSetUp]
     public async Task OneTimeSetup() {
         _connectionString = await AssemblyContainerFixture.CreatePostgresDatabaseAsync(DatabaseName);
@@ -45,7 +42,7 @@ public class CategoriaHandlerIntegrationTests {
 
     [SetUp]
     public async Task Setup() {
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> {
                 { "ConnectionStrings:DefaultConnection", _connectionString },
                 { "MongoDbSettings:ConnectionString", _mongoConnectionString },
@@ -74,7 +71,7 @@ public class CategoriaHandlerIntegrationTests {
 
         _provider = services.BuildServiceProvider();
 
-        var dbContext = _provider.GetRequiredService<TiendaDbContext>();
+        TiendaDbContext dbContext = _provider.GetRequiredService<TiendaDbContext>();
         await dbContext.Database.EnsureCreatedAsync();
 
         _mediator = _provider.GetRequiredService<IMediator>();
@@ -85,9 +82,16 @@ public class CategoriaHandlerIntegrationTests {
         _provider?.Dispose();
     }
 
+    private const string DatabaseName = "it_categoria_handler";
+    private string _connectionString = string.Empty;
+    private string _mongoConnectionString = string.Empty;
+    private ServiceProvider? _provider;
+    private IMediator? _mediator;
+
     [Test]
     public async Task GetAll_SinCategorias_RetornaResultadoPaginado() {
-        var result = await _mediator!.Send(new GetAllCategoriasQuery(new CategoriaFilterDto()));
+        Result<PagedResult<CategoriaDto>, DomainError> result =
+            await _mediator!.Send(new GetAllCategoriasQuery(new CategoriaFilterDto()));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -98,7 +102,7 @@ public class CategoriaHandlerIntegrationTests {
     public async Task Create_ConDatosValidos_RetornaCategoriaCreada() {
         var dto = new CategoriaRequestDto { Nombre = "Electronica Test" };
 
-        var result = await _mediator!.Send(new CreateCategoriaCommand(dto));
+        Result<CategoriaDto, DomainError> result = await _mediator!.Send(new CreateCategoriaCommand(dto));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -108,11 +112,12 @@ public class CategoriaHandlerIntegrationTests {
 
     [Test]
     public async Task GetById_ConCategoriaExistente_RetornaCategoria() {
-        var createResult = await _mediator!.Send(
+        Result<CategoriaDto, DomainError> createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Buscar Test" }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var findResult = await _mediator.Send(new GetCategoriaByIdQuery(createResult.Value.Id));
+        Result<CategoriaDto, DomainError> findResult =
+            await _mediator.Send(new GetCategoriaByIdQuery(createResult.Value.Id));
 
         findResult.IsSuccess.Should().BeTrue();
         findResult.Value.Nombre.Should().Be("Buscar Test");
@@ -120,18 +125,18 @@ public class CategoriaHandlerIntegrationTests {
 
     [Test]
     public async Task GetById_ConCategoriaNoExistente_RetornaNotFound() {
-        var result = await _mediator!.Send(new GetCategoriaByIdQuery(999999));
+        Result<CategoriaDto, DomainError> result = await _mediator!.Send(new GetCategoriaByIdQuery(999999));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
     public async Task Update_ConDatosValidos_RetornaCategoriaActualizada() {
-        var createResult = await _mediator!.Send(
+        Result<CategoriaDto, DomainError> createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Original" }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var updateResult = await _mediator.Send(
+        Result<CategoriaDto, DomainError> updateResult = await _mediator.Send(
             new UpdateCategoriaCommand(createResult.Value.Id, new CategoriaRequestDto { Nombre = "Actualizado" }));
 
         updateResult.IsSuccess.Should().BeTrue();
@@ -140,15 +145,16 @@ public class CategoriaHandlerIntegrationTests {
 
     [Test]
     public async Task Delete_ConCategoriaExistente_RetornaExito() {
-        var createResult = await _mediator!.Send(
+        Result<CategoriaDto, DomainError> createResult = await _mediator!.Send(
             new CreateCategoriaCommand(new CategoriaRequestDto { Nombre = "Eliminar Test" }));
         createResult.IsSuccess.Should().BeTrue();
 
-        var deleteResult = await _mediator.Send(new DeleteCategoriaCommand(createResult.Value.Id));
+        UnitResult<DomainError> deleteResult = await _mediator.Send(new DeleteCategoriaCommand(createResult.Value.Id));
 
         deleteResult.IsSuccess.Should().BeTrue();
 
-        var findResult = await _mediator.Send(new GetCategoriaByIdQuery(createResult.Value.Id));
+        Result<CategoriaDto, DomainError> findResult =
+            await _mediator.Send(new GetCategoriaByIdQuery(createResult.Value.Id));
         findResult.IsFailure.Should().BeTrue();
     }
 
@@ -157,20 +163,21 @@ public class CategoriaHandlerIntegrationTests {
         var dto = new CategoriaRequestDto { Nombre = "Duplicado Test" };
         await _mediator!.Send(new CreateCategoriaCommand(dto));
 
-        var result = await _mediator.Send(new CreateCategoriaCommand(dto));
+        Result<CategoriaDto, DomainError> result = await _mediator.Send(new CreateCategoriaCommand(dto));
 
         result.IsFailure.Should().BeTrue();
     }
 
     [Test]
     public async Task GetAll_ConFiltro_RetornaResultadosPaginados() {
-        for (var i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             await _mediator!.Send(new CreateCategoriaCommand(
                 new CategoriaRequestDto { Nombre = $"Paged Test {i}" }));
         }
 
         var filter = new CategoriaFilterDto { Page = 1, Size = 3 };
-        var result = await _mediator!.Send(new GetAllCategoriasQuery(filter));
+        Result<PagedResult<CategoriaDto>, DomainError>
+            result = await _mediator!.Send(new GetAllCategoriasQuery(filter));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(3);

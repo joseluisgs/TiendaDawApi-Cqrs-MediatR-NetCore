@@ -6,12 +6,12 @@ using TiendaApi.Api.GraphQL.Publishers;
 namespace TiendaApi.Api.Features.Productos.Notifications;
 
 /// <summary>
-/// Handler que publica evento de GraphQL Subscription cuando se crea un producto.
+///     Handler que publica evento de GraphQL Subscription cuando se crea un producto.
 /// </summary>
 public class ProductoCreadoGraphQLHandler(IEventPublisher eventPublisher)
     : INotificationHandler<ProductoCreadoNotification> {
     /// <summary>
-    /// Procesa el evento ProductoCreado y publica la suscripción GraphQL onProductoCreado.
+    ///     Procesa el evento ProductoCreado y publica la suscripción GraphQL onProductoCreado.
     /// </summary>
     public async Task Handle(ProductoCreadoNotification notification, CancellationToken cancellationToken) {
         await eventPublisher.PublishAsync("onProductoCreado", new ProductoCreadoEvent {
@@ -21,6 +21,7 @@ public class ProductoCreadoGraphQLHandler(IEventPublisher eventPublisher)
             Stock = notification.Producto.Stock,
             CreatedAt = DateTime.UtcNow
         });
-        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Producto creado ID={ProductoId}", notification.Producto.Id);
+        Log.Information("🔄 [GRAPHQL] Evento Subscription enviado: Producto creado ID={ProductoId}",
+            notification.Producto.Id);
     }
 }

@@ -1,5 +1,5 @@
-using Asp.Versioning;
 using System.Security.Claims;
+using Asp.Versioning;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -19,15 +19,13 @@ using TiendaApi.Api.Helpers.Pagination;
 namespace TiendaApi.Api.Controllers;
 
 /// <summary>
-/// Controlador de productos refactorizado con CQRS + MediatR.
-///
-/// 🎓 ANTES vs AHORA:
-/// ANTES:  ProductosController(IProductoService service, ILogger logger)
-/// AHORA:  ProductosController(IMediator mediator)
-///
-/// El Controller ya no tiene NINGUNA dependencia de negocio. Solo sabe que puede
-/// "enviar" peticiones al Mediator y recibir respuestas. Esto hace el Controller
-/// extremadamente delgado y fácil de testear.
+///     Controlador de productos refactorizado con CQRS + MediatR.
+///     🎓 ANTES vs AHORA:
+///     ANTES:  ProductosController(IProductoService service, ILogger logger)
+///     AHORA:  ProductosController(IMediator mediator)
+///     El Controller ya no tiene NINGUNA dependencia de negocio. Solo sabe que puede
+///     "enviar" peticiones al Mediator y recibir respuestas. Esto hace el Controller
+///     extremadamente delgado y fácil de testear.
 /// </summary>
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
@@ -49,17 +47,21 @@ public class ProductosController(IMediator mediator) : ControllerBase {
         [FromQuery] int size = 10,
         [FromQuery] string sortBy = "id",
         [FromQuery] string direction = "asc") {
-        var filter = new ProductoFilterDto(nombre, categoria, isDeleted, precioMax, stockMin, page, size, sortBy, direction);
-        var resultado = await mediator.Send(new GetAllProductosQuery(filter));
+        var filter = new ProductoFilterDto(nombre, categoria, isDeleted, precioMax, stockMin, page, size, sortBy,
+            direction);
+        Result<PagedResult<ProductoDto>, DomainError> resultado = await mediator.Send(new GetAllProductosQuery(filter));
         return resultado.Match(
-            onSuccess: productos => {
+            productos => {
                 // ETag lo gestiona OutputCache ([OutputCache] attribute)
-                var linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
-                if (!string.IsNullOrEmpty(linkHeader))
+                string linkHeader = PaginationLinksHelper.CreateLinkHeader(productos, Request, sortBy, direction);
+                if (!string.IsNullOrEmpty(linkHeader)) {
                     Response.Headers.Append("Link", linkHeader);
+                }
+
                 return (ActionResult<PagedResult<ProductoDto>>)productos;
             },
-            onFailure: error => (ActionResult<PagedResult<ProductoDto>>)new ObjectResult(new { message = error.Message }) { StatusCode = StatusCodes.Status500InternalServerError }
+            error => (ActionResult<PagedResult<ProductoDto>>)new ObjectResult(new { message = error.Message })
+                { StatusCode = StatusCodes.Status500InternalServerError }
         );
     }
 
@@ -70,10 +72,10 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     public async Task<ActionResult<ProductoDto>> GetById(long id) {
-        var resultado = await mediator.Send(new GetProductoByIdQuery(id));
+        Result<ProductoDto, DomainError> resultado = await mediator.Send(new GetProductoByIdQuery(id));
         return resultado.Match(
-            onSuccess: producto => producto,
-            onFailure: error => error.ToHttpResult<ProductoDto>()
+            producto => producto,
+            error => error.ToHttpResult<ProductoDto>()
         );
     }
 
@@ -84,10 +86,11 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<ProductoDto>>> GetByCategoria(long categoriaId) {
-        var resultado = await mediator.Send(new GetProductosByCategoriaQuery(categoriaId));
+        Result<IEnumerable<ProductoDto>, DomainError> resultado =
+            await mediator.Send(new GetProductosByCategoriaQuery(categoriaId));
         return resultado.Match(
-            onSuccess: productos => Ok(productos),
-            onFailure: error => error.ToHttpResult<IEnumerable<ProductoDto>>()
+            productos => Ok(productos),
+            error => error.ToHttpResult<IEnumerable<ProductoDto>>()
         );
     }
 
@@ -100,10 +103,10 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<ProductoDto>> Create([FromBody] ProductoRequestDto dto) {
-        var resultado = await mediator.Send(new CreateProductoCommand(dto));
+        Result<ProductoDto, DomainError> resultado = await mediator.Send(new CreateProductoCommand(dto));
         return resultado.Match(
-            onSuccess: producto => CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto),
-            onFailure: error => error.ToHttpResult<ProductoDto>()
+            producto => CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto),
+            error => error.ToHttpResult<ProductoDto>()
         );
     }
 
@@ -116,10 +119,10 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<ProductoDto>> Update(long id, [FromBody] ProductoRequestDto dto) {
-        var resultado = await mediator.Send(new UpdateProductoCommand(id, dto));
+        Result<ProductoDto, DomainError> resultado = await mediator.Send(new UpdateProductoCommand(id, dto));
         return resultado.Match(
-            onSuccess: producto => producto,
-            onFailure: error => error.ToHttpResult<ProductoDto>()
+            producto => producto,
+            error => error.ToHttpResult<ProductoDto>()
         );
     }
 
@@ -131,9 +134,12 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult> Delete(long id) {
-        var resultado = await mediator.Send(new DeleteProductoCommand(id));
-        if (resultado.IsSuccess) return NoContent();
-        var error = resultado.Error;
+        UnitResult<DomainError> resultado = await mediator.Send(new DeleteProductoCommand(id));
+        if (resultado.IsSuccess) {
+            return NoContent();
+        }
+
+        DomainError error = resultado.Error;
         return error switch {
             NotFoundError => NotFound(new { message = error.Message }),
             ForbiddenError => StatusCode(StatusCodes.Status403Forbidden, new { message = error.Message }),
@@ -151,17 +157,19 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [RequestSizeLimit(10 * 1024 * 1024)]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<ProductoDto>> UpdateImage(long id, IFormFile image) {
-        if (image is null or { Length: 0 })
+        if (image is null or { Length: 0 }) {
             return BadRequest(new { message = "Debe proporcionar un archivo de imagen" });
+        }
 
-        var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
-        if (!allowedTypes.Contains(image.ContentType.ToLowerInvariant()))
+        string[] allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+        if (!allowedTypes.Contains(image.ContentType.ToLowerInvariant())) {
             return BadRequest(new { message = "Tipo de archivo no permitido. Solo se permiten: JPG, PNG, GIF, WEBP" });
+        }
 
-        var resultado = await mediator.Send(new UpdateProductoImageCommand(id, image));
+        Result<ProductoDto, DomainError> resultado = await mediator.Send(new UpdateProductoImageCommand(id, image));
         return resultado.Match(
-            onSuccess: producto => producto,
-            onFailure: error => error.ToHttpResult<ProductoDto>()
+            producto => producto,
+            error => error.ToHttpResult<ProductoDto>()
         );
     }
 
@@ -174,20 +182,20 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [Authorize(Policy = "RequireAdminRole")]
     public async Task<ActionResult<ProductoDto>> UpdatePartial(long id, [FromBody] ProductoPatchDto dto) {
-        var resultado = await mediator.Send(new UpdateProductoPartialCommand(id, dto));
+        Result<ProductoDto, DomainError> resultado = await mediator.Send(new UpdateProductoPartialCommand(id, dto));
         return resultado.Match(
-            onSuccess: producto => producto,
-            onFailure: error => error.ToHttpResult<ProductoDto>()
+            producto => producto,
+            error => error.ToHttpResult<ProductoDto>()
         );
     }
 
     /// <summary>
-    /// 🎓 Serie histórica de precios de un producto (Cassandra, consulta Q-A).
-    /// PÚBLICO, como el propio catálogo. El orden (más reciente primero) lo
-    /// guarda la clustering key de la tabla; el 404 lo decide PostgreSQL (fuente
-    /// de verdad), no Cassandra. Controller ultra-delgado: solo envía la query
-    /// al mediator (la fachada HistorialService hace el resto, idéntico al
-    /// proyecto sin CQRS).
+    ///     🎓 Serie histórica de precios de un producto (Cassandra, consulta Q-A).
+    ///     PÚBLICO, como el propio catálogo. El orden (más reciente primero) lo
+    ///     guarda la clustering key de la tabla; el 404 lo decide PostgreSQL (fuente
+    ///     de verdad), no Cassandra. Controller ultra-delgado: solo envía la query
+    ///     al mediator (la fachada HistorialService hace el resto, idéntico al
+    ///     proyecto sin CQRS).
     /// </summary>
     /// <param name="id">Producto.</param>
     /// <param name="desde">Fecha mínima opcional (ISO 8601).</param>
@@ -204,21 +212,22 @@ public class ProductosController(IMediator mediator) : ControllerBase {
         [FromQuery] DateTime? desde = null,
         [FromQuery] DateTime? hasta = null,
         [FromQuery] int limit = 50) {
-        var resultado = await mediator.Send(new GetHistorialPreciosQuery(id, desde, hasta, limit));
+        Result<IReadOnlyList<HistorialPrecioDto>, DomainError> resultado =
+            await mediator.Send(new GetHistorialPreciosQuery(id, desde, hasta, limit));
 
         // Constructor explícito: el operador implícito T -> ActionResult<T> no se
         // aplica cuando T es una interfaz genérica construida (IReadOnlyList<>).
         return resultado.Match(
-            onSuccess: serie => new ActionResult<IReadOnlyList<HistorialPrecioDto>>(serie),
-            onFailure: error => error.ToHttpResult<IReadOnlyList<HistorialPrecioDto>>()
+            serie => new ActionResult<IReadOnlyList<HistorialPrecioDto>>(serie),
+            error => error.ToHttpResult<IReadOnlyList<HistorialPrecioDto>>()
         );
     }
 
     /// <summary>
-    /// Registra que el usuario autenticado ha visto este producto (escritura Q-B,
-    /// alimenta su feed con TTL nativo de 180 días). El 204 lo decide la sesión
-    /// y la existencia del producto: la fila del feed es un dato auxiliar del
-    /// usuario que alimenta una consulta aparte.
+    ///     Registra que el usuario autenticado ha visto este producto (escritura Q-B,
+    ///     alimenta su feed con TTL nativo de 180 días). El 204 lo decide la sesión
+    ///     y la existencia del producto: la fila del feed es un dato auxiliar del
+    ///     usuario que alimenta una consulta aparte.
     /// </summary>
     /// <param name="id">Producto visto.</param>
     /// <returns>204 No Content, 401 sin sesión o 404 si el producto no existe.</returns>
@@ -231,15 +240,17 @@ public class ProductosController(IMediator mediator) : ControllerBase {
     // ya no hereda de ActionResult, así que ToHttpResult<T> no es convertible al
     // tipo no genérico. Con T = object el 204/401 y el mapeo de errores siguen iguales.
     public async Task<ActionResult<object>> RegistrarVista(long id) {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        string? userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long userId)) {
             return Unauthorized(new { message = "Usuario no autenticado correctamente" });
+        }
 
-        var resultado = await mediator.Send(new RegistrarVistaCommand(userId, id));
+        UnitResult<DomainError> resultado = await mediator.Send(new RegistrarVistaCommand(userId, id));
 
-        if (resultado.IsSuccess)
+        if (resultado.IsSuccess) {
             return NoContent();
+        }
 
         return resultado.Error.ToHttpResult<object>();
     }

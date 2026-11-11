@@ -8,23 +8,22 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Api.Features.Productos.Queries;
 
 /// <summary>
-/// Query para obtener todos los productos paginados con filtros.
+///     Query para obtener todos los productos paginados con filtros.
 /// </summary>
 public record GetAllProductosQuery(ProductoFilterDto Filter)
     : IRequest<Result<PagedResult<ProductoDto>, DomainError>>;
 
 /// <summary>
-/// Handler de la query GetAllProductosQuery.
-///
-/// La lectura delega en la fachada IProductoService
-/// (caché + MongoDB). El handler solo orquesta.
+///     Handler de la query GetAllProductosQuery.
+///     La lectura delega en la fachada IProductoService
+///     (caché + MongoDB). El handler solo orquesta.
 /// </summary>
 public class GetAllProductosQueryHandler(IProductoService service)
     : IRequestHandler<GetAllProductosQuery, Result<PagedResult<ProductoDto>, DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<PagedResult<ProductoDto>, DomainError>> Handle(
         GetAllProductosQuery request, CancellationToken cancellationToken) {
-        var pagedResult = await service.GetPagedAsync(request.Filter);
+        PagedResult<ProductoDto> pagedResult = await service.GetPagedAsync(request.Filter);
         return Result.Success<PagedResult<ProductoDto>, DomainError>(pagedResult);
     }
 }

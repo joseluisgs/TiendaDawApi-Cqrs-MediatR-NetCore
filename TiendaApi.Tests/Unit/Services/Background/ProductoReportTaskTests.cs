@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using NUnit.Framework;
+using TiendaApi.Api.Errors;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Models.Read;
 using TiendaApi.Api.Repositories.Usuarios;
@@ -14,13 +14,21 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Tests.Unit.Services.Background;
 
 /// <summary>
-/// Tests unitarios para ProductoReportTask.
-/// Verifica la lógica de reportes de productos y envío de emails.
+///     Tests unitarios para ProductoReportTask.
+///     Verifica la lógica de reportes de productos y envío de emails.
 /// </summary>
 [TestFixture]
 [Category("Unit")]
 [Category("BackgroundJob")]
 public class ProductoReportTaskTests {
+    [SetUp]
+    public void SetUp() {
+        _mockProductoService = new Mock<IProductoService>();
+        _mockUserRepository = new Mock<IUserRepository>();
+        _mockEmailService = new Mock<IEmailService>();
+        _mockLogger = new Mock<ILogger<ProductoReportTask>>();
+    }
+
     private Mock<IProductoService> _mockProductoService = null!;
     private Mock<IUserRepository> _mockUserRepository = null!;
     private Mock<IEmailService> _mockEmailService = null!;
@@ -32,7 +40,7 @@ public class ProductoReportTaskTests {
             { "IsDevelopment", isDevelopment.ToString().ToLower() }
         };
 
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(inMemorySettings!)
             .Build();
 
@@ -45,23 +53,13 @@ public class ProductoReportTaskTests {
         );
     }
 
-    [SetUp]
-    public void SetUp() {
-        _mockProductoService = new Mock<IProductoService>();
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockEmailService = new Mock<IEmailService>();
-        _mockLogger = new Mock<ILogger<ProductoReportTask>>();
-    }
-
-    #region ========== ExecuteAsync Tests ==========
-
     [Test]
     public async Task ExecuteAsync_ModoDesarrollo_RetornaSuccess() {
         // Arrange
-        var task = CreateTask(isDevelopment: true);
+        ProductoReportTask task = CreateTask();
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -70,13 +68,13 @@ public class ProductoReportTaskTests {
     [Test]
     public async Task ExecuteAsync_ModoProduccion_SinProductos_RetornaSuccess() {
         // Arrange
-        var task = CreateTask(isDevelopment: false);
+        ProductoReportTask task = CreateTask(false);
 
         _mockProductoService.Setup(r => r.GetRecentlyCreatedAsync(It.IsAny<int>()))
             .ReturnsAsync(new List<ProductoRead>());
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -85,7 +83,7 @@ public class ProductoReportTaskTests {
     [Test]
     public async Task ExecuteAsync_ModoProduccion_ConProductos_EnviaEmails() {
         // Arrange
-        var task = CreateTask(isDevelopment: false);
+        ProductoReportTask task = CreateTask(false);
 
         var productos = new List<ProductoRead> {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 },
@@ -107,7 +105,7 @@ public class ProductoReportTaskTests {
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -117,7 +115,7 @@ public class ProductoReportTaskTests {
     [Test]
     public async Task ExecuteAsync_ModoProduccion_SinUsuarios_RetornaSuccess() {
         // Arrange
-        var task = CreateTask(isDevelopment: false);
+        ProductoReportTask task = CreateTask(false);
 
         var productos = new List<ProductoRead> {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 }
@@ -130,7 +128,7 @@ public class ProductoReportTaskTests {
             .ReturnsAsync(new List<User>());
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -140,7 +138,7 @@ public class ProductoReportTaskTests {
     [Test]
     public async Task ExecuteAsync_ModoProduccion_DiasPersonalizados_UsaDiasConfigurados() {
         // Arrange
-        var task = CreateTask(isDevelopment: false, days: 14);
+        ProductoReportTask task = CreateTask(false, 14);
 
         var productos = new List<ProductoRead>();
 
@@ -148,7 +146,7 @@ public class ProductoReportTaskTests {
             .ReturnsAsync(productos);
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -158,7 +156,7 @@ public class ProductoReportTaskTests {
     [Test]
     public async Task ExecuteAsync_ModoProduccion_UnProducto_EnviaUnEmail() {
         // Arrange
-        var task = CreateTask(isDevelopment: false);
+        ProductoReportTask task = CreateTask(false);
 
         var productos = new List<ProductoRead> {
             new() { Id = 1, Nombre = "Producto 1", Descripcion = "Desc 1", Precio = 10.99m, Stock = 5 }
@@ -178,25 +176,19 @@ public class ProductoReportTaskTests {
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await task.ExecuteAsync();
+        UnitResult<DomainError> result = await task.ExecuteAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         _mockEmailService.Verify(e => e.EnqueueEmailAsync(It.IsAny<EmailMessage>()), Times.Once);
     }
 
-    #endregion
-
-    #region ========== Configuration Tests ==========
-
     [Test]
     public void Constructor_ValoresPorDefecto_ConfiguraCorrectamente() {
         // Arrange & Act
-        var task = CreateTask(isDevelopment: true, days: 7);
+        ProductoReportTask task = CreateTask();
 
         // Assert - The task was created successfully
         task.Should().NotBeNull();
     }
-
-    #endregion
 }

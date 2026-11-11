@@ -6,15 +6,16 @@ using TiendaApi.Api.Realtime.Pedidos;
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que emite por SignalR la eliminación de un pedido.
+///     Handler que emite por SignalR la eliminación de un pedido.
 /// </summary>
 public class PedidoEliminadoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<PedidoEliminadoNotification> {
     /// <summary>
-    /// Procesa el evento PedidoEliminado y difunde la eliminación por SignalR.
+    ///     Procesa el evento PedidoEliminado y difunde la eliminación por SignalR.
     /// </summary>
     public async Task Handle(PedidoEliminadoNotification notification, CancellationToken cancellationToken) {
-        Log.Information("📟 [SIGNALR] Recibida notificación PedidoEliminado para ID: {PedidoId}", notification.PedidoId);
+        Log.Information("📟 [SIGNALR] Recibida notificación PedidoEliminado para ID: {PedidoId}",
+            notification.PedidoId);
 
         await hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new {
             pedidoId = notification.PedidoId,
@@ -25,6 +26,7 @@ public class PedidoEliminadoSignalRHandler(IHubContext<PedidosHub> hubContext)
             timestamp = DateTime.UtcNow
         }, cancellationToken);
 
-        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido eliminado ID={PedidoId}", notification.PedidoId);
+        Log.Information("📟 [SIGNALR] Evento enviado al dueño y a administradores: Pedido eliminado ID={PedidoId}",
+            notification.PedidoId);
     }
 }

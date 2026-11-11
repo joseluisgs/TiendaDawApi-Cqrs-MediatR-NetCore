@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Serilog;
@@ -8,6 +9,7 @@ using TiendaApi.Api.Errors;
 using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Notifications;
 using TiendaApi.Api.Mappers;
+using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Categorias;
 using TiendaApi.Api.Repositories.Productos;
 using TiendaApi.Api.Services.Cache;
@@ -16,13 +18,13 @@ using TiendaApi.Api.Services.Productos;
 namespace TiendaApi.Api.Features.Productos.Commands;
 
 /// <summary>
-/// Comando para crear un nuevo producto.
+///     Comando para crear un nuevo producto.
 /// </summary>
 public record CreateProductoCommand(ProductoRequestDto Dto)
     : IRequest<Result<ProductoDto, DomainError>>;
 
 /// <summary>
-/// Handler del comando CreateProductoCommand.
+///     Handler del comando CreateProductoCommand.
 /// </summary>
 public class CreateProductoCommandHandler(
     IProductoRepository productoRepository,
@@ -32,10 +34,10 @@ public class CreateProductoCommandHandler(
     ICacheService cacheService,
     IOutputCacheStore outputCacheStore)
     : IRequestHandler<CreateProductoCommand, Result<ProductoDto, DomainError>> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<ProductoDto, DomainError>> Handle(
         CreateProductoCommand request, CancellationToken cancellationToken) {
-        var validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
+        ValidationResult validationResult = await validator.ValidateAsync(request.Dto, cancellationToken);
         if (!validationResult.IsValid) {
             var errors = validationResult.Errors
                 .GroupBy(e => e.PropertyName)
@@ -43,7 +45,7 @@ public class CreateProductoCommandHandler(
             return Result.Failure<ProductoDto, DomainError>(ProductoError.ValidacionConCampos(errors));
         }
 
-        var categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
+        Categoria? categoriaExists = await categoriaRepository.FindByIdAsync(request.Dto.CategoriaId);
         if (categoriaExists is null) {
             return Result.Failure<ProductoDto, DomainError>(
                 ProductoError.ValidacionConCampos(new Dictionary<string, string[]> {
@@ -52,8 +54,8 @@ public class CreateProductoCommandHandler(
             );
         }
 
-        var saved = await productoRepository.SaveAsync(request.Dto.ToEntity());
-        var dto = saved.ToDto();
+        Producto saved = await productoRepository.SaveAsync(request.Dto.ToEntity());
+        ProductoDto dto = saved.ToDto();
 
         // 🎓 Orden correcto: PRIMERO replicar (Publish → sync a MongoDB), DESPUÉS invalidar.
         // Si invalidamos antes, un lector puede repueblar la caché con el modelo de lectura viejo.

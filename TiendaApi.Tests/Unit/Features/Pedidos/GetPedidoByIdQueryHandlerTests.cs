@@ -1,12 +1,10 @@
 using CSharpFunctionalExtensions;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using Moq;
 using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Pedidos;
 using TiendaApi.Api.Features.Pedidos.Queries;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Pedidos;
@@ -34,7 +32,8 @@ public class GetPedidoByIdQueryHandlerTests {
 
         var handler = new GetPedidoByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetPedidoByIdQuery("PED-2024-0001"), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new GetPedidoByIdQuery("PED-2024-0001"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -49,7 +48,8 @@ public class GetPedidoByIdQueryHandlerTests {
 
         var handler = new GetPedidoByIdQueryHandler(repository.Object, cacheService.Object, configuration.Object);
 
-        var result = await handler.Handle(new GetPedidoByIdQuery("PED-9999-9999"), CancellationToken.None);
+        Result<PedidoDto, DomainError> result =
+            await handler.Handle(new GetPedidoByIdQuery("PED-9999-9999"), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

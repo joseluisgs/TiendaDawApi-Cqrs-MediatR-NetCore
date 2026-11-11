@@ -11,17 +11,23 @@ using TiendaApi.Api.Repositories.Productos;
 namespace TiendaApi.Tests.Unit.Features.Productos;
 
 /// <summary>
-/// Tests unitarios de ProductoReadSyncHandler (read model CQRS).
-///
-/// 🎓 El sync handler es el puente entre el write model (PostgreSQL, vía
-/// notificaciones de los commands) y el read model (MongoDB). Estos tests
-/// verifican que cada notificación se traduce en la operación de Mongo
-/// correcta y que un fallo de MongoDB NO propaga excepción (PG ya commiteado).
+///     Tests unitarios de ProductoReadSyncHandler (read model CQRS).
+///     🎓 El sync handler es el puente entre el write model (PostgreSQL, vía
+///     notificaciones de los commands) y el read model (MongoDB). Estos tests
+///     verifican que cada notificación se traduce en la operación de Mongo
+///     correcta y que un fallo de MongoDB NO propaga excepción (PG ya commiteado).
 /// </summary>
 [TestFixture]
 [Category("Unit")]
 [Category("Sync")]
 public class ProductoReadSyncHandlerTests {
+    [SetUp]
+    public void SetUp() {
+        _readRepository = new Mock<IProductoReadRepository>();
+        _logger = new Mock<ILogger<ProductoReadSyncHandler>>();
+        _handler = new ProductoReadSyncHandler(_readRepository.Object, _logger.Object);
+    }
+
     private Mock<IProductoReadRepository> _readRepository = null!;
     private Mock<ILogger<ProductoReadSyncHandler>> _logger = null!;
     private ProductoReadSyncHandler _handler = null!;
@@ -32,13 +38,6 @@ public class ProductoReadSyncHandlerTests {
         new CategoriaResumenDto(1, "Electrónica"), null,
         new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc),
         new DateTime(2026, 1, 15, 12, 30, 0, DateTimeKind.Utc));
-
-    [SetUp]
-    public void SetUp() {
-        _readRepository = new Mock<IProductoReadRepository>();
-        _logger = new Mock<ILogger<ProductoReadSyncHandler>>();
-        _handler = new ProductoReadSyncHandler(_readRepository.Object, _logger.Object);
-    }
 
     [Test]
     public async Task Handle_ProductoCreado_UpsertaDocumentoDesnormalizado() {
@@ -93,7 +92,7 @@ public class ProductoReadSyncHandlerTests {
             .Setup(r => r.UpsertAsync(It.IsAny<ProductoRead>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));
 
-        var act = async () => await _handler.Handle(
+        Func<Task> act = async () => await _handler.Handle(
             new ProductoCreadoNotification(Producto), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
@@ -105,7 +104,7 @@ public class ProductoReadSyncHandlerTests {
             .Setup(r => r.SoftDeleteAsync(It.IsAny<long>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));
 
-        var act = async () => await _handler.Handle(
+        Func<Task> act = async () => await _handler.Handle(
             new ProductoEliminadoNotification(1), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
@@ -117,7 +116,7 @@ public class ProductoReadSyncHandlerTests {
             .Setup(r => r.UpdateCategoriaNombreAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string?>()))
             .ThrowsAsync(new TimeoutException("MongoDB caído"));
 
-        var act = async () => await _handler.Handle(
+        Func<Task> act = async () => await _handler.Handle(
             new CategoriaActualizadaNotification(1, "Nueva"), CancellationToken.None);
 
         await act.Should().NotThrowAsync();

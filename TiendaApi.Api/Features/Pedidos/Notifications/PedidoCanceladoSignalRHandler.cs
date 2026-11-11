@@ -5,15 +5,14 @@ using TiendaApi.Api.Realtime.Pedidos;
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que emite por SignalR la cancelación de un pedido.
-/// 
-/// 🎓 OPEN/CLOSED: el comando no necesita conocer cómo se notifica la cancelación.
+///     Handler que emite por SignalR la cancelación de un pedido.
+///     🎓 OPEN/CLOSED: el comando no necesita conocer cómo se notifica la cancelación.
 /// </summary>
 public class PedidoCanceladoSignalRHandler(IHubContext<PedidosHub> hubContext)
     : INotificationHandler<PedidoCanceladoNotification> {
-    /// <inheritdoc/>
-    public Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) =>
-        hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new {
+    /// <inheritdoc />
+    public Task Handle(PedidoCanceladoNotification notification, CancellationToken cancellationToken) {
+        return hubContext.SendPedidoToUserAndAdminsAsync(notification.UserId, "PedidoEliminado", new {
             pedidoId = notification.PedidoId,
             userId = notification.UserId,
             estado = "CANCELADO",
@@ -21,4 +20,5 @@ public class PedidoCanceladoSignalRHandler(IHubContext<PedidosHub> hubContext)
             total = notification.Total,
             timestamp = DateTime.UtcNow
         }, cancellationToken);
+    }
 }

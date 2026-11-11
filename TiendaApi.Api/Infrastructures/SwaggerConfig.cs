@@ -1,16 +1,16 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 using Serilog;
+using Path = System.IO.Path;
 
 namespace TiendaApi.Api.Infrastructures;
 
 /// <summary>
-/// Extensiones de configuración de Swagger/OpenAPI.
+///     Extensiones de configuración de Swagger/OpenAPI.
 /// </summary>
 public static class SwaggerConfig {
     /// <summary>
-    /// Configura Swagger/OpenAPI con documentación completa y seguridad JWT.
+    ///     Configura Swagger/OpenAPI con documentación completa y seguridad JWT.
     /// </summary>
     public static IServiceCollection AddSwagger(this IServiceCollection services) {
         Log.Information("📖 Configurando Swagger/OpenAPI...");
@@ -45,8 +45,8 @@ public static class SwaggerConfig {
                 { new OpenApiSecuritySchemeReference("Bearer", document), new List<string>() }
             });
 
-            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            options.IncludeXmlComments(System.IO.Path.Combine(AppContext.BaseDirectory, xmlFilename));
+            string xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
         });
 
         return services;

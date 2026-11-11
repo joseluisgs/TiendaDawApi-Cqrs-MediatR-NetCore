@@ -1,10 +1,10 @@
+using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.OutputCaching;
 using Moq;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
-using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.Models;
 using TiendaApi.Api.Repositories.Productos;
@@ -18,14 +18,17 @@ public class UpdateProductoPartialCommandHandlerTests {
         var repository = new Mock<IProductoRepository>();
         var mediator = new Mock<IMediator>();
         var cacheService = new Mock<ICacheService>();
-        repository.Setup(r => r.FindByIdAsync(1)).ReturnsAsync(new Producto { Id = 1, Nombre = "Old", Precio = 100m, Stock = 5 });
+        repository.Setup(r => r.FindByIdAsync(1))
+            .ReturnsAsync(new Producto { Id = 1, Nombre = "Old", Precio = 100m, Stock = 5 });
         repository.Setup(r => r.UpdateAsync(It.IsAny<Producto>())).ReturnsAsync((Producto p) => p);
 
         var dto = new ProductoPatchDto { Nombre = "New Name" };
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateProductoPartialCommand(1, dto), CancellationToken.None);
+        Result<ProductoDto, DomainError> result =
+            await handler.Handle(new UpdateProductoPartialCommand(1, dto), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Nombre.Should().Be("New Name");
@@ -40,9 +43,11 @@ public class UpdateProductoPartialCommandHandlerTests {
 
         var dto = new ProductoPatchDto { Nombre = "New Name" };
         var outputCacheStore = new Mock<IOutputCacheStore>();
-        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object, outputCacheStore.Object);
+        var handler = new UpdateProductoPartialCommandHandler(repository.Object, mediator.Object, cacheService.Object,
+            outputCacheStore.Object);
 
-        var result = await handler.Handle(new UpdateProductoPartialCommand(999, dto), CancellationToken.None);
+        Result<ProductoDto, DomainError> result =
+            await handler.Handle(new UpdateProductoPartialCommand(999, dto), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
     }

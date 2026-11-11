@@ -2,9 +2,9 @@ using CSharpFunctionalExtensions;
 using FluentAssertions;
 using MediatR;
 using Moq;
-using NUnit.Framework;
 using TiendaApi.Api.Dtos.Productos;
 using TiendaApi.Api.Errors;
+using TiendaApi.Api.Errors.Productos;
 using TiendaApi.Api.Features.Productos.Commands;
 using TiendaApi.Api.GraphQL.Inputs;
 using TiendaApi.Api.GraphQL.Mutations;
@@ -12,40 +12,38 @@ using TiendaApi.Api.GraphQL.Mutations;
 namespace TiendaApi.Tests.Unit.GraphQL;
 
 /// <summary>
-/// Tests unitarios del mutation GraphQL ProductoMutation.
-///
-/// 🎓 El mutation es capa de traducción delgada: mapea el input y delega en
-/// MediatR. Estos tests verifican exactamente eso: que el patch llega bien
-/// mapeado al comando (incluido CategoriaId) y que los fallos del comando se
-/// traducen en excepción GraphQL (array "errors"), nunca en null silencioso.
-/// Ningún repositorio participa: el read-before-write vive en el handler.
+///     Tests unitarios del mutation GraphQL ProductoMutation.
+///     🎓 El mutation es capa de traducción delgada: mapea el input y delega en
+///     MediatR. Estos tests verifican exactamente eso: que el patch llega bien
+///     mapeado al comando (incluido CategoriaId) y que los fallos del comando se
+///     traducen en excepción GraphQL (array "errors"), nunca en null silencioso.
+///     Ningún repositorio participa: el read-before-write vive en el handler.
 /// </summary>
 [TestFixture]
 [Category("Unit")]
 [Category("GraphQL")]
 public class ProductoMutationTests {
-    private Mock<IMediator> _mediatorMock = null!;
-    private ProductoMutation _mutation = null!;
-
     [SetUp]
     public void Setup() {
         _mediatorMock = new Mock<IMediator>();
         _mutation = new ProductoMutation();
     }
 
-    private static ProductoDto NuevoProducto(long id = 1, string nombre = "Nuevo Producto") =>
-        new(id, nombre, "Descripción", 99.99m, 10, "image.jpg",
-            new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
+    private Mock<IMediator> _mediatorMock = null!;
+    private ProductoMutation _mutation = null!;
 
-    #region CreateProducto Tests
+    private static ProductoDto NuevoProducto(long id = 1, string nombre = "Nuevo Producto") {
+        return new ProductoDto(id, nombre, "Descripción", 99.99m, 10, "image.jpg",
+            new CategoriaResumenDto(1, "Electrónica"), null, DateTime.UtcNow, DateTime.UtcNow);
+    }
 
     [Test]
     public async Task CreateProducto_ConDtoValido_RetornaProductoCreado() {
         ProductoRequestDto? dtoEnviado = null;
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<CreateProductoCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<ProductoDto, DomainError>>, CancellationToken>(
-                (req, _) => dtoEnviado = ((CreateProductoCommand)req).Dto)
+            .Callback<IRequest<Result<ProductoDto, DomainError>>, CancellationToken>((req, _) =>
+                dtoEnviado = ((CreateProductoCommand)req).Dto)
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(NuevoProducto()));
 
         var input = new CreateProductoInput {
@@ -55,7 +53,7 @@ public class ProductoMutationTests {
             CategoriaId = 1
         };
 
-        var result = await _mutation.CreateProducto(input, _mediatorMock.Object);
+        ProductoDto result = await _mutation.CreateProducto(input, _mediatorMock.Object);
 
         result.Should().NotBeNull();
         dtoEnviado.Should().NotBeNull("el mutation debe delegar en CreateProductoCommand");
@@ -71,14 +69,10 @@ public class ProductoMutationTests {
 
         var input = new CreateProductoInput { Nombre = "", Precio = -100m, Stock = 0, CategoriaId = 1 };
 
-        var act = () => _mutation.CreateProducto(input, _mediatorMock.Object);
+        Func<Task<ProductoDto>> act = () => _mutation.CreateProducto(input, _mediatorMock.Object);
 
         await act.Should().ThrowAsync<Exception>().WithMessage("Error");
     }
-
-    #endregion
-
-    #region UpdateProducto Tests
 
     [Test]
     public async Task UpdateProducto_ConInputParcial_MapeaElPatchYDelegaEnElComando() {
@@ -89,13 +83,13 @@ public class ProductoMutationTests {
         // comando, igual que el endpoint REST PATCH
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<UpdateProductoPartialCommand>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Result<ProductoDto, DomainError>>, CancellationToken>(
-                (req, _) => comandoRecibido = (UpdateProductoPartialCommand)req)
+            .Callback<IRequest<Result<ProductoDto, DomainError>>, CancellationToken>((req, _) =>
+                comandoRecibido = (UpdateProductoPartialCommand)req)
             .ReturnsAsync(Result.Success<ProductoDto, DomainError>(NuevoProducto(nombre: "Nuevo Nombre")));
 
         var input = new UpdateProductoInput { Nombre = "Nuevo Nombre", CategoriaId = 2 };
 
-        var result = await _mutation.UpdateProducto(productoId, input, _mediatorMock.Object);
+        ProductoDto result = await _mutation.UpdateProducto(productoId, input, _mediatorMock.Object);
 
         result.Should().NotBeNull();
         result.Nombre.Should().Be("Nuevo Nombre");
@@ -117,18 +111,14 @@ public class ProductoMutationTests {
         _mediatorMock
             .Setup(m => m.Send(It.IsAny<UpdateProductoPartialCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ProductoDto, DomainError>(
-                TiendaApi.Api.Errors.Productos.ProductoError.NotFound(productoId)));
+                ProductoError.NotFound(productoId)));
 
         var input = new UpdateProductoInput { Nombre = "Nuevo Nombre" };
 
-        var act = () => _mutation.UpdateProducto(productoId, input, _mediatorMock.Object);
+        Func<Task<ProductoDto>> act = () => _mutation.UpdateProducto(productoId, input, _mediatorMock.Object);
 
         await act.Should().ThrowAsync<Exception>();
     }
-
-    #endregion
-
-    #region DeleteProducto Tests
 
     [Test]
     public async Task DeleteProducto_ConProductoExistente_RetornaTrue() {
@@ -136,7 +126,7 @@ public class ProductoMutationTests {
             .Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<DomainError>());
 
-        var result = await _mutation.DeleteProducto(1, _mediatorMock.Object);
+        bool result = await _mutation.DeleteProducto(1, _mediatorMock.Object);
 
         result.Should().BeTrue();
     }
@@ -147,10 +137,8 @@ public class ProductoMutationTests {
             .Setup(m => m.Send(It.IsAny<DeleteProductoCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure<DomainError>(new NotFoundError("No encontrado")));
 
-        var act = () => _mutation.DeleteProducto(999, _mediatorMock.Object);
+        Func<Task<bool>> act = () => _mutation.DeleteProducto(999, _mediatorMock.Object);
 
         await act.Should().ThrowAsync<Exception>().WithMessage("No encontrado");
     }
-
-    #endregion
 }

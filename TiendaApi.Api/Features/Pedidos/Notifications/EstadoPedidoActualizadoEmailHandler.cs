@@ -1,24 +1,26 @@
 using MediatR;
 using Serilog;
+using TiendaApi.Api.Dtos.Pedidos;
 using TiendaApi.Api.Services.Email;
 
 namespace TiendaApi.Api.Features.Pedidos.Notifications;
 
 /// <summary>
-/// Handler que envía el email de cambio de estado al CLIENTE del pedido.
-/// 
-/// 📧 Matriz de emails (ver doc/21/15): el usuario es quien debe enterarse
-/// de los cambios de estado de SU pedido. El admin no recibe este email
-/// porque los cambios de estado los provoca él desde el panel.
+///     Handler que envía el email de cambio de estado al CLIENTE del pedido.
+///     📧 Matriz de emails (ver doc/21/15): el usuario es quien debe enterarse
+///     de los cambios de estado de SU pedido. El admin no recibe este email
+///     porque los cambios de estado los provoca él desde el panel.
 /// </summary>
 public class EstadoPedidoActualizadoEmailHandler(IEmailService emailService)
     : INotificationHandler<EstadoPedidoActualizadoNotification> {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public Task Handle(EstadoPedidoActualizadoNotification notification, CancellationToken cancellationToken) {
-        var destinatario = notification.Pedido.Destinatario;
-        if (string.IsNullOrWhiteSpace(destinatario?.Email)) return Task.CompletedTask;
+        DestinatarioDto? destinatario = notification.Pedido.Destinatario;
+        if (string.IsNullOrWhiteSpace(destinatario?.Email)) {
+            return Task.CompletedTask;
+        }
 
-        var content = EmailTemplates.PedidoEstadoActualizado(
+        string content = EmailTemplates.PedidoEstadoActualizado(
             notification.Pedido.Id,
             notification.Pedido.Estado,
             notification.NuevoEstado,
